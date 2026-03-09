@@ -1,0 +1,37 @@
+webserver motherfucker:
+
+1. PRIO
+HIGH
+read the RFCs defining the HTTP protocol
+https://datatracker.ietf.org/doc/html/rfc2616
+https://www.rfc-editor.org/rfc/rfc9110.html
+https://www.rfc-editor.org/rfc/rfc7230
+GET INTO NGINX: perform tests with telnet and NGINX
+config file
+do one full setup
+reading introduction
+get into CGI
+MID
+What is a socket: How is a pipe or a socket setup via fds
+get into epoll
+LOW
+
+2. GAME PLAN
+Foundation
+parse nginx config file
+Socket setup + basic accept loop
+Can accept connection, read raw bytes
+HTTP
+Parse HTTP requests properly (GET first, then POST)
+Build HTTP responses (status codes, headers, body)
+Serve static files (read from disk, MIME types, error pages)
+Connection
+Implement select/poll/epoll: 3-4 days (this is where bugs hide)
+Handle multiple simultaneous connections: 2-3 days debugging
+CGI
+Understand CGI spec
+Fork/exec CGI scripts
+Pass environment variables correctly
+Read CGI output back
+
+
