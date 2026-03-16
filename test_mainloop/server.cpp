@@ -127,7 +127,7 @@ void set_arr(int open_fds[MAX_CLIENTS]) {
 }
 
 int main() {
-  std::signal(SIGINT, signal_handler);
+//   std::signal(SIGINT, signal_handler);
   int open_fds[MAX_CLIENTS];
   int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
   if (serverSocket == -1)
