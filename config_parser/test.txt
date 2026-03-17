@@ -16,8 +16,7 @@ server {
     
     listen 127.24.255.255;
 }
-server
- {
+server {
     location / {
         root /;
         index /biiiitch;

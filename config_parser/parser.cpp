@@ -1,9 +1,13 @@
 #include "structs.hpp"
 #include "Tokenizer.hpp"
+#include <algorithm>
+#include <cstddef>
 #include <cstdio>
+#include <exception>
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 Node *directive(Tokenizer& stream, std::vector<std::string>& args) {
     Node *directiveNode = new Node(); 
@@ -76,22 +80,39 @@ Node *base(Tokenizer& stream) {
     return base;
 }
 
+# define GET 0
+# define POST 1
+# define DELETE 2
+
+int allowMethods(std::vector<std::string> &args) {
+    int bitmap = 0;
+    if (std::find(args.begin(), args.end(), "GET") != args.end())
+        bitmap |= 1 << GET;
+    if (std::find(args.begin(), args.end(), "POST") != args.end())
+        bitmap |= 1 << POST;
+    if (std::find(args.begin(), args.end(), "DELETE") != args.end())
+        bitmap |= 1 << DELETE;
+    return bitmap;
+}
+
 void eval(Node *tree, t_eval &evalData) {
     if (tree->type == DIRECTIVE) {
         if (!evalData.server)
             throw std::runtime_error("directive outside of server block");
         switch (tree->tag) {
-            case ROOT: evalData.servers.back().root = tree->args[0]; return;
-            case INDEX: evalData.servers.back().index = tree->args[0]; return;
+            case ROOT: evalData.servers.back().locations.back().root = tree->args[0]; return;
+            case INDEX: evalData.servers.back().locations.back().index = tree->args[0]; return;
+            case AUTOINDEX: evalData.servers.back().locations.back().autoindex = tree->args[0]; return;
+            case ALLOWMETHODS: evalData.servers.back().locations.back().allowMethods = allowMethods(tree->args); return;
             default :   ;
         }
         if (evalData.location)
             throw std::runtime_error("wrong directive in location context");
         switch (tree->tag) {
             case SERVER_NAME: evalData.servers.back().server_name = tree->args[0]; break;
-            case LISTEN: evalData.servers.back().listen = tree->args[0]; break;
             case CLIENT_MAX_BODY_SIZE: evalData.servers.back().client_max_body = tree->args[0]; break;
             case PORT: evalData.servers.back().port = tree->args[0]; break;
+            case LISTEN: evalData.servers.back().listen = tree->args[0]; break;
             default : throw std::runtime_error("directive unknown");
         }
     }
@@ -102,12 +123,17 @@ void eval(Node *tree, t_eval &evalData) {
             evalData.server = true;
             t_server server;
             evalData.servers.push_back(server);
+            t_location rootLocation{};
+            rootLocation.location = "/";
+            evalData.servers.back().locations.push_back(rootLocation);
         }
         else if (tree->tag == LOCATION) {
             if (!evalData.server || evalData.location || tree->args.size() != 1) 
                 throw std::runtime_error("bad location block");
             evalData.location = true;
-            evalData.servers.back().location = tree->args[0];
+            t_location  newLocation{};
+            newLocation.location = tree->args[0];
+            evalData.servers.back().locations.push_back(newLocation);
         }
         for(unsigned int i = 0; i < tree->content.size(); ++i) {
             eval(tree->content.at(i), evalData);
@@ -119,21 +145,27 @@ void eval(Node *tree, t_eval &evalData) {
     }
 }
 
+void freeTree(Node *node) {
+    for (unsigned int i = 0; i < node->content.size(); ++i)
+        freeTree(node->content[i]);
+    delete node;
+}
+
 void parser(const char *fileName) {
-    Tokenizer stream(fileName);
-    Node *tree = base(stream);
     
-    t_eval  evalData{};
-    eval(tree, evalData);
-    for (unsigned int i = 0; i < evalData.servers.size(); ++i) {
-        std::cout << "\nServer nr: " << i + 1 << "\n";
-        std::cout << "server name: " << evalData.servers[i].server_name << "\n";
-        std::cout << "client_max_body: " << evalData.servers[i].client_max_body << "\n";
-        std::cout << "index: " << evalData.servers[i].index << "\n";
-        std::cout << "listen: " << evalData.servers[i].listen << "\n";
-        std::cout << "port: " << evalData.servers[i].port << "\n";
-        std::cout << "root: " << evalData.servers[i].root << "\n";
-    }
+    Node *tree = NULL;
+    try {
+        Tokenizer stream(fileName);
+        tree = base(stream);
+        t_eval  evalData{};
+        eval(tree, evalData);
+        if (tree)
+            freeTree(tree);
+    } catch (std::exception &e) {
+        if (tree)
+            freeTree(tree);
+        std::cout << "Error\n" << e.what() << "\n";
+    } 
 }
 
 int main() {
