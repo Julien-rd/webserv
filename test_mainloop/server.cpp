@@ -166,7 +166,7 @@ int main() {
       int fd = request_buf[i].data.fd;
       if (fd == serverSocket) {
         while (true) {
-          int ClientSocket = accept(serverSocket, NULL, NULL);
+          int ClientSocket = accept(serverSocket, NULL, NULL); // TODO can't do like socket(), accept4() not allowed and is a nonstandard Linux extension
           if (ClientSocket == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK)
               break;

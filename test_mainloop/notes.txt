@@ -4,4 +4,7 @@ useful:
 1. man 2 socket (linux) - SOCK_NONBLOCK: We can bitwise OR SOCK_NONBLOCK with `type` argument
 	passed to socket(), and save the call to fcntl later on.
 
-2. 
+2. We could maybe replace all the error handling with wrapper functions that throw exception
+	on error, and make a try catch block that wraps all the code, so the code looks cleaner
+
+3. 
