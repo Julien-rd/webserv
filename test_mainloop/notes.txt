@@ -1,0 +1,7 @@
+useful:
+	- vscode extension: Todo Tree (highlights TODO and FIXME in comments)
+
+1. man 2 socket (linux) - SOCK_NONBLOCK: We can bitwise OR SOCK_NONBLOCK with `type` argument
+	passed to socket(), and save the call to fcntl later on.
+
+2. 

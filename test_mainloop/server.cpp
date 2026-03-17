@@ -109,7 +109,7 @@ int add_socket(int socket_fd, int epfd) {
 }
 
 bool set_nonblocking(int fd) {
-  int flags = fcntl(fd, F_GETFL, 0);
+  int flags = fcntl(fd, F_GETFL, 0); // FIXME We're only allowed F_SETFL, O_NONBLOCK and FD_CLOEXEC with fcntl()
   if (flags == -1)
     return false;
   flags = flags | O_NONBLOCK;
@@ -129,7 +129,7 @@ void set_arr(int open_fds[MAX_CLIENTS]) {
 int main() {
 //   std::signal(SIGINT, signal_handler);
   int open_fds[MAX_CLIENTS];
-  int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+  int serverSocket = socket(AF_INET, SOCK_STREAM, 0); // FIXME (only for linux) bitwise OR SOCK_NONBLOCK to `type`
   if (serverSocket == -1)
     return error_msg(ErrorFlag::ERR_SOCKET, open_fds);
   open_fds[serverSocket] = serverSocket;
