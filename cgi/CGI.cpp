@@ -1,4 +1,5 @@
-#include "cgi.hpp"
+#include "CGI.hpp"
+#include "../HttpRequest.hpp"
 #include <exception>
 #include <iostream>
 
@@ -11,8 +12,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-CGI::CGI(char *content):
-	content(content) {}
+CGI::CGI(void) {}
 
 CGI::~CGI(void) {}
 
@@ -24,17 +24,27 @@ void	CGI::setPid(pid_t pid) {
 	this->pid = pid;
 }
 
-void	CGI::validateContent(void) const {
+void	CGI::validateRequest(void) const {
 	// TODO VALIDATE HERE
-	if (!this->content) {
+	if (false) {
 		throw CGI::StandardException();
 	}
 }
 
-void	CGI::parseRawHTTP(char **newEnvp, char *content) {
+void	CGI::initCGI(char **newEnvp, HttpRequest request) {
 	// TODO implement parsing
-	(void)content;
-	// this->metaVariables.
+
+	this->metaVariables.auth_type = ""; // RFC 3875 - 4.1.1 // Implement?
+	this->metaVariables.content_length = request._contentLength; // What about chunks?
+	this->metaVariables.content_type = ""; // ?? Default value is "US-ASCII"
+	this->metaVariables.gateway_interface = "CGI/1.1";
+	// this->metaVariables.path_info = 
+	// this->metaVariables
+	// this->metaVariables
+	// this->metaVariables
+	// this->metaVariables
+	// this->metaVariables
+	// this->metaVariables
 	this->path = (char *)"./script.py";
 	this->argv[0] = (char *)"script.py";
 	this->argv[1] = NULL;
@@ -93,13 +103,26 @@ void	CGI::execute(void) {
 
 int	main(int argc, char **argv, char **envp) {
 	(void)argc, void(argv), (void)envp;
+	std::string	content = 
+	"GET /index.html HTTP/1.1\r\n"
+	"Host:localhost:8080\r\n"
+	"User-Agent:    SuperBrowser/1.0\r\n"
+	"Accept:\ttext/html\r\n"
+	"Connection: keep-alive  \r\n"
+	"X-Empty-Header:\r\n"
+	"Accept-Language: de\r\n"
+	"Connection: keep-alive  \r\n"
+	"Accept-Language: en\r\n"
+	"Accept-Language            : en\r\n"
+	"\r\n";
 
-	char	*content = (char *)"Content-Type: text/html\r\n\r\n<h1>Hello from CGI!</h1>\n";
-	CGI		cgi(content);
+	HttpRequest	request;
+	CGI			cgi;
 
+	request.parseHttpRequest(content);
 	try {
-		cgi.parseRawHTTP(envp, content);
-		cgi.validateContent();
+		cgi.validateRequest();
+		cgi.initCGI(envp, request);
 		cgi.pipeIO();
 		cgi.spawnProcess();
 		cgi.execute();

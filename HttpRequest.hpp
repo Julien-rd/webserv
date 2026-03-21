@@ -22,6 +22,13 @@ class HttpRequest{
     int parseHttpRequest(std::string request_content);
     void print();
     HttpRequest();
+    std::string _method;
+    std::string _uri;
+    std::string _httpVersion;
+    std::map<std::string, std::string> _headers;
+    std::string _fieldName;
+    std::string _fieldValue;
+    size_t _contentLength;
     
     private:
     bool validMethod();
@@ -42,13 +49,6 @@ class HttpRequest{
     void addHeader();
 
     state _currentState;
-    std::string _method;
-    std::string _uri;
-    std::string _httpVersion;
-    std::map<std::string, std::string> _headers;
-    std::string _fieldName;
-    std::string _fieldValue;
-    size_t _contentLength;
 };
 
 #endif

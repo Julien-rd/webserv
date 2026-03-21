@@ -5,10 +5,10 @@ CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -MMD -MP -std=c++98 -pedantic -g #-fsanitize=address,leak,undefined,bounds,float-divide-by-zero
 
 SOURCES =
-CLASS_SOURCES = cgi.cpp
+CLASS_SOURCES = CGI.cpp ../HttpRequest.cpp ../HttpRequestHelpers.cpp
 ALL_SOURCES = $(SOURCES) $(CLASS_SOURCES)
 
-HEADERS = cgi.hpp
+HEADERS = CGI.hpp ../HttpRequest.hpp
 TEMPLATE = 
 
 OBJ_DIR = objects/

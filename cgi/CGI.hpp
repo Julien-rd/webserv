@@ -1,6 +1,7 @@
 #ifndef CGI_HPP
 # define CGI_HPP
 
+# include "../HttpRequest.hpp"
 # include <string>
 # include <exception>
 
@@ -38,7 +39,6 @@ class	CGI {
 	private:
 		t_metaVariables	metaVariables;
 		char			*path;
-		char			*content;
 
 		pid_t			pid;
 		int				pipefd[2];
@@ -46,14 +46,14 @@ class	CGI {
 		char			**envp;
 
 	public:
-		CGI(char *content);
+		CGI(void);
 		~CGI(void);
 
 		pid_t	getPid(void) const;
 		void	setPid(pid_t pid);
 
-		void	validateContent(void) const;
-		void	parseRawHTTP(char **newEnvp, char *content);
+		void	validateRequest(void) const;
+		void	initCGI(char **newEnvp, HttpRequest request);
 		void	spawnProcess(void);
 		void	pipeIO(void);
 		void	redirectIO(void);
