@@ -53,7 +53,7 @@ class	CGI {
 		void	setPid(pid_t pid);
 
 		void	validateContent(void) const;
-		void	parseContent(char **newEnvp);
+		void	parseRawHTTP(char **newEnvp, char *content);
 		void	spawnProcess(void);
 		void	pipeIO(void);
 		void	redirectIO(void);

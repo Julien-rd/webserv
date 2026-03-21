@@ -31,17 +31,18 @@ void	CGI::validateContent(void) const {
 	}
 }
 
-// void	CGI::parseContent(char **newEnvp, char *content) {
-// 	// TODO implement parsing
-// 	// this->metaVariables.
-// 	this->path = (char *)"./script.py";
-// 	this->argv[0] = (char *)"script.py";
-// 	this->argv[1] = NULL;
-// 	this->envp = newEnvp;
-// 	// this->envp[0] = (char *)"PATH=/usr/bin:/bin";
-// 	// this->envp[1] = (char *)"CONTENT_LENGTH=TheMagnificent";
-// 	// this->envp[2] = NULL;
-// }
+void	CGI::parseRawHTTP(char **newEnvp, char *content) {
+	// TODO implement parsing
+	(void)content;
+	// this->metaVariables.
+	this->path = (char *)"./script.py";
+	this->argv[0] = (char *)"script.py";
+	this->argv[1] = NULL;
+	this->envp = newEnvp;
+	// this->envp[0] = (char *)"PATH=/usr/bin:/bin";
+	// this->envp[1] = (char *)"CONTENT_LENGTH=TheMagnificent";
+	// this->envp[2] = NULL;
+}
 
 void	CGI::pipeIO(void) {
 	if (pipe(this->pipefd) == -1) {
@@ -97,7 +98,7 @@ int	main(int argc, char **argv, char **envp) {
 	CGI		cgi(content);
 
 	try {
-		// cgi.parseRawHTTP(envp, content);
+		cgi.parseRawHTTP(envp, content);
 		cgi.validateContent();
 		cgi.pipeIO();
 		cgi.spawnProcess();
