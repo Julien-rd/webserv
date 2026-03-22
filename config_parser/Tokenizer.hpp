@@ -9,6 +9,10 @@ class Tokenizer {
             if (!file.is_open())
                 throw std::runtime_error("file couldn't be opened");
         }
+        ~Tokenizer() {
+            if (file.is_open())
+                file.close();
+        }
         const std::string next() {
             skipWhitespaces();
             char peek = file.peek();
