@@ -31,6 +31,29 @@ void	CGI::validateRequest(void) const {
 	}
 }
 
+std::string	parsePathInfo(const std::string& _uri) {
+	// TODO Maybe also handle errors here, instead of in validateRequest() ?
+
+	const std::string	scriptPath = "/cgi-bin/script.py";
+	const size_t		scriptPathPos = _uri.find(scriptPath);
+
+	if (scriptPathPos == std::string::npos) {
+		std::cerr << "ERROR: maybe unknown script path" << std::endl;
+		throw CGI::StandardException();
+	}
+	return _uri.substr(scriptPathPos + scriptPath.size());
+}
+
+std::string	parseQueryString(const std::string& _uri) {
+	const std::string	queryString;
+	const size_t		queryStringPos = _uri.find('?');
+
+	if (queryStringPos == std::string::npos) {
+		return "";
+	}
+	return _uri.substr(queryStringPos + 1);
+}
+
 void	CGI::initCGI(char **newEnvp, HttpRequest request) {
 	// TODO implement parsing
 
@@ -38,13 +61,20 @@ void	CGI::initCGI(char **newEnvp, HttpRequest request) {
 	this->metaVariables.content_length = request._contentLength; // What about chunks?
 	this->metaVariables.content_type = ""; // ?? Default value is "US-ASCII"
 	this->metaVariables.gateway_interface = "CGI/1.1";
-	// this->metaVariables.path_info = 
-	// this->metaVariables
-	// this->metaVariables
-	// this->metaVariables
-	// this->metaVariables
-	// this->metaVariables
-	// this->metaVariables
+	this->metaVariables.path_info = parsePathInfo(request._uri);
+	this->metaVariables.path_translated = this->metaVariables.path_translated;
+	this->metaVariables.query_string = parseQueryString(request._uri);
+	this->metaVariables.remote_addr = "";
+	this->metaVariables.remote_host = "";
+	this->metaVariables.remote_ident = "";
+	this->metaVariables.remote_user = "";
+	this->metaVariables.request_method = "GET";
+	this->metaVariables.script_name = "script.py";
+	this->metaVariables.server_name = "";
+	this->metaVariables.server_port = "";
+	this->metaVariables.server_protocol = "";
+	this->metaVariables.server_software = "";
+	// this->metaVariables.x = "";
 	this->path = (char *)"./script.py";
 	this->argv[0] = (char *)"script.py";
 	this->argv[1] = NULL;
