@@ -24,9 +24,11 @@ void	CGI::setPid(pid_t pid) {
 	this->pid = pid;
 }
 
-void	CGI::validateRequest(void) const {
+void	CGI::validateRequest(const HttpRequest& request) const {
 	// TODO VALIDATE HERE
-	if (false) {
+
+	if (request._uri != "/cgi-bin/script.py") {
+		std::cout << "URI is not a script (\"/cgi-bin/script.py\")";
 		throw CGI::StandardException();
 	}
 }
@@ -54,34 +56,40 @@ std::string	parseQueryString(const std::string& _uri) {
 	return _uri.substr(queryStringPos + 1);
 }
 
-void	CGI::initCGI(char **newEnvp, HttpRequest request) {
+void	CGI::initCGI(const char **newEnvp, const HttpRequest& request) {
 	// TODO implement parsing
 
-	this->metaVariables.auth_type = ""; // RFC 3875 - 4.1.1 // Implement?
-	this->metaVariables.content_length = request._contentLength; // What about chunks?
-	this->metaVariables.content_type = ""; // ?? Default value is "US-ASCII"
-	this->metaVariables.gateway_interface = "CGI/1.1";
+	(void)newEnvp;
+	this->envp = (const char **)malloc(sizeof(char *) * 18);
+	if (!this->envp) {
+		throw CGI::StandardException();
+	}
+	// this->metaVariables.auth_type = ""; // RFC 3875 - 4.1.1 // Implement?
+	// this->metaVariables.content_length = request._contentLength; // What about chunks?
+	// this->metaVariables.content_type = ""; // ?? Default value is "US-ASCII"
+	// this->metaVariables.gateway_interface = "CGI/1.1";
 	this->metaVariables.path_info = parsePathInfo(request._uri);
-	this->metaVariables.path_translated = this->metaVariables.path_translated;
+	// this->metaVariables.path_translated = this->metaVariables.path_translated;
 	this->metaVariables.query_string = parseQueryString(request._uri);
-	this->metaVariables.remote_addr = "";
-	this->metaVariables.remote_host = "";
-	this->metaVariables.remote_ident = "";
-	this->metaVariables.remote_user = "";
-	this->metaVariables.request_method = "GET";
-	this->metaVariables.script_name = "script.py";
-	this->metaVariables.server_name = "";
-	this->metaVariables.server_port = "";
-	this->metaVariables.server_protocol = "";
-	this->metaVariables.server_software = "";
+	// this->metaVariables.remote_addr = "";
+	// this->metaVariables.remote_host = "";
+	// this->metaVariables.remote_ident = "";
+	// this->metaVariables.remote_user = "";
+	// this->metaVariables.request_method = request._method;
+	// this->metaVariables.script_name = "script.py";
+	// this->metaVariables.server_name = "";
+	// this->metaVariables.server_port = "";
+	// this->metaVariables.server_protocol = "";
+	// this->metaVariables.server_software = "";
 	// this->metaVariables.x = "";
 	this->path = (char *)"./script.py";
 	this->argv[0] = (char *)"script.py";
 	this->argv[1] = NULL;
-	this->envp = newEnvp;
-	// this->envp[0] = (char *)"PATH=/usr/bin:/bin";
+	// this->envp = newEnvp;
+	this->envp[0] = (std::string(request._method).insert(0, "REQUEST_METHOD=")).c_str();
+	this->envp[1] = NULL;
+	// this->envp[0] = (char *)"PATH=/usr/bin:/bin"; // TODO make this dynamic maybe ?
 	// this->envp[1] = (char *)"CONTENT_LENGTH=TheMagnificent";
-	// this->envp[2] = NULL;
 }
 
 void	CGI::pipeIO(void) {
@@ -120,21 +128,21 @@ void	CGI::spawnProcess(void) {
 // }
 
 void	CGI::execute(void) {
-	char	buf[10];
+	// char	buf[10];
 
 	// read(0, buf, 10);
-	buf[9] = 0;
-	printf("read (%s), now writing it back.\n", buf);
-	fflush(stdout);
+	// buf[9] = 0;
+	// printf("read (%s), now writing it back.\n", buf);
+	// fflush(stdout);
 	// write(1, buf, 10);
 	// write(1, "\n", 1);
-	execve(this->path, this->argv, this->envp);
+	execve("./script.py", this->argv, const_cast<char **>(this->envp));
 }
 
-int	main(int argc, char **argv, char **envp) {
+int	main(const int argc, const char **argv, const char **envp) {
 	(void)argc, void(argv), (void)envp;
 	std::string	content = 
-	"GET /index.html HTTP/1.1\r\n"
+	"GET /cgi-bin/script.py HTTP/1.1\r\n"
 	"Host:localhost:8080\r\n"
 	"User-Agent:    SuperBrowser/1.0\r\n"
 	"Accept:\ttext/html\r\n"
@@ -151,7 +159,7 @@ int	main(int argc, char **argv, char **envp) {
 
 	request.parseHttpRequest(content);
 	try {
-		cgi.validateRequest();
+		cgi.validateRequest(request);
 		cgi.initCGI(envp, request);
 		cgi.pipeIO();
 		cgi.spawnProcess();
@@ -161,7 +169,7 @@ int	main(int argc, char **argv, char **envp) {
 	catch (CGI::WaitException& e) {
 		std::cout << e.what() << std::endl;
 		if (waitpid(cgi.getPid(), NULL, 0) == -1) {
-			std::cerr << "ERROR: waitpid(): " << strerror(errno) << std::endl;
+			std::cout << "ERROR: waitpid(): " << strerror(errno) << std::endl; // TODO Handle real errors and success waits
 		}
 	}
 	catch (std::exception& e) {

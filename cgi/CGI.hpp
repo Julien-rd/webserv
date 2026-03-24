@@ -43,7 +43,7 @@ class	CGI {
 		pid_t			pid;
 		int				pipefd[2];
 		char			*argv[2];
-		char			**envp;
+		const char		**envp;
 
 	public:
 		CGI(void);
@@ -52,8 +52,8 @@ class	CGI {
 		pid_t	getPid(void) const;
 		void	setPid(pid_t pid);
 
-		void	validateRequest(void) const;
-		void	initCGI(char **newEnvp, HttpRequest request);
+		void	validateRequest(const HttpRequest& request) const;
+		void	initCGI(const char **newEnvp, const HttpRequest& request);
 		void	spawnProcess(void);
 		void	pipeIO(void);
 		void	redirectIO(void);

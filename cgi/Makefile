@@ -2,7 +2,7 @@ NAME = cgi
 
 CXX = c++
 
-CXXFLAGS = -Wall -Wextra -Werror -MMD -MP -std=c++98 -pedantic -g #-fsanitize=address,leak,undefined,bounds,float-divide-by-zero
+CXXFLAGS = -Wall -Wextra -Werror -MMD -MP -std=c++98 -pedantic -g -fsanitize=address,undefined,bounds,float-divide-by-zero
 
 SOURCES =
 CLASS_SOURCES = CGI.cpp ../HttpRequest.cpp ../HttpRequestHelpers.cpp
