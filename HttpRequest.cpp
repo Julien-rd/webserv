@@ -2,7 +2,7 @@
 #include <string>
 #include <iostream>
 
-HttpRequest::HttpRequest(): _currentState(METHOD), _contentLength(0){
+HttpRequest::HttpRequest(): _contentLength(0), _currentState(METHOD){
 }
 
 void HttpRequest::print(){

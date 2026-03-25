@@ -2,6 +2,7 @@
 #include "../HttpRequest.hpp"
 #include <exception>
 #include <iostream>
+#include <iterator>
 
 #include <cstring>
 #include <cstdio>
@@ -12,9 +13,13 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#define SCRIPT_NAME "/cgi-bin/script.py"
+
 CGI::CGI(void) {}
 
-CGI::~CGI(void) {}
+CGI::~CGI(void) {
+	delete []this->envp;
+}
 
 pid_t	CGI::getPid(void) const {
 	return this->pid;
@@ -25,25 +30,36 @@ void	CGI::setPid(pid_t pid) {
 }
 
 void	CGI::validateRequest(const HttpRequest& request) const {
-	// TODO VALIDATE HERE
-
-	if (request._uri != "/cgi-bin/script.py") {
-		std::cout << "URI is not a script (\"/cgi-bin/script.py\")";
+	std::string	scriptName = SCRIPT_NAME;
+	if (request._uri.compare(0, scriptName.size(), scriptName)) { // TODO Or could replace this with a dynamic array of known scripts and check if URI matches one of them, then set a variable indicating that we will work with this specifi script for the rest of the execution oF CGI
+		std::cout << "URI is not a known script (\"/cgi-bin/script.py\")";
 		throw CGI::StandardException();
 	}
+	// TODO Do we need more validations???
 }
 
 std::string	parsePathInfo(const std::string& _uri) {
-	// TODO Maybe also handle errors here, instead of in validateRequest() ?
+	// const std::string	scriptName = SCRIPT_NAME;
+	const size_t	pathInfoPos = _uri.find(SCRIPT_NAME) + std::string(SCRIPT_NAME).size();
+	size_t			queryStringPos = _uri.find('?');
 
-	const std::string	scriptPath = "/cgi-bin/script.py";
-	const size_t		scriptPathPos = _uri.find(scriptPath);
-
-	if (scriptPathPos == std::string::npos) {
-		std::cerr << "ERROR: maybe unknown script path" << std::endl;
+	// This is commented out because it should already be validated and confirmed to be one of the scripts (if we implement that) in valduateRequest()
+	if (pathInfoPos == std::string::npos) {
+		std::cerr << "ERROR: maybe unknown script path in parsePathInfo(). Avoid reaching here in execution" << std::endl;
 		throw CGI::StandardException();
 	}
-	return _uri.substr(scriptPathPos + scriptPath.size());
+	if (queryStringPos != std::string::npos) {
+		if (queryStringPos > pathInfoPos) {
+			std::cout << "DEBUG: found '?' before PATH_INFO in parsePathInfo(). Avoid reaching here in execution" << std::endl;
+			throw CGI::StandardException();
+		}
+	}
+	else {
+		queryStringPos = std::string(SCRIPT_NAME).size();
+	}
+	std::string res(_uri.substr(pathInfoPos, queryStringPos - pathInfoPos));
+	std::cout << "parsed PATH_INFO as: " << res << std::endl;
+	return res;
 }
 
 std::string	parseQueryString(const std::string& _uri) {
@@ -56,21 +72,41 @@ std::string	parseQueryString(const std::string& _uri) {
 	return _uri.substr(queryStringPos + 1);
 }
 
-void	CGI::initCGI(const char **newEnvp, const HttpRequest& request) {
-	// TODO implement parsing
+void	CGI::setGETVariables(const HttpRequest& request) {
+	this->path = (char *)"./script.py";
+	this->argv[0] = (char *)"script.py";
+	this->argv[1] = NULL;
+	this->envp[0] = std::string("REQUEST_METHOD=").append(request._method).c_str();
+	this->envp[1] = std::string("QUERY_STRING=").append(parseQueryString(request._uri)).c_str();
+	this->envp[2] = std::string("SCRIPT_NAME=").append(SCRIPT_NAME).c_str();
 
-	(void)newEnvp;
-	this->envp = (const char **)malloc(sizeof(char *) * 18);
-	if (!this->envp) {
-		throw CGI::StandardException();
-	}
+	this->envp[3] = std::string("PATH_INFO=").append(parsePathInfo(request._uri)).c_str();
+	// this->envp[2] = std::string("SERVER_PROTOCOL=").c_str();
+	// this->envp[2] = std::string("SERVER_NAME=").c_str();
+	// this->envp[2] = std::string("SERVER_PORT=").c_str();
+	this->envp[4] = NULL;
+}
+
+void	CGI::setPOSTVariables(const HttpRequest& request) {
+	this->path = (char *)"./script.py";
+	this->argv[0] = (char *)"script.py";
+	this->argv[1] = NULL;
+	this->envp[0] = std::string("REQUEST_METHOD=").append(request._method).c_str();
+	// this->envp[1] = std::string("CONTENT_LENGTH=")
+	// this->envp[2] = std::string("CONTENT_TYPE=")
+	this->envp[1] = NULL;
+	
+}
+
+void	CGI::setMetaVariables(const HttpRequest& request) {
+	(void)request;
 	// this->metaVariables.auth_type = ""; // RFC 3875 - 4.1.1 // Implement?
 	// this->metaVariables.content_length = request._contentLength; // What about chunks?
 	// this->metaVariables.content_type = ""; // ?? Default value is "US-ASCII"
 	// this->metaVariables.gateway_interface = "CGI/1.1";
-	this->metaVariables.path_info = parsePathInfo(request._uri);
+	// this->metaVariables.path_info = parsePathInfo(request._uri);
 	// this->metaVariables.path_translated = this->metaVariables.path_translated;
-	this->metaVariables.query_string = parseQueryString(request._uri);
+	// this->metaVariables.query_string = parseQueryString(request._uri);
 	// this->metaVariables.remote_addr = "";
 	// this->metaVariables.remote_host = "";
 	// this->metaVariables.remote_ident = "";
@@ -82,14 +118,24 @@ void	CGI::initCGI(const char **newEnvp, const HttpRequest& request) {
 	// this->metaVariables.server_protocol = "";
 	// this->metaVariables.server_software = "";
 	// this->metaVariables.x = "";
-	this->path = (char *)"./script.py";
-	this->argv[0] = (char *)"script.py";
-	this->argv[1] = NULL;
-	// this->envp = newEnvp;
-	this->envp[0] = (std::string(request._method).insert(0, "REQUEST_METHOD=")).c_str();
-	this->envp[1] = NULL;
-	// this->envp[0] = (char *)"PATH=/usr/bin:/bin"; // TODO make this dynamic maybe ?
-	// this->envp[1] = (char *)"CONTENT_LENGTH=TheMagnificent";
+}
+
+void	CGI::initCGI(const char **parentEnvp, const HttpRequest& request) {
+	// TODO implement parsing
+
+	(void)parentEnvp;
+	this->envp = new const char *[10];
+	this->setMetaVariables(request); // TODO Do we need this??
+	if (request._method == "GET") {
+		this->setGETVariables(request);
+	}
+	else if (request._method == "POST") {
+		this->setPOSTVariables(request);
+	}
+	else {
+		std::cerr << "Unknown method in CGI" << std::endl;
+		throw CGI::StandardException();	
+	}
 }
 
 void	CGI::pipeIO(void) {
@@ -142,7 +188,7 @@ void	CGI::execute(void) {
 int	main(const int argc, const char **argv, const char **envp) {
 	(void)argc, void(argv), (void)envp;
 	std::string	content = 
-	"GET /cgi-bin/script.py HTTP/1.1\r\n"
+	"GET /cgi-bin/script.py/this-is-path-info HTTP/1.1\r\n"
 	"Host:localhost:8080\r\n"
 	"User-Agent:    SuperBrowser/1.0\r\n"
 	"Accept:\ttext/html\r\n"

@@ -45,13 +45,16 @@ class	CGI {
 		char			*argv[2];
 		const char		**envp;
 
+		void	setGETVariables(const HttpRequest& request);
+		void	setPOSTVariables(const HttpRequest& request);
+		void	setMetaVariables(const HttpRequest& request);
+
 	public:
 		CGI(void);
 		~CGI(void);
 
 		pid_t	getPid(void) const;
 		void	setPid(pid_t pid);
-
 		void	validateRequest(const HttpRequest& request) const;
 		void	initCGI(const char **newEnvp, const HttpRequest& request);
 		void	spawnProcess(void);
