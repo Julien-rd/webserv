@@ -4,7 +4,7 @@ CXX = c++
 
 CXXFLAGS = -Wall -Wextra -Werror -MMD -MP -std=c++98 -pedantic -g #-fsanitize=address,undefined,bounds,float-divide-by-zero
 
-SOURCES =
+SOURCES = CGI_parsing.cpp
 CLASS_SOURCES = CGI.cpp HttpRequest.cpp HttpRequestHelpers.cpp
 ALL_SOURCES = $(SOURCES) $(CLASS_SOURCES)
 

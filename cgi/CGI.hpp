@@ -37,17 +37,21 @@ typedef struct s_metaVariables {
 
 class	CGI {
 	private:
-		t_metaVariables	metaVariables;
-		char			*path;
+		t_metaVariables		meta;
+		pid_t				pid;
+		int					pipefd[2];
 
-		pid_t			pid;
-		int				pipefd[2];
-		char			*argv[2];
-		const char		**envp;
+		char				*executable;
+		char				*argv[2];
+		const char			**envp;
 
-		void	setGETVariables(const HttpRequest& request);
-		void	setPOSTVariables(const HttpRequest& request);
-		void	setMetaVariables(const HttpRequest& request);
+		const std::string	pythonScriptName;
+		const std::string	phpScriptName;
+
+		void	setGETVariables(void);
+		void	setPOSTVariables(void);
+		void	initMeta(const HttpRequest& request);
+		void	execute(void);
 
 	public:
 		CGI(void);
@@ -55,15 +59,19 @@ class	CGI {
 
 		pid_t	getPid(void) const;
 		void	setPid(pid_t pid);
+
 		void	validateRequest(const HttpRequest& request) const;
-		void	initCGI(const char **newEnvp, const HttpRequest& request);
-		void	spawnProcess(void);
+		void	initCGI(const HttpRequest& request);
 		void	pipeIO(void);
-		void	redirectIO(void);
-		void	execute(void);
+		void	spawnProcess(void);
+		void	wait(void) const;
+		// void	redirectIO(void);
 
 		FT_DEFINE_EXCEPTION(StandardException, "ERROR: Standard Exception");
 		FT_DEFINE_EXCEPTION(WaitException, "EXCEPTION CAUGHT IN PARENT: waiting");
 };
+
+std::string	parsePathInfo(const std::string& _uri);
+std::string	parseQueryString(const std::string& _uri);
 
 #endif /* CGI_HPP */
