@@ -5,10 +5,10 @@ CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -MMD -MP -std=c++98 -pedantic -g #-fsanitize=address,undefined,bounds,float-divide-by-zero
 
 SOURCES =
-CLASS_SOURCES = CGI.cpp ../HttpRequest.cpp ../HttpRequestHelpers.cpp
+CLASS_SOURCES = CGI.cpp HttpRequest.cpp HttpRequestHelpers.cpp
 ALL_SOURCES = $(SOURCES) $(CLASS_SOURCES)
 
-HEADERS = CGI.hpp ../HttpRequest.hpp
+HEADERS = CGI.hpp HttpRequest.hpp
 TEMPLATE = 
 
 OBJ_DIR = objects/
@@ -37,7 +37,6 @@ runsan: re
 
 clean:
 	rm -rf $(OBJ_DIR)
-	rm *.o *.d
 
 fclean: clean
 	rm -rf $(NAME)

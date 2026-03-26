@@ -1,7 +1,7 @@
 #ifndef CGI_HPP
 # define CGI_HPP
 
-# include "../HttpRequest.hpp"
+# include "HttpRequest.hpp"
 # include <string>
 # include <exception>
 
