@@ -13,11 +13,9 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#define SCRIPT_NAME "/cgi-bin/script.py"
-
 CGI::CGI(void): envp(new const char*[10]),
 pythonScriptName("/cgi-bin/python.py"),
-phpScriptName("/cgi-bin/peeAitschPee.php") {
+phpScriptName("/cgi-bin/php.php") {
 	this->pipefd[0] = -1;
 	this->pipefd[1] = -1;
 }
@@ -41,20 +39,27 @@ void	CGI::setPid(pid_t pid) {
 }
 
 void	CGI::validateRequest(const HttpRequest& request) const {
-	std::string	scriptName = SCRIPT_NAME;
-	if (request._uri.compare(0, scriptName.size(), scriptName)) { // TODO Or could replace this with a dynamic array of known scripts and check if URI matches one of them, then set a variable indicating that we will work with this specifi script for the rest of the execution oF CGI
-		std::cout << "URI doesn't contain a known script (\"/cgi-bin/script.py\")";
+	if (request._uri.compare(0, this->pythonScriptName.size(), this->pythonScriptName)
+		&& request._uri.compare(0, this->phpScriptName.size(), this->phpScriptName)) { // TODO Or could replace this with a dynamic array of known scripts and check if URI matches one of them, then set a variable indicating that we will work with this specifi script for the rest of the execution oF CGI
+		std::cout << "URI doesn't contain a known script" << std::endl;
 		throw CGI::StandardException();
 	}
-	// TODO Do we need more validations???
+	// TODO Validate minimum requirements needed for CGI execution (maybe headers for GET or POST. specific requirements for attributes of HttpRequest)???
+}
+
+void	CGI::setScriptAttributes(void) {
+	if (this->scriptName == "/cgi-bin/python.py") {
+		this->executable = (char *)"./python.py";
+		this->argv[0] = (char *)"python.py";
+	}
+	else if (this->scriptName == "/cgi-bin/php.php") {
+		this->executable = (char *)"./php.php";
+		this->argv[0] = (char *)"php.php";
+	}
+	this->argv[1] = NULL;
 }
 
 void	CGI::setGETVariables(void) {
-	this->executable = (char *)"./script.py";
-
-	this->argv[0] = (char *)"script.py";
-	this->argv[1] = NULL;
-
 	this->envp[0] = this->meta.request_method.c_str();
 	this->envp[1] = this->meta.query_string.c_str();
 	this->envp[2] = this->meta.script_name.c_str();
@@ -66,10 +71,6 @@ void	CGI::setGETVariables(void) {
 }
 
 void	CGI::setPOSTVariables(void) {
-	this->executable = (char *)"./script.py";
-
-	this->argv[0] = (char *)"script.py";
-	this->argv[1] = NULL;
 
 	this->envp[0] = this->meta.request_method.c_str();
 	this->envp[1] = this->meta.content_length.c_str();
@@ -83,8 +84,7 @@ void	CGI::setPOSTVariables(void) {
 	
 }
 
-void	CGI::initMeta(const HttpRequest& request) {
-	(void)request;
+void	CGI::initMeta(const HttpRequest& request, const std::string& scriptName) {
 	// this->meta.auth_type = ""; // RFC 3875 - 4.1.1 // Implement?
 	std::stringstream	ss;
 	ss << request._contentLength;
@@ -100,7 +100,7 @@ void	CGI::initMeta(const HttpRequest& request) {
 	// this->meta.remote_ident = "";
 	// this->meta.remote_user = "";
 	this->meta.request_method = std::string("REQUEST_METHOD=").append(request._method);
-	this->meta.script_name = std::string("SCRIPT_NAME=").append(SCRIPT_NAME);
+	this->meta.script_name = std::string("SCRIPT_NAME=").append(scriptName);
 	this->meta.server_name = std::string("SERVER_NAME=").append(request._headers.at("Host")); // TODO get this from result of config_parser instead
 	this->meta.server_port = std::string("SERVER_PORT=").append(request._headers.at("Host").substr(request._headers.at("Host").find(':') + 1)); // TODO get this from result of config_parser instead
 	this->meta.server_protocol = std::string("SERVER_PROTOCAL=").append("HTTP/1.1");
@@ -109,9 +109,10 @@ void	CGI::initMeta(const HttpRequest& request) {
 }
 
 void	CGI::initCGI(const HttpRequest& request) {
-	// TODO implement parsing
+	this->scriptName = getScriptName(request._uri, this->pythonScriptName, this->phpScriptName);
 
-	this->initMeta(request); // TODO Do we need this??
+	this->initMeta(request, scriptName);
+	this->setScriptAttributes();
 	if (request._method == "GET") {
 		this->setGETVariables();
 	}
@@ -120,7 +121,7 @@ void	CGI::initCGI(const HttpRequest& request) {
 	}
 	else {
 		std::cerr << "Unknown method in CGI" << std::endl;
-		throw CGI::StandardException();	
+		throw CGI::StandardException();
 	}
 }
 
@@ -157,7 +158,11 @@ void	CGI::execute(void) {
 	close(this->pipefd[1]);
 	// int fd = open("cgi_output.txt", O_CREAT | O_NONBLOCK | O_RDWR, 0777);
 	// dup2(fd, STDOUT_FILENO);
-	execve("./script.py", this->argv, const_cast<char **>(this->envp));
+	// std::cout << "executable is (" << this->executable << ") argv[0] is (" << this->argv[0] << ")" << std::endl;
+	if (execve(this->executable, this->argv, const_cast<char **>(this->envp)) == -1) {
+		std::cerr << "execve() failed. shouldn't reach here, maybe invalid arguments (path or argv))" << std::endl;
+		throw CGI::StandardException();
+	}
 }
 
 // void	CGI::redirectIO(void) {
@@ -173,7 +178,7 @@ void	CGI::execute(void) {
 int	main(const int argc, const char **argv, const char **envp) {
 	(void)argc, void(argv), (void)envp;
 	std::string	content = 
-	"POST /cgi-bin/script.py/this-is-path-info?key1=valuee HTTP/1.1\r\n"
+	"POST /cgi-bin/php.php/this-is-path-info?key1=valuee HTTP/1.1\r\n"
 	"Host:localhost:8080\r\n"
 	"User-Agent:    SuperBrowser/1.0\r\n"
 	"Accept:\ttext/html\r\n"

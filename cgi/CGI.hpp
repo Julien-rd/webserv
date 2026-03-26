@@ -37,20 +37,22 @@ typedef struct s_metaVariables {
 
 class	CGI {
 	private:
+		std::string			scriptName;
 		t_metaVariables		meta;
 		pid_t				pid;
 		int					pipefd[2];
 
-		char				*executable;
+		const char			*executable;
 		char				*argv[2];
 		const char			**envp;
 
 		const std::string	pythonScriptName;
 		const std::string	phpScriptName;
 
+		void	setScriptAttributes(void);
 		void	setGETVariables(void);
 		void	setPOSTVariables(void);
-		void	initMeta(const HttpRequest& request);
+		void	initMeta(const HttpRequest& request, const std::string& scriptName);
 		void	execute(void);
 
 	public:
@@ -73,5 +75,6 @@ class	CGI {
 
 std::string	parsePathInfo(const std::string& _uri);
 std::string	parseQueryString(const std::string& _uri);
+std::string	getScriptName(const std::string& _uri, const std::string& name1, const std::string& name2);
 
 #endif /* CGI_HPP */
