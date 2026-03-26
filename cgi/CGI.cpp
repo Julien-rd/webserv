@@ -13,9 +13,11 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-CGI::CGI(void): envp(new const char*[10]),
+CGI::CGI(const HttpRequest& request): 
+envp(new const char*[10]),
 pythonScriptName("/cgi-bin/python.py"),
-phpScriptName("/cgi-bin/php.php") {
+phpScriptName("/cgi-bin/php.php"),
+request(request) {
 	this->pipefd[0] = -1;
 	this->pipefd[1] = -1;
 }
@@ -30,17 +32,17 @@ CGI::~CGI(void) {
 	}
 }
 
-pid_t	CGI::getPid(void) const {
-	return this->pid;
-}
+// pid_t	CGI::getPid(void) const {
+// 	return this->pid;
+// }
 
-void	CGI::setPid(pid_t pid) {
-	this->pid = pid;
-}
+// void	CGI::setPid(pid_t pid) {
+// 	this->pid = pid;
+// }
 
-void	CGI::validateRequest(const HttpRequest& request) const {
-	if (request._uri.compare(0, this->pythonScriptName.size(), this->pythonScriptName)
-		&& request._uri.compare(0, this->phpScriptName.size(), this->phpScriptName)) { // TODO Or could replace this with a dynamic array of known scripts and check if URI matches one of them, then set a variable indicating that we will work with this specifi script for the rest of the execution oF CGI
+void	CGI::validateRequest(void) const {
+	if (this->request._uri.compare(0, this->pythonScriptName.size(), this->pythonScriptName)
+		&& this->request._uri.compare(0, this->phpScriptName.size(), this->phpScriptName)) { // TODO Or could replace this with a dynamic array of known scripts and check if URI matches one of them, then set a variable indicating that we will work with this specifi script for the rest of the execution oF CGI
 		std::cout << "URI doesn't contain a known script" << std::endl;
 		throw CGI::StandardException();
 	}
@@ -49,12 +51,14 @@ void	CGI::validateRequest(const HttpRequest& request) const {
 
 void	CGI::setScriptAttributes(void) {
 	if (this->scriptName == "/cgi-bin/python.py") {
-		this->executable = (char *)"./python.py";
-		this->argv[0] = (char *)"python.py";
+		this->executable = (char *)"/usr/bin/python3";
+		this->argv[0] = (char *)"/usr/bin/python3"; // TODO This is hardcoded!!
+		this->argv[1] = (char *)"../cgi-bin/python.py"; // TODO This is hardcoded!!
 	}
 	else if (this->scriptName == "/cgi-bin/php.php") {
-		this->executable = (char *)"./php.php";
-		this->argv[0] = (char *)"php.php";
+		this->executable = (char *)"/usr/bin/php-cgi";
+		this->argv[0] = (char *)"/usr/bin/php-cgi"; // TODO This is hardcoded!!
+		this->argv[1] = (char *)"../cgi-bin/php.php"; // TODO This is hardcoded!!
 	}
 	this->argv[1] = NULL;
 }
@@ -84,39 +88,38 @@ void	CGI::setPOSTVariables(void) {
 	
 }
 
-void	CGI::initMeta(const HttpRequest& request, const std::string& scriptName) {
+void	CGI::initMeta(const std::string& scriptName) {
 	// this->meta.auth_type = ""; // RFC 3875 - 4.1.1 // Implement?
 	std::stringstream	ss;
-	ss << request._contentLength;
+	ss << this->request._contentLength;
 
 	this->meta.content_length = std::string("CONTENT_LENGTH=").append(ss.str()); // What about chunks?
 	this->meta.content_type = std::string("CONTENT_TYPE=").append("text/html"); // ?? Default value is "US-ASCII"
 	// this->meta.gateway_interface = "CGI/1.1";
-	this->meta.path_info = std::string("PATH_INFO=").append(parsePathInfo(request._uri));
+	this->meta.path_info = std::string("PATH_INFO=").append(parsePathInfo(this->request._uri));
 	// this->meta.path_translated = this->meta.path_translated;
-	this->meta.query_string = std::string("QUERY_STRING=").append(parseQueryString(request._uri));
+	this->meta.query_string = std::string("QUERY_STRING=").append(parseQueryString(this->request._uri));
 	// this->meta.remote_addr = "";
 	// this->meta.remote_host = "";
 	// this->meta.remote_ident = "";
 	// this->meta.remote_user = "";
-	this->meta.request_method = std::string("REQUEST_METHOD=").append(request._method);
+	this->meta.request_method = std::string("REQUEST_METHOD=").append(this->request._method);
 	this->meta.script_name = std::string("SCRIPT_NAME=").append(scriptName);
-	this->meta.server_name = std::string("SERVER_NAME=").append(request._headers.at("Host")); // TODO get this from result of config_parser instead
-	this->meta.server_port = std::string("SERVER_PORT=").append(request._headers.at("Host").substr(request._headers.at("Host").find(':') + 1)); // TODO get this from result of config_parser instead
+	this->meta.server_name = std::string("SERVER_NAME=").append(this->request._headers.at("Host")); // TODO get this from result of config_parser instead
+	this->meta.server_port = std::string("SERVER_PORT=").append(this->request._headers.at("Host").substr(this->request._headers.at("Host").find(':') + 1)); // TODO get this from result of config_parser instead
 	this->meta.server_protocol = std::string("SERVER_PROTOCAL=").append("HTTP/1.1");
 	// this->meta.server_software = "";
 	// this->meta.x = "";
 }
 
-void	CGI::initCGI(const HttpRequest& request) {
-	this->scriptName = getScriptName(request._uri, this->pythonScriptName, this->phpScriptName);
-
-	this->initMeta(request, scriptName);
+void	CGI::initCGI(void) {
+	this->scriptName = getScriptName(this->request._uri, this->pythonScriptName, this->phpScriptName);
+	this->initMeta(scriptName);
 	this->setScriptAttributes();
-	if (request._method == "GET") {
+	if (this->request._method == "GET") {
 		this->setGETVariables();
 	}
-	else if (request._method == "POST") {
+	else if (this->request._method == "POST") {
 		this->setPOSTVariables();
 	}
 	else {
@@ -159,6 +162,7 @@ void	CGI::execute(void) {
 	// int fd = open("cgi_output.txt", O_CREAT | O_NONBLOCK | O_RDWR, 0777);
 	// dup2(fd, STDOUT_FILENO);
 	// std::cout << "executable is (" << this->executable << ") argv[0] is (" << this->argv[0] << ")" << std::endl;
+	// read(STDIN_FILENO, buf, )
 	if (execve(this->executable, this->argv, const_cast<char **>(this->envp)) == -1) {
 		std::cerr << "execve() failed. shouldn't reach here, maybe invalid arguments (path or argv))" << std::endl;
 		throw CGI::StandardException();
@@ -191,12 +195,11 @@ int	main(const int argc, const char **argv, const char **envp) {
 	"\r\n";
 
 	HttpRequest	request;
-	CGI			cgi;
-
 	request.parseHttpRequest(content);
+	CGI			cgi(request);
 	try {
-		cgi.validateRequest(request);
-		cgi.initCGI(request);
+		cgi.validateRequest();
+		cgi.initCGI();
 		cgi.pipeIO();
 		cgi.spawnProcess();
 		cgi.wait();

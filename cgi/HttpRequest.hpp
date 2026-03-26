@@ -22,6 +22,7 @@ class HttpRequest{
     int parseHttpRequest(std::string request_content);
     void print();
     HttpRequest();
+	HttpRequest(const HttpRequest& request);
     std::string _method;
     std::string _uri;
     std::string _httpVersion;

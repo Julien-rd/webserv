@@ -5,6 +5,16 @@
 HttpRequest::HttpRequest(): _contentLength(0), _currentState(METHOD){
 }
 
+HttpRequest::HttpRequest(const HttpRequest& obj):
+    _method(obj._method),
+    _uri(obj._uri),
+    _httpVersion(obj._httpVersion),
+    _headers(obj._headers),
+    _fieldName(obj._fieldName),
+    _fieldValue(obj._fieldValue),
+    _contentLength(obj._contentLength),
+	_currentState(obj._currentState) {}
+
 void HttpRequest::print(){
     std::cout << "---------------------RequestLine---------------------\n";
     std::cout << "Method: " << _method << "\n" << "URI: " << _uri << "\n" << "HTTP_VERSION: " << _httpVersion << "\n";

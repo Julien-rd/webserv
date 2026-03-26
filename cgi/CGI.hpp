@@ -52,18 +52,19 @@ class	CGI {
 		void	setScriptAttributes(void);
 		void	setGETVariables(void);
 		void	setPOSTVariables(void);
-		void	initMeta(const HttpRequest& request, const std::string& scriptName);
+		void	initMeta(const std::string& scriptName);
 		void	execute(void);
 
 	public:
-		CGI(void);
+		HttpRequest			request;
+		CGI(const HttpRequest& request);
 		~CGI(void);
 
-		pid_t	getPid(void) const;
-		void	setPid(pid_t pid);
+		// pid_t	getPid(void) const;
+		// void	setPid(pid_t pid);
 
-		void	validateRequest(const HttpRequest& request) const;
-		void	initCGI(const HttpRequest& request);
+		void	validateRequest(void) const;
+		void	initCGI(void);
 		void	pipeIO(void);
 		void	spawnProcess(void);
 		void	wait(void) const;
