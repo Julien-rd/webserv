@@ -40,6 +40,7 @@ int HttpRequest::parseRequestLine(std::string &request_content){
             if(!validMethod())
                 return 1; // 501 not implemented, 404 kauderwelsch
             _currentState = URI;
+			/* fall through */
         case URI:
             findSeperator(request_content, ' ', pos, max_pos);
             if(brokenSyntax(pos, max_pos))
@@ -52,6 +53,7 @@ int HttpRequest::parseRequestLine(std::string &request_content){
             if(!validUri())
                 return 1;
             _currentState = HTTP_VERSION;
+			/* fall through */
         case HTTP_VERSION:
             pos = request_content.find("\r\n");
             if(pos == std::string::npos){
@@ -95,6 +97,7 @@ int HttpRequest::parseHeaders(std::string &request_content){
                     return 1;
                 }
                 _currentState = FIELD_VALUE;
+				/* fall through */
             case FIELD_VALUE:
                 pos = request_content.find("\r\n");
                 if(pos == std::string::npos){

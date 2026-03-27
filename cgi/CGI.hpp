@@ -33,6 +33,7 @@ typedef struct s_metaVariables {
     std::string	server_port;
     std::string	server_protocol;
     std::string	server_software;
+	std::string	script_filename;
 }	t_metaVariables;
 
 class	CGI {
@@ -43,28 +44,35 @@ class	CGI {
 		int					pipefd[2];
 
 		const char			*executable;
-		char				*argv[2];
+		char				*argv[3];
 		const char			**envp;
 
 		const std::string	pythonScriptName;
 		const std::string	phpScriptName;
 
-		void	setScriptAttributes(void);
-		void	setGETVariables(void);
-		void	setPOSTVariables(void);
-		void	initMeta(const std::string& scriptName);
+		void	initPythonScript(const HttpRequest& request);
+		void	initMetaPython(const HttpRequest& request);
+		void	setScriptAttributesPython(void);
+		void	setGETVariablesPython(void);
+		void	setPOSTVariablesPython(void);
+
+		void	initPhpScript(const HttpRequest& request);
+		void	initMetaPhp(const HttpRequest& request);
+		void	setScriptAttributesPhp(void);
+		void	setGETVariablesPhp(void);
+		void	setPOSTVariablesPhp(void);
+
 		void	execute(void);
 
 	public:
-		HttpRequest			request;
-		CGI(const HttpRequest& request);
+		CGI(void);
 		~CGI(void);
 
 		// pid_t	getPid(void) const;
 		// void	setPid(pid_t pid);
 
-		void	validateRequest(void) const;
-		void	initCGI(void);
+		void	validateRequest(const HttpRequest& request) const;
+		void	initCGI(const HttpRequest& request);
 		void	pipeIO(void);
 		void	spawnProcess(void);
 		void	wait(void) const;
@@ -74,7 +82,7 @@ class	CGI {
 		FT_DEFINE_EXCEPTION(WaitException, "EXCEPTION CAUGHT IN PARENT: waiting");
 };
 
-std::string	parsePathInfo(const std::string& _uri);
+std::string	parsePathInfo(const std::string& _uri, const std::string& scriptName);
 std::string	parseQueryString(const std::string& _uri);
 std::string	getScriptName(const std::string& _uri, const std::string& name1, const std::string& name2);
 

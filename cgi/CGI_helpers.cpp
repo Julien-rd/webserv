@@ -1,10 +1,8 @@
 #include "CGI.hpp"
 #include <iostream>
 
-#define SCRIPT_NAME "/cgi-bin/script.py"
-
-std::string	parsePathInfo(const std::string& _uri) {
-	const size_t	pathInfoPos = _uri.find(SCRIPT_NAME) + std::string(SCRIPT_NAME).size();
+std::string	parsePathInfo(const std::string& _uri, const std::string& scriptName) {
+	const size_t	pathInfoPos = _uri.find(scriptName) + std::string(scriptName).size();
 	size_t			queryStringPos = _uri.find('?');
 
 	// // This is commented out because it should already be validated and confirmed to be one of the scripts (if we implement that) in valduateRequest()
