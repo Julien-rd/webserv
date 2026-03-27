@@ -34,6 +34,7 @@ void	CGI::setPOSTVariablesPhp(void) {
 	this->envp[5] = this->meta.server_name.c_str();
 	this->envp[6] = this->meta.server_port.c_str();
 	this->envp[7] = this->meta.server_protocol.c_str();
+	/* php specific */
 	this->envp[8] = "REDIRECT_STATUS=1";
 	this->envp[9] = this->meta.script_filename.c_str();
 	this->envp[10] = this->meta.remote_addr.c_str();

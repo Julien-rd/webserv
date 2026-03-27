@@ -115,7 +115,7 @@ void	CGI::execute(void) {
 int	main(const int argc, const char **argv, const char **envp) {
 	(void)argc, void(argv), (void)envp;
 	std::string	content = 
-	"GET /cgi-bin/python.py/this-is-path-info?key1=valuee HTTP/1.1\r\n"
+	"GET /cgi-bin/php.php/this-is-path-info?key1=valuee HTTP/1.1\r\n"
 	"Host:localhost:8080\r\n"
 	"User-Agent:    SuperBrowser/1.0\r\n"
 	"Accept:\ttext/html\r\n"
