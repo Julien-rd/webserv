@@ -41,6 +41,7 @@ class HttpRequest{
 
     int parseHeaders(std::string &request_content);
     int parseRequestLine(std::string &request_content);
+	int	parseBody(std::string &request_content);
     bool validateMandatoryHeaders();
 
     void trim();

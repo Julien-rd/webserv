@@ -115,6 +115,11 @@ int HttpRequest::parseHeaders(std::string &request_content){
     return 1;
 }
 
+int	HttpRequest::parseBody(std::string &request_content) {
+	std::cout << "req_content from parsing is: (" << request_content << ")" << std::endl;
+	return 0;
+}
+
 int HttpRequest::parseHttpRequest(std::string request_content){
     if (parseRequestLine(request_content) == 1)
         return 1;
@@ -122,6 +127,7 @@ int HttpRequest::parseHttpRequest(std::string request_content){
         return 1;
     if(validateMandatoryHeaders() == false)
         return 1;
-    //parse body;
+    if (parseBody(request_content) == 1)
+		return 1;
     return 0;
 }

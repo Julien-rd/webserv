@@ -125,22 +125,23 @@ int	main(const int argc, const char **argv, const char **envp) {
 	"Connection: keep-alive  \r\n"
 	"Accept-Language: en\r\n"
 	"Accept-Language            : en\r\n"
-	"\r\n";
+	"\r\n"
+	"BODYBODYBODYBODYBODYBODYBODYBODYBODYBODY";
 
 	HttpRequest	request;
 	CGI			cgi;
 
 	request.parseHttpRequest(content);
-	try {
-		cgi.validateRequest(request);
-		cgi.initCGI(request);
-		cgi.pipeIO();
-		cgi.spawnProcess();
-		cgi.wait();
-		// cgi.redirectIO(); // I don't think I need this ¯\_(ツ)_/¯
-	}
-	catch (std::exception& e) {
-		std::cerr << e.what() << std::endl;
-	}
+	// try {
+	// 	cgi.validateRequest(request);
+	// 	cgi.initCGI(request);
+	// 	cgi.pipeIO();
+	// 	cgi.spawnProcess();
+	// 	cgi.wait();
+	// 	// cgi.redirectIO(); // I don't think I need this ¯\_(ツ)_/¯
+	// }
+	// catch (std::exception& e) {
+	// 	std::cerr << e.what() << std::endl;
+	// }
 	return 0;
 }
