@@ -1,6 +1,5 @@
 #include "CGI.hpp"
 #include "HttpRequest.hpp"
-#include <exception>
 #include <iostream>
 
 #include <cstring>
