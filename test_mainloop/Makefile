@@ -3,7 +3,7 @@ CXXFLAGS        = -Wall -Wextra -Werror -std=c++98
 
 SERVER_TARGET   = webserv
 SERVER_OBJDIR   = webserv_obj
-SERVER_SRCS     = server.cpp
+SERVER_SRCS     = main.cpp
 SERVER_OBJS     = $(addprefix $(SERVER_OBJDIR)/, $(SERVER_SRCS:.cpp=.o))
 SERVER_DEPS     = $(SERVER_OBJS:.o=.d)
 

@@ -153,7 +153,7 @@ int main() {
            sizeof(serverAddress)) == -1)
     return (error_msg(ErrorFlag::ERR_BIND, open_fds));
   if (listen(serverSocket, 5) == -1)
-    return (error_msg(ErrorFlag::ERR_LISTEN, open_fds));
+    return (error_msg(ErrorFlag::ERR_LISTEN, open_fds)); // TODO until here could be combined into initServerSocket()
   std::vector<epoll_event> request_buf(MAX_CLIENTS);
   while (1) {
     std::cout << "waiting for request \n";
