@@ -1,8 +1,12 @@
 #ifndef SERVER_CLASS_HPP
 # define SERVER_CLASS_HPP
 
+# include <vector>
+
 # include <cstddef>
-#include <netinet/in.h>
+
+# include <netinet/in.h>
+# include <sys/epoll.h>
 
 enum Type {
 	ERR_EPOLL_WAIT,
@@ -17,14 +21,21 @@ enum Type {
 	ERR_READ
 };
 
+typedef struct s_configParser { // TODO This just contains things we get from the config parser. REMOVE THIS
+	size_t	maxClients;
+}	t_configParser;
+
 class	Server {
 	private:
-		size_t		maxClients;
-		int			*openFds;
-		sockaddr_in	serverSockAddr;
-		int			epfd;
+		size_t						maxClients;
+		int							*openFds;
+		int							serverSocket;
+		sockaddr_in					serverSockAddr;
+		int							epfd;
+		std::vector<epoll_event>	requestBuf;
+		int							readyEvents;
 
-		void	initSocket(void);
+		void	initServerSocket(void);
 		void	createEpoll(void);
 		
 		void	setServerSockAddr(void);
@@ -32,14 +43,18 @@ class	Server {
 		void	bindAndListen(void);
 		int		error_msg(Type type);
 
-	public:
-		int			serverSocket;
+		void	setToNonBlocking(int socketFd);
 
-		Server(const int max_clients);
+		void	handleServerEvent(void);
+		void	handleClientEvent(const int clientFd);
+
+	public:
+		Server(const int maxClients);
 		~Server(void);
 
 		void	initServer(void);
+		void	epollWait(void);
+		void	loopReadyEvents(void);
 };
-
 
 #endif /* SERVER_CLASS_HPP */

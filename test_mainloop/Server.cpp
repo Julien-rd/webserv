@@ -7,6 +7,7 @@
 #include <cerrno>
 #include <csignal>
 #include <cstring>
+#include <cstdio>
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -17,15 +18,19 @@
 
 Server::Server(const int maxClients):
 maxClients(maxClients),
-openFds(new int[maxClients]) {}
+openFds(new int[maxClients]),
+requestBuf(maxClients) {
+	for (size_t i = 3; i < this->maxClients; i++) {
+		this->openFds[i] = -1;
+	}
+}
 
 Server::~Server(void) {
-	size_t iter = 3;
-	while (iter < this->maxClients) {
+	size_t	iter = 3;
+	for (size_t i = 3; i < this->maxClients; i++) {
 		if (this->openFds[iter] != -1) {
 			close(this->openFds[iter]);
 		}
-		++iter;
 	}
 	delete[] this->openFds;
 }
@@ -46,7 +51,7 @@ void	Server::addSocketToEpfd(int socketFd) {
 	}
 }
 
-void	Server::initSocket(void) {
+void	Server::initServerSocket(void) {
 	this->serverSocket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 	if (this->serverSocket == -1) {
 		error_msg(ERR_SOCKET);
@@ -81,83 +86,123 @@ void	Server::bindAndListen(void) {
 }
 
 void	Server::initServer(void) { // TODO we can maybe put all this code in the constructor
-	initSocket();
+	initServerSocket();
 	setServerSockAddr();
 	createEpoll();
 	addSocketToEpfd(this->serverSocket);
 	bindAndListen();
 }
 
-typedef struct s_configParser { // TODO This just contains things we get from the config parser.
-	size_t	maxClients;
-}	t_configParser;
+void	Server::epollWait() {
+    this->readyEvents = epoll_wait(epfd, this->requestBuf.data(), this->maxClients, -1);
+    // if (gSignalStatus)
+    //   break;
+    if (this->readyEvents == -1) {
+		error_msg(ERR_EPOLL_WAIT);
+		perror(strerror(errno));
+		throw std::exception();
+	}
+}
+
+void	Server::setToNonBlocking(int socketFd) {
+	int flags = fcntl(socketFd, F_GETFL, 0); // FIXME We're only allowed F_SETFL, O_NONBLOCK and FD_CLOEXEC with fcntl()
+	if (flags == -1) {
+		error_msg(ERR_FCNTL);
+		throw std::exception();
+	}
+	flags = flags | O_NONBLOCK;
+	if (fcntl(socketFd, F_SETFL, flags) == -1) {
+		error_msg(ERR_FCNTL);
+		throw std::exception();
+	}
+}
+
+void	Server::handleServerEvent(void) {
+	int	ClientSocket;
+	while (true) {
+		ClientSocket = accept(this->serverSocket, NULL, NULL);
+		if (ClientSocket == -1) {
+			if (errno == EAGAIN || errno == EWOULDBLOCK) {
+				return ;
+			}
+			else {
+				error_msg(ERR_ACCEPT);
+				throw std::exception();
+			}
+			break;
+		}
+		this->openFds[ClientSocket] = ClientSocket;
+		setToNonBlocking(ClientSocket);
+		addSocketToEpfd(ClientSocket);
+		std::cout << "Client accepted: FD " << ClientSocket << "\n";
+	}
+}
+
+void	Server::handleClientEvent(const int clientFd) {
+	char	buffer[10];
+	ssize_t	bytesRead;
+
+	std::cout << "message from client FD " << clientFd << " received!\n";
+	while (1) {
+		bytesRead = read(clientFd, buffer, 10);
+		if (bytesRead == 0) {
+			std::cout << "client FD " << clientFd << " closed connection!\n";
+			if (epoll_ctl(epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
+				error_msg(ERR_EPOLL_CTL);
+				throw std::exception();
+			}
+			this->openFds[clientFd] = -1;
+			if (close(clientFd) == -1) {
+				error_msg(ERR_READ);
+				throw std::exception();
+			}
+			break;
+		}
+		if (bytesRead == -1) {
+			if (error_msg(ERR_READ) == 1)
+				throw std::exception();
+			else {
+				break;
+			}
+		}
+		buffer[bytesRead] = 0;
+		std::cout << buffer;
+	}
+}
+
+void	Server::loopReadyEvents(void) {
+	for (int i = 0; i < this->readyEvents; i++) {
+		int fd = requestBuf[i].data.fd;
+		if (fd == serverSocket) {
+			handleServerEvent();
+		} else {
+			handleClientEvent(fd);
+		}
+	}
+}
 
 int	main(void) {
 	t_configParser	parser;
 	parser.maxClients = 1024;
 	Server			server(parser.maxClients);
 
-	try { // TODO Remove this try catch, because failing to initialize the server should exit, right? :D (basically exceptions should be used for things that could fail but prog still continues execution after). Also if u keep it, we shouldn't debug using exceptions prints
-		server.initServer();
+	// try { // TODO Remove this try catch, because failing to initialize the server should exit, right? :D (basically exceptions should be used for things that could fail but prog still continues execution after). Also if u keep it, we shouldn't debug using exceptions prints
+	server.initServer();
+	// }
+	// catch (std::exception& e) {
+	// 	std::cerr << e.what() << std::endl;
+	// 	return 1;
+	// }
+
+  while (1) {
+    std::cout << "waiting for request \n";
+	try {
+		server.epollWait();
+		server.loopReadyEvents();
 	}
 	catch (std::exception& e) {
 		std::cerr << e.what() << std::endl;
 		return 1;
 	}
-
-  std::vector<epoll_event> request_buf(parser.maxClients);
-  // TODO remake this :)
-  while (1) {
-    std::cout << "waiting for request \n";
-    int ready_events = epoll_wait(epfd, request_buf.data(), parser.maxClients, -1);
-    if (gSignalStatus)
-      break;
-    if (ready_events == -1)
-      return error_msg(ErrorFlag::ERR_EPOLL_WAIT, open_fds);
-    for (int i = 0; i < ready_events; i++) {
-      int fd = request_buf[i].data.fd;
-      if (fd == serverSocket) {
-        while (true) {
-          int ClientSocket = accept(serverSocket, NULL, NULL); // TODO can't do like socket(), accept4() not allowed and is a nonstandard Linux extension
-          if (ClientSocket == -1) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-              break;
-            else
-              return error_msg(ErrorFlag::ERR_ACCEPT, open_fds);
-            break;
-          }
-          open_fds[ClientSocket] = ClientSocket;
-          if (set_nonblocking(ClientSocket) == false)
-            return error_msg(ErrorFlag::ERR_FCNTL, open_fds);
-          if (add_socket(ClientSocket, epfd))
-            return error_msg(ErrorFlag::ERR_EPOLL_CTL, open_fds);
-          std::cout << "Client accepted: FD " << ClientSocket << "\n";
-        }
-      } else {
-        std::cout << "message from client FD " << fd << " received!\n";
-        char buffer[10];
-        while (1) {
-          ssize_t bytes_read = read(fd, buffer, 10);
-          if (bytes_read == 0) {
-            std::cout << "client FD " << fd << " closed connection!\n";
-            if (epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL) == -1)
-              return error_msg(ErrorFlag::ERR_EPOLL_CTL, open_fds);
-            open_fds[fd] = -1;
-            if (close(fd) == -1)
-              return error_msg(ErrorFlag::ERR_READ, open_fds);
-            break;
-          }
-          if (bytes_read == -1) {
-            if (error_msg(ErrorFlag::ERR_READ, open_fds) == 1)
-              return 1;
-            else {
-              break;
-            }
-          }
-          buffer[bytes_read] = 0;
-          std::cout << buffer;
-        }
-      }
-    }
   }
 }

@@ -1,6 +1,10 @@
 #include "Server.hpp"
+
 #include <iostream>
+
 #include <cstring>
+
+#include <errno.h>
 
 void	custom_perror(const char *spec, char *errnoMsg) {
   std::cout << spec << errnoMsg << "\n";
@@ -37,14 +41,12 @@ int	Server::error_msg(Type type) {
     custom_perror("listen: ", strerror(errno));
     break;
   case ERR_READ:
-    if (errno == EAGAIN || errno == EWOULDBLOCK)
+    if (errno == EAGAIN || errno == EWOULDBLOCK) // TODO Eval sheet says we can't check for errno after any call to read/recv/write/send !!!!!!!!!!
       ret = 0;
     else
       custom_perror("read: ", strerror(errno));
     break;
   }
-//   if (ret == 1)
-//     cleanup(this->openFds); TODO do this
   return ret;
 }
 
