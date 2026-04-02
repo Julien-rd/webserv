@@ -1,5 +1,5 @@
 #include "CGI.hpp"
-#include "HttpRequest.hpp"
+# include "../HttpRequest/HttpRequest.hpp"
 #include <iostream>
 
 #include <cstring>
@@ -36,13 +36,15 @@ CGI::~CGI(void) {
 // 	this->pid = pid;
 // }
 
-void	CGI::validateRequest(const HttpRequest& request) const {
+bool	CGI::validateRequest(const HttpRequest& request) const {
 	if (request._uri.compare(0, this->pythonScriptName.size(), this->pythonScriptName)
 		&& request._uri.compare(0, this->phpScriptName.size(), this->phpScriptName)) { // TODO Or could replace this with a dynamic array of known scripts and check if URI matches one of them, then set a variable indicating that we will work with this specifi script for the rest of the execution oF CGI
-		std::cout << "URI doesn't contain a known script" << std::endl;
-		throw CGI::StandardException();
+		// std::cout << "URI doesn't contain a known script" << std::endl;
+		return 1;
+		// throw CGI::StandardException();
 	}
 	// TODO Validate minimum requirements needed for CGI execution (maybe headers for GET or POST. specific requirements for attributes of HttpRequest)???
+	return 0;
 }
 
 void	CGI::initCGI(const HttpRequest& request) {
@@ -95,6 +97,7 @@ void	CGI::execute(void) {
 	// read(STDIN_FILENO, buf, )
 	// printf(">>>>> path(%s) argv(%s && %s)\n", this->executable, this->argv[0], this->argv[1]);
 	// fflush(stdout);
+	// std::cout << "caling execve with parameters, path:\n" << this->executable << " ================\n" << this->argv[0] << "------" << this->argv[1] << "================\n" << this->envp[0] << std::endl;
 	if (execve(this->executable, this->argv, const_cast<char **>(this->envp)) == -1) {
 		std::cerr << "execve() failed. shouldn't reach here, maybe invalid arguments (path or argv))" << std::endl;
 		throw CGI::StandardException();
@@ -111,36 +114,36 @@ void	CGI::execute(void) {
 // 	}
 // }
 
-int	main(const int argc, const char **argv, const char **envp) {
-	(void)argc, void(argv), (void)envp;
-	std::string	content = 
-	"GET /cgi-bin/php.php/this-is-path-info?key1=valuee HTTP/1.1\r\n"
-	"Host:localhost:8080\r\n"
-	"User-Agent:    SuperBrowser/1.0\r\n"
-	"Accept:\ttext/html\r\n"
-	"Connection: keep-alive  \r\n"
-	"X-Empty-Header:\r\n"
-	"Accept-Language: de\r\n"
-	"Connection: keep-alive  \r\n"
-	"Accept-Language: en\r\n"
-	"Accept-Language            : en\r\n"
-	"\r\n"
-	"BODYBODYBODYBODYBODYBODYBODYBODYBODYBODY";
+// int	main(const int argc, const char **argv, const char **envp) {
+// 	(void)argc, void(argv), (void)envp;
+// 	std::string	content = 
+// 	"GET /cgi-bin/php.php/this-is-path-info?key1=valuee HTTP/1.1\r\n"
+// 	"Host:localhost:8080\r\n"
+// 	"User-Agent:    SuperBrowser/1.0\r\n"
+// 	"Accept:\ttext/html\r\n"
+// 	"Connection: keep-alive  \r\n"
+// 	"X-Empty-Header:\r\n"
+// 	"Accept-Language: de\r\n"
+// 	"Connection: keep-alive  \r\n"
+// 	"Accept-Language: en\r\n"
+// 	"Accept-Language            : en\r\n"
+// 	"\r\n"
+// 	"BODYBODYBODYBODYBODYBODYBODYBODYBODYBODY";
 
-	HttpRequest	request;
-	CGI			cgi;
+// 	HttpRequest	request;
+// 	CGI			cgi;
 
-	request.parseHttpRequest(content);
-	// try {
-	// 	cgi.validateRequest(request);
-	// 	cgi.initCGI(request);
-	// 	cgi.pipeIO();
-	// 	cgi.spawnProcess();
-	// 	cgi.wait();
-	// 	// cgi.redirectIO(); // I don't think I need this ¯\_(ツ)_/¯
-	// }
-	// catch (std::exception& e) {
-	// 	std::cerr << e.what() << std::endl;
-	// }
-	return 0;
-}
+// 	request.parseHttpRequest(content);
+// 	try {
+// 		cgi.validateRequest(request);
+// 		cgi.initCGI(request);
+// 		cgi.pipeIO();
+// 		cgi.spawnProcess();
+// 		cgi.wait();
+// 		// cgi.redirectIO(); // I don't think I need this ¯\_(ツ)_/¯
+// 	}
+// 	catch (std::exception& e) {
+// 		std::cerr << e.what() << std::endl;
+// 	}
+// 	return 0;
+// }

@@ -1,7 +1,9 @@
 #ifndef SERVER_CLASS_HPP
 # define SERVER_CLASS_HPP
 
+# include "../HttpRequest/HttpRequest.hpp"
 # include <vector>
+# include <string>
 
 # include <cstddef>
 
@@ -21,19 +23,22 @@ enum Type {
 	ERR_READ
 };
 
-typedef struct s_configParser { // TODO This just contains things we get from the config parser. REMOVE THIS
+typedef struct s_config { // TODO This just contains things we get from the config parser. REMOVE THIS
 	size_t	maxClients;
-}	t_configParser;
+	size_t	maxBodySize;
+}	t_config;
 
 class	Server {
 	private:
-		size_t						maxClients;
+		t_config					config; // TODO remove this later
 		int							*openFds;
 		int							serverSocket;
 		sockaddr_in					serverSockAddr;
 		int							epfd;
 		std::vector<epoll_event>	requestBuf;
 		int							readyEvents;
+		std::string					content;
+		HttpRequest					request;
 
 		void	initServerSocket(void);
 		void	createEpoll(void);
@@ -49,12 +54,14 @@ class	Server {
 		void	handleClientEvent(const int clientFd);
 
 	public:
-		Server(const int maxClients);
+		Server(const t_config config);
 		~Server(void);
 
 		void	initServer(void);
 		void	epollWait(void);
 		void	loopReadyEvents(void);
+		void	parseHttpRequest(void);
+		void	handleCGI(void) const;
 };
 
 #endif /* SERVER_CLASS_HPP */

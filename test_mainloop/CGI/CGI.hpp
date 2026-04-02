@@ -1,7 +1,7 @@
 #ifndef CGI_HPP
 # define CGI_HPP
 
-# include "HttpRequest.hpp"
+# include "../HttpRequest/HttpRequest.hpp"
 # include <string>
 # include <exception>
 
@@ -40,7 +40,7 @@ class	CGI {
 	private:
 		std::string			scriptName;
 		t_metaVariables		meta;
-		pid_t				pid;
+		int					pid;
 		int					pipefd[2];
 
 		const char			*executable;
@@ -71,7 +71,7 @@ class	CGI {
 		// pid_t	getPid(void) const;
 		// void	setPid(pid_t pid);
 
-		void	validateRequest(const HttpRequest& request) const;
+		bool	validateRequest(const HttpRequest& request) const;
 		void	initCGI(const HttpRequest& request);
 		void	pipeIO(void);
 		void	spawnProcess(void);

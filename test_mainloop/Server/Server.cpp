@@ -1,4 +1,6 @@
 #include "Server.hpp"
+#include "../HttpRequest/HttpRequest.hpp"
+#include "../CGI/CGI.hpp"
 
 #include <exception>
 #include <iostream>
@@ -16,18 +18,18 @@
 #include <sys/epoll.h>
 #include <sys/socket.h>
 
-Server::Server(const int maxClients):
-maxClients(maxClients),
-openFds(new int[maxClients]),
-requestBuf(maxClients) {
-	for (size_t i = 3; i < this->maxClients; i++) {
+Server::Server(const t_config config):
+config(config),
+openFds(new int[config.maxClients]),
+requestBuf(config.maxClients) {
+	for (size_t i = 3; i < this->config.maxClients; i++) {
 		this->openFds[i] = -1;
 	}
 }
 
 Server::~Server(void) {
 	size_t	iter = 3;
-	for (size_t i = 3; i < this->maxClients; i++) {
+	for (size_t i = 3; i < this->config.maxClients; i++) {
 		if (this->openFds[iter] != -1) {
 			close(this->openFds[iter]);
 		}
@@ -94,7 +96,7 @@ void	Server::initServer(void) { // TODO we can maybe put all this code in the co
 }
 
 void	Server::epollWait() {
-    this->readyEvents = epoll_wait(epfd, this->requestBuf.data(), this->maxClients, -1);
+    this->readyEvents = epoll_wait(epfd, this->requestBuf.data(), this->config.maxClients, -1);
     // if (gSignalStatus)
     //   break;
     if (this->readyEvents == -1) {
@@ -134,9 +136,10 @@ void	Server::handleServerEvent(void) {
 }
 
 void	Server::handleClientEvent(const int clientFd) {
-	char	buffer[10];
-	ssize_t	bytesRead;
+	char		buffer[10];
+	ssize_t		bytesRead = 0;
 
+	this->content.clear();
 	std::cout << "message from client FD " << clientFd << " received!\n";
 	while (1) {
 		bytesRead = read(clientFd, buffer, 10);
@@ -154,15 +157,35 @@ void	Server::handleClientEvent(const int clientFd) {
 			break;
 		}
 		if (bytesRead == -1) {
-			if (error_msg(ERR_READ) == 1)
+			if (error_msg(ERR_READ) == 1) // TODO recheck this!! what happens when you break and call parseHttpRequest() ???
 				throw std::exception();
 			else {
 				break;
 			}
 		}
 		buffer[bytesRead] = 0;
-		std::cout << buffer;
+		this->content.append(buffer);
 	}
+	// std::cout << content << std::endl;
+}
+
+void	Server::parseHttpRequest(void) {
+	HttpRequest	request;
+	this->request = request;
+	this->request.parseHttpRequest(this->content);
+}
+
+void	Server::handleCGI(void) const {
+	CGI	cgi;
+
+	if (cgi.validateRequest(request)) {
+		return ;
+	}
+	cgi.initCGI(request);
+	cgi.pipeIO();
+	cgi.spawnProcess();
+	cgi.wait();
+	// cgi.redirectIO(); // I don't think I need this ¯\_(ツ)_/¯
 }
 
 void	Server::loopReadyEvents(void) {
@@ -172,32 +195,9 @@ void	Server::loopReadyEvents(void) {
 			handleServerEvent();
 		} else {
 			handleClientEvent(fd);
-		}
-	}
-}
-
-int	main(void) {
-	t_configParser	config;
-	config.maxClients = 1024;
-	Server			server(config.maxClients);
-
-	try { // TODO Remove this try catch, because failing to initialize the server should exit, right? :D (basically exceptions should be used for things that could fail but prog still continues execution after). Also if u keep it, we shouldn't debug using exceptions prints
-		server.initServer(); // TODO actually keep it :D
-	}
-	catch (std::exception& e) {
-		std::cerr << e.what() << std::endl;
-		return 1;
-	}
-
-	while (1) {
-		std::cout << "waiting for request \n";
-		try {
-			server.epollWait();
-			server.loopReadyEvents();
-		}
-		catch (std::exception& e) {
-			std::cerr << e.what() << std::endl;
-			return 1;
+			parseHttpRequest();
+			// this->request.print();
+			handleCGI();
 		}
 	}
 }

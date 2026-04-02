@@ -20,7 +20,7 @@ void HttpRequest::print(){
     std::cout << "Method: " << _method << "\n" << "URI: " << _uri << "\n" << "HTTP_VERSION: " << _httpVersion << "\n";
     std::cout << "\n---------------------Headers---------------------\n";
     for(std::map<std::string, std::string>::iterator it = _headers.begin(); it != _headers.end(); ++it){
-        std::cout << "Fieldname: [" << it->first << "], Fieldvalue: [" << it->second << "]" <<  "\n";
+        std::cout << it->first << ": " << it->second <<  "\n";
     }
 }
 
@@ -116,7 +116,8 @@ int HttpRequest::parseHeaders(std::string &request_content){
 }
 
 int	HttpRequest::parseBody(std::string &request_content) {
-	std::cout << "req_content from parsing is: (" << request_content << ")" << std::endl;
+	(void)request_content;
+	// TODO todo
 	return 0;
 }
 

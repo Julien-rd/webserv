@@ -5,7 +5,7 @@
 void	CGI::setScriptAttributesPhp(void) {
 	this->executable = (char *)"/usr/bin/php-cgi";
 	this->argv[0] = (char *)"/usr/bin/php-cgi"; // TODO This is hardcoded!!
-	this->argv[1] = (char *)"../cgi-bin/php.php"; // TODO This is hardcoded!!
+	this->argv[1] = (char *)"./cgi-bin/php.php"; // TODO This is hardcoded!!
 	this->argv[2] = NULL;
 }
 
@@ -62,7 +62,8 @@ void	CGI::initMetaPhp(const HttpRequest& request) {
 	this->meta.server_name = std::string("SERVER_NAME=").append(request._headers.at("Host")); // TODO get this from result of config_parser instead
 	this->meta.server_port = std::string("SERVER_PORT=").append(request._headers.at("Host").substr(request._headers.at("Host").find(':') + 1)); // TODO get this from result of config_parser instead
 	this->meta.server_protocol = std::string("SERVER_PROTOCOL=").append("HTTP/1.1");
-	this->meta.script_filename = std::string("SCRIPT_FILENAME=").append("/home/jel-ghna/github/webserv/cgi-bin/php.php"); // TODO maybe make this better
+	// this->meta.script_filename = std::string("SCRIPT_FILENAME=").append("/home/jel-ghna/github/webserv/cgi-bin/php.php"); // TODO maybe make this better
+	this->meta.script_filename = std::string("SCRIPT_FILENAME=").append("/home/josefelghnam/github/webserv/test_mainloop/cgi-bin/php.php"); // TODO maybe make this better
 	// this->meta.server_software = "";
 	// this->meta.x = "";
 }
