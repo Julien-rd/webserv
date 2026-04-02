@@ -52,7 +52,7 @@ void	Server::addSocketToEpfd(int socketFd) {
 }
 
 void	Server::initServerSocket(void) {
-	this->serverSocket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+	this->serverSocket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
 	if (this->serverSocket == -1) {
 		error_msg(ERR_SOCKET);
 		throw std::exception();
@@ -105,23 +105,18 @@ void	Server::epollWait() {
 }
 
 void	Server::setToNonBlocking(int socketFd) {
-	int flags = fcntl(socketFd, F_GETFL, 0); // FIXME We're only allowed F_SETFL, O_NONBLOCK and FD_CLOEXEC with fcntl()
-	if (flags == -1) {
-		error_msg(ERR_FCNTL);
-		throw std::exception();
-	}
-	flags = flags | O_NONBLOCK;
-	if (fcntl(socketFd, F_SETFL, flags) == -1) {
+	if (fcntl(socketFd, F_SETFL, FD_CLOEXEC | O_NONBLOCK) == -1) {
 		error_msg(ERR_FCNTL);
 		throw std::exception();
 	}
 }
 
 void	Server::handleServerEvent(void) {
-	int	ClientSocket;
+	int	clientSocket;
+
 	while (true) {
-		ClientSocket = accept(this->serverSocket, NULL, NULL);
-		if (ClientSocket == -1) {
+		clientSocket = accept(this->serverSocket, NULL, NULL);
+		if (clientSocket == -1) {
 			if (errno == EAGAIN || errno == EWOULDBLOCK) {
 				return ;
 			}
@@ -131,10 +126,10 @@ void	Server::handleServerEvent(void) {
 			}
 			break;
 		}
-		this->openFds[ClientSocket] = ClientSocket;
-		setToNonBlocking(ClientSocket);
-		addSocketToEpfd(ClientSocket);
-		std::cout << "Client accepted: FD " << ClientSocket << "\n";
+		this->openFds[clientSocket] = clientSocket;
+		setToNonBlocking(clientSocket);
+		addSocketToEpfd(clientSocket);
+		std::cout << "Client accepted: FD " << clientSocket << "\n";
 	}
 }
 
@@ -182,27 +177,27 @@ void	Server::loopReadyEvents(void) {
 }
 
 int	main(void) {
-	t_configParser	parser;
-	parser.maxClients = 1024;
-	Server			server(parser.maxClients);
+	t_configParser	config;
+	config.maxClients = 1024;
+	Server			server(config.maxClients);
 
-	// try { // TODO Remove this try catch, because failing to initialize the server should exit, right? :D (basically exceptions should be used for things that could fail but prog still continues execution after). Also if u keep it, we shouldn't debug using exceptions prints
-	server.initServer();
-	// }
-	// catch (std::exception& e) {
-	// 	std::cerr << e.what() << std::endl;
-	// 	return 1;
-	// }
-
-  while (1) {
-    std::cout << "waiting for request \n";
-	try {
-		server.epollWait();
-		server.loopReadyEvents();
+	try { // TODO Remove this try catch, because failing to initialize the server should exit, right? :D (basically exceptions should be used for things that could fail but prog still continues execution after). Also if u keep it, we shouldn't debug using exceptions prints
+		server.initServer(); // TODO actually keep it :D
 	}
 	catch (std::exception& e) {
 		std::cerr << e.what() << std::endl;
 		return 1;
 	}
-  }
+
+	while (1) {
+		std::cout << "waiting for request \n";
+		try {
+			server.epollWait();
+			server.loopReadyEvents();
+		}
+		catch (std::exception& e) {
+			std::cerr << e.what() << std::endl;
+			return 1;
+		}
+	}
 }

@@ -9,7 +9,7 @@
 int main()
 {
     // creating socket
-    int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
+    int clientSocket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 
     // specifying address
     sockaddr_in serverAddress;
