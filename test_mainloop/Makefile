@@ -6,8 +6,10 @@ CXXFLAGS = -Wall -Wextra -Werror -MMD -MP -std=c++98 -pedantic -g #-fsanitize=ad
 
 SOURCES = main.cpp
 CLASS_SOURCES = Server/Server.cpp Server/ServerError.cpp \
-				HttpRequest/HttpRequest.cpp HttpRequest/HttpRequestHelpers.cpp \
-				CGI/CGI.cpp CGI/CGI_helpers.cpp CGI/CGI_php.cpp CGI/CGI_python.cpp
+				CGI/CGI.cpp CGI/CGI_helpers.cpp CGI/CGI_php.cpp CGI/CGI_python.cpp \
+				Client/HttpRequest/HttpRequest.cpp Client/HttpRequest/HttpRequestGetters.cpp Client/HttpRequest/HttpRequestHelpers.cpp \
+				Client/HttpResponse/HttpResponse.cpp Client/HttpResponse/ReasonPhrase.cpp Client/client.cpp
+				#HttpRequest/HttpRequest.cpp HttpRequest/HttpRequestHelpers.cpp \#
 ALL_SOURCES = $(SOURCES) $(CLASS_SOURCES)
 
 HEADERS = Server.hpp HttpRequest.hpp

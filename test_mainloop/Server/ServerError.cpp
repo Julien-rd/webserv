@@ -40,11 +40,11 @@ int	Server::error_msg(Type type) {
   case ERR_LISTEN:
     custom_perror("listen: ", strerror(errno));
     break;
-  case ERR_READ:
-    if (errno == EAGAIN || errno == EWOULDBLOCK) // TODO Eval sheet says we can't check for errno after any call to read/recv/write/send !!!!!!!!!!
-      ret = 0;
-    else
-      custom_perror("read: ", strerror(errno));
+  case ERR_RECV:
+    custom_perror("recv: ", strerror(errno));
+    break;
+  case ERR_CLOSE:
+    custom_perror("close: ", strerror(errno));
     break;
   }
   return ret;

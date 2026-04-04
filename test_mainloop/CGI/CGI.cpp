@@ -1,5 +1,5 @@
 #include "CGI.hpp"
-# include "../HttpRequest/HttpRequest.hpp"
+#include "../Client/HttpRequest/HttpRequest.hpp"
 #include <iostream>
 
 #include <cstring>

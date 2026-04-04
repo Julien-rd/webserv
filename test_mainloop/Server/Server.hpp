@@ -1,7 +1,9 @@
 #ifndef SERVER_CLASS_HPP
 # define SERVER_CLASS_HPP
 
-# include "../HttpRequest/HttpRequest.hpp"
+# include "../Client/HttpRequest/HttpRequest.hpp"
+// # include "../Client/HttpResponse/HttpResponse.hpp"
+# include "../Client/client.hpp"
 # include <vector>
 # include <string>
 
@@ -20,7 +22,8 @@ enum Type {
 	ERR_EPOLL_CTL,
 	ERR_BIND,
 	ERR_LISTEN,
-	ERR_READ
+	ERR_RECV,
+	ERR_CLOSE
 };
 
 typedef struct s_config { // TODO This just contains things we get from the config parser. REMOVE THIS
@@ -31,13 +34,14 @@ typedef struct s_config { // TODO This just contains things we get from the conf
 class	Server {
 	private:
 		t_config					config; // TODO remove this later
-		int							*openFds;
+		// int							*openFds;
+		Client						_clients[1024]; // maximum clients is in conf file
 		int							serverSocket;
 		sockaddr_in					serverSockAddr;
 		int							epfd;
 		std::vector<epoll_event>	requestBuf;
 		int							readyEvents;
-		std::string					content;
+		// std::string					content; prob not needed, please check
 		HttpRequest					request;
 
 		void	initServerSocket(void);
