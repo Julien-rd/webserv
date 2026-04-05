@@ -145,6 +145,10 @@ void HttpRequest::isChunked() {
 bool HttpRequest::validateMandatoryHeaders() {
   if (_method == "POST") {
     isChunked();
+    if(hasHostHeader() == false)
+      std::cout << "hesd\n";
+    if(hasContentLength() == false)
+      std::cout << "hes\n";
     return (hasHostHeader() && hasContentLength());
   }
   _currentState = METHOD;

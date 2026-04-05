@@ -59,6 +59,7 @@ int HttpResponse::getTimeStamp() {
 #include <fstream>
 #include <iostream>
 #include <cstring>
+#include <algorithm>
 
 
 int HttpResponse::extractContentType(std::string path) {
@@ -89,8 +90,8 @@ void HttpResponse::addBody(HttpRequest request) {
   std::string path; 
   std::string uri = request.getURI();
   std::cout << uri << std::endl;
-  if(uri == "/password.html"){
-    serveSuccessPage();
+  if(uri == "/password.php"){
+    serveSuccessPage(request);
     return ;
   }
   std::map<std::string, std::string>::iterator it = _uri.find(uri);
@@ -163,7 +164,7 @@ void HttpResponse::addRules() {
 
 void HttpResponse::addMandatoryHeaders() {
   _response += "Date: " + _timeStamp + "\r\n"; // apparently not mandatory
-  // if get request Content length, or chunked header thingy
+  // if get request -> Content length, or chunked header thingy
 }
 
 void HttpResponse::buildStatusLine() {
@@ -201,13 +202,24 @@ void HttpResponse::serveErrorPage() {
   _response += htmlBody; // fix it to char vec
 }
 
-void HttpResponse::serveSuccessPage() {
+void HttpResponse::serveSuccessPage(HttpRequest request) {
   std::ostringstream ss;
   getReasonPhrase();
+
+  std::vector<char> requestBody = request.getBody();
+
+  std::vector<char>::iterator start = std::find(requestBody.begin(), requestBody.end(), '=');
+  std::vector<char>::iterator end = std::find(requestBody.begin(), requestBody.end(), '&');
+  std::string username(start + 1, end);
+
+  start = std::find(end, requestBody.end(), '=');
+  end = std::find(requestBody.begin(), requestBody.end(), '\r');
+  std::string password(start + 1, end);
+
   std::string htmlBody = "<!DOCTYPE html>\r\n"
                          "<html>\r\n"
                          "    <body>\r\n<h1>"
-                         "registration successful"
+                         "registration of " + username + " with password: " + password + " successful" // make sure to protect against XSS
                          "</h1>\r\n"
                          "    </body>\r\n"
                          "</html>\r\n";

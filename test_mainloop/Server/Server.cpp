@@ -135,7 +135,7 @@ void Server::handleServerEvent(void) {
   }
 }
 #define BUFFER_SIZE                                                            \
-  10 // we should move this to another spot but i need it to test parsing for
+  4096 // we should move this to another spot but i need it to test parsing for
      // diff sizes
 void Server::handleClientEvent(const int clientFd) {
   char buffer[BUFFER_SIZE + 1];

@@ -8,7 +8,11 @@ HttpRequest::HttpRequest(size_t client_max_body_size)
 
 HttpRequest::HttpRequest()
     : _currentState(METHOD), _contentLength(0), _parsingDone(false),
-      _client_max_body_size(1) {}
+      _client_max_body_size(4096) {} //TODO hardcoded fix accordingly 
+
+std::vector<char> HttpRequest::getBody() const{
+  return _body;
+}
 
 void HttpRequest::print() {
   std::cout << "---------------------RequestLine---------------------\n";
@@ -159,7 +163,7 @@ int HttpRequest::parseHeaders(std::string &request_content) {
 int HttpRequest::parse_body(std::string request_content) {
   if (_currentState == BODY) {
     size_t bytes_needed = _contentLength - _body.size();
-    std::string::iterator start = request_content.begin();
+    std::string::iterator start = request_content.begin() + _bytesRead;
     std::string::iterator end = request_content.end();
     if (start + bytes_needed > end)
       _body.insert(_body.end(), start, end);

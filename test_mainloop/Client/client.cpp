@@ -43,6 +43,7 @@ int Client::closeConnection() {
 int Client::loop(std::string input) {
   _bytesRead = 0;
   bool err = false;
+  std::cout << "[" << input << "]\n";
   while (_bytesRead < input.length()) {
     if (_request.parseHttpRequest(input, _bytesRead) == 1)
       return closeConnection();

@@ -31,7 +31,7 @@ private:
   void serveErrorPage();
   void addRules();
   void addMandatoryHeaders();
-  void serveSuccessPage();
+  void serveSuccessPage(HttpRequest request);
   void addBody(HttpRequest request);
 
   void getReasonPhraseInfo();
