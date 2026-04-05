@@ -1,4 +1,4 @@
-#include "Server.hpp"
+#include "ServerManager.hpp"
 
 #include <iostream>
 
@@ -10,7 +10,7 @@ void	custom_perror(const char *spec, char *errnoMsg) {
   std::cout << spec << errnoMsg << "\n";
 }
 
-int	Server::error_msg(Type type) {
+int	ServerManager::error_msg(Type type) {
   int ret = 1;
   switch (type) {
   case ERR_EPOLL_WAIT:

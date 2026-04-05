@@ -1,4 +1,6 @@
-/cgi/cgi
 *.o
 *.d
+webserv
 /objects
+.cache/
+compile_commands.json

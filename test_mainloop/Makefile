@@ -5,14 +5,14 @@ CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -MMD -MP -std=c++98 -pedantic -g #-fsanitize=address,undefined,bounds,float-divide-by-zero
 
 SOURCES = main.cpp
-CLASS_SOURCES = Server/Server.cpp Server/ServerError.cpp \
+CLASS_SOURCES = ServerManager/ServerManager.cpp ServerManager/ServerManagerError.cpp \
 				CGI/CGI.cpp CGI/CGI_helpers.cpp CGI/CGI_php.cpp CGI/CGI_python.cpp \
 				Client/HttpRequest/HttpRequest.cpp Client/HttpRequest/HttpRequestGetters.cpp Client/HttpRequest/HttpRequestHelpers.cpp \
 				Client/HttpResponse/HttpResponse.cpp Client/HttpResponse/ReasonPhrase.cpp Client/client.cpp
 				#HttpRequest/HttpRequest.cpp HttpRequest/HttpRequestHelpers.cpp \#
 ALL_SOURCES = $(SOURCES) $(CLASS_SOURCES)
 
-HEADERS = Server.hpp HttpRequest.hpp
+HEADERS = ServerManager.hpp HttpRequest.hpp
 TEMPLATE = 
 
 OBJ_DIR = objects/
