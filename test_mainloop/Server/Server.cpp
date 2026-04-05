@@ -141,7 +141,7 @@ void Server::handleClientEvent(const int clientFd) {
   char buffer[BUFFER_SIZE + 1];
   ssize_t bytesRead = 0;
 
-  std::cout << "message from client FD " << clientFd << " received!\n";
+  // std::cout << "message from client FD " << clientFd << " received!\n";
   bytesRead = recv(clientFd, buffer, BUFFER_SIZE, 0);
   if (bytesRead == 0) {
     std::cout << "client FD " << clientFd << " closed connection!\n";
@@ -154,14 +154,26 @@ void Server::handleClientEvent(const int clientFd) {
       throw std::exception();
     }
     _clients[clientFd].reset();
-    return ;
+    return;
   }
   if (bytesRead == -1) {
     error_msg(ERR_RECV);
     throw std::exception();
   }
   buffer[bytesRead] = 0;
-  _clients[clientFd].loop(buffer);
+  if (_clients[clientFd].loop(buffer) == 1) {
+    std::cout << "client FD " << clientFd << " connection has been closed!\n";
+    if (epoll_ctl(epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
+      error_msg(ERR_EPOLL_CTL);
+      throw std::exception();
+    }
+    if (close(clientFd) == -1) {
+      error_msg(ERR_CLOSE);
+      throw std::exception();
+    }
+    _clients[clientFd].reset();
+    return;
+  }
 }
 
 void Server::handleCGI(void) const {
@@ -177,7 +189,9 @@ void Server::handleCGI(void) const {
   // cgi.redirectIO(); // I don't think I need this ¯\_(ツ)_/¯
 }
 
-void Server::loopReadyEvents(void) { // this loop is only meant for 1 server, epoll doesnt know what fd belongs to which server
+void Server::loopReadyEvents(
+    void) { // this loop is only meant for 1 server, epoll doesnt know what fd
+            // belongs to which server
   for (int i = 0; i < this->readyEvents; i++) {
     int fd = requestBuf[i].data.fd;
     if (fd == serverSocket) {

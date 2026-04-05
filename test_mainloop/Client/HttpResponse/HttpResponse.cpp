@@ -5,10 +5,12 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <sys/sendfile.h>
 
 const std::string HttpResponse::_httpVersion = "HTTP/1.1";
 
 HttpResponse::HttpResponse() {
+  // _responseBody.resize(1); // safeguard?
   _mimeTypes["html"] = "text/html";
   _mimeTypes["htm"] = "text/html";
   _mimeTypes["css"] = "text/css";
@@ -18,9 +20,27 @@ HttpResponse::HttpResponse() {
   _mimeTypes["jpeg"] = "image/jpeg";
   _mimeTypes["ico"] = "image/x-icon";
   _mimeTypes["txt"] = "text/plain";
+
+  // _uri["/"] = "/home/jromann/webserv/mySites/index.html";
+  _uri["/"] = "/home/jromann/webserv/mySites/form.html";
+  _uri["/styles.css"] = "/home/jromann/webserv/mySites/styles.css";
+  _uri["/favicon.ico"] = "//home/jromann/webserv/mySites/ronaldo.png";
 }
 
-void HttpResponse::reset() {}
+std::vector<char> HttpResponse::getResponseBody(){
+  return _responseBody;
+}
+
+void HttpResponse::reset() {
+  _contentLength = 0;
+  _contentType.clear();
+  _timeStamp.clear();
+  _reasonPhrase.clear();
+  _header.clear();
+  _response.clear();
+  _responseBody.clear();
+  _statusCodeStr.clear();
+}
 
 int HttpResponse::getTimeStamp() {
   char buf[1024];
@@ -36,84 +56,71 @@ int HttpResponse::getTimeStamp() {
 }
 #include <csignal>
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
+#include <cstring>
 
-std::string getHTML() {
-  std::string html_body =
-      "<!DOCTYPE html>\r\n"
-      "<html>\r\n"
-      "    <head>\r\n"
-      "        <meta charset=\"UTF-8\"/>\r\n"
-      "        <title>My site</title>\r\n"
-      "        <link rel=\"stylesheet\" href=\"/styles.css\">\r\n"
-      "    </head>\r\n"
-      "    <body>\r\n"
-      "        <h1> yooo whats up! </h1>\r\n"
-      "        <h1> yooo whats up pt2! </h1>\r\n"
-      "        <h2> yooo whats up diff col mol! </h2>\r\n"
-      "    </body>\r\n"
-      "</html>\r\n";
-  return html_body;
+
+int HttpResponse::extractContentType(std::string path) {
+  size_t pos = path.find_last_of('.');
+  if (pos == std::string::npos || pos == 0 || path[pos - 1] == '/')
+    return 1;
+  // lookup mimetype in map or something like that
+  std::string contentType = path.substr(pos + 1);
+  std::map<std::string, std::string>::iterator it =
+      _mimeTypes.find(contentType);
+  if (it == _mimeTypes.end())
+    return 1;
+  _response += "Content-Type: ";
+  _response += it->second;
+  _response += "\r\n";
+  return 0;
 }
 
-std::string getCSS() {
-  std::string html_body = "h1 {\r\n"
-                          "background-color: green;\r\n"
-                          "color: black;\r\n"
-                          "}\r\n"
-
-                          "h2 {\r\n"
-                          "background-color: pink;\r\n"
-                          "color: blue;\r\n"
-                          "};\r\n";
-  return html_body;
+void HttpResponse::extractContentLength() {
+  std::ostringstream ss;
+  ss << _responseBody.size();
+  _response += "Content-Length: " + ss.str() + "\r\n";
 }
 
-// void HttpResponse::addBody(HttpRequest request) {
-//   // hard code
-//   std::ostringstream ss;
-//   std::string htmlBody;
-//   std::string mimeType;
-//   std::string uri = request.getURI();
-//   size_t posDot = uri.rfind('.');
-//   size_t posSlash = uri.rfind('/');
-//   if (posDot != std::string::npos && posSlash != std::string::npos &&
-//       posSlash + 1 < posDot) {
-//     mimeType = uri.substr(posSlash + 1);
-//     if (_mimeTypes.find(mimeType) == _mimeTypes.end()) {
-//       std::cout << "mimeType not found\n";
-//       return;
-//     }
-//     if (mimeType == "html")
-//       htmlBody = getHTML();
-//     else if (mimeType == "css")
-//       htmlBody = getHTML();
-//     _response += "Content-Type" + _mimeTypes[mimeType] + "\r\n";
-//     ss << htmlBody.length();
-//     _response += "Content-Length: " + ss.str() + "\r\n";
-//     _response += "\r\n";
-//     _response += htmlBody;
-//   } else
-//     std::cout << "FASILLELELEL\n";
-// } 
-//->>> needs URI Path logic but is the newest version
+
 
 void HttpResponse::addBody(HttpRequest request) {
-  // hard code
-  std::ostringstream ss;
-  std::string html_body;
-  if (request.getURI() == "/") {
-    html_body = getHTML();
-    _response += "Content-Type: text/html\r\n"; // TODO make it more dynamic with mime types
-  } else {
-    html_body = getCSS();
-    // "text/css; charset=UTF-8");
-    _response += "Content-Type: text/css\r\n";
+  std::string path; 
+  std::string uri = request.getURI();
+  std::cout << uri << std::endl;
+  if(uri == "/password.html"){
+    serveSuccessPage();
+    return ;
   }
-  ss << html_body.length();
-  _response += "Content-Length: " + ss.str() + "\r\n";
+  std::map<std::string, std::string>::iterator it = _uri.find(uri);
+  if(it == _uri.end()){
+    _statusCode = 404;
+    return ; // URI not found
+  }
+  path = it->second;
+  // end
+  std::fstream htmlPage(path.c_str(), std::ios::in | std::ios::binary);
+  if (!htmlPage.is_open())  { // or empty file
+    std::cout << "open: " << strerror(errno);
+    return; // error handling
+  }
+  htmlPage.seekg(0, std::ios::end);
+  std::streampos size = htmlPage.tellg();
+  htmlPage.seekg(0, std::ios::beg);
+  if(size == 0){
+    _statusCode = 404; //check statusCodes
+    std::cout << "empty file\n";
+    return ;
+  }
+  _responseBody.resize(size);
+  htmlPage.read(&_responseBody[0], size);
+  if (extractContentType(path) == 1){
+    //mimetype not found
+    return ;
+  }
+  extractContentLength();
   _response += "\r\n";
-  _response += html_body;
 }
 
 void HttpResponse::addRules() {
@@ -156,33 +163,51 @@ void HttpResponse::addRules() {
 
 void HttpResponse::addMandatoryHeaders() {
   _response += "Date: " + _timeStamp + "\r\n"; // apparently not mandatory
+  // if get request Content length, or chunked header thingy
 }
 
 void HttpResponse::buildStatusLine() {
   std::stringstream st;
   st << _statusCode;
-  std::string statusCodeStr;
-  st >> statusCodeStr;
+  st >> _statusCodeStr;
   _responseClass = _statusCode / 100;
   getReasonPhrase();
   _response = _httpVersion;
   _response += " ";
-  _response += statusCodeStr;
+  _response += _statusCodeStr;
   _response += " ";
   _response += _reasonPhrase;
   _response += "\r\n";
 }
 
 void HttpResponse::serveErrorPage() {
+  std::ostringstream ss;
   std::stringstream st;
   st << _statusCode;
-  std::string statusCodeStr;
-  st >> statusCodeStr;
-  std::ostringstream ss;
+  st >> _statusCodeStr;
+  _responseClass = _statusCode / 100;
+  getReasonPhrase();
   std::string htmlBody = "<!DOCTYPE html>\r\n"
                          "<html>\r\n"
                          "    <body>\r\n<h1>" +
-                         statusCodeStr + " " + _reasonPhrase +
+                         _statusCodeStr + " " + _reasonPhrase +
+                         "</h1>\r\n"
+                         "    </body>\r\n"
+                         "</html>\r\n";
+  _response += "Content-Type: text/html\r\n";
+  ss << htmlBody.length();
+  _response += "Content-Length: " + ss.str() + "\r\n";
+  _response += "\r\n";
+  _response += htmlBody; // fix it to char vec
+}
+
+void HttpResponse::serveSuccessPage() {
+  std::ostringstream ss;
+  getReasonPhrase();
+  std::string htmlBody = "<!DOCTYPE html>\r\n"
+                         "<html>\r\n"
+                         "    <body>\r\n<h1>"
+                         "registration successful"
                          "</h1>\r\n"
                          "    </body>\r\n"
                          "</html>\r\n";
@@ -202,8 +227,10 @@ int HttpResponse::build(HttpRequest request) {
   addRules();
   if (_statusCode < 400)
     addBody(request);
-  else
+  if(_statusCode >= 400){
     serveErrorPage();
+    return 1;
+  }
   return 0;
 }
 

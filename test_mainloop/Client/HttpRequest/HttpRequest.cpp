@@ -120,7 +120,6 @@ int HttpRequest::parseHeaders(std::string &request_content) {
       exctractContent(request_content, pos);
       if(containsWhiteSpaces() == true){
         std::cout << "[" << request_content << "]\n";
-        std::cout << "FUCKK\n";
         return 1;
       }
       _currentState = FIELD_VALUE;
@@ -138,20 +137,16 @@ int HttpRequest::parseHeaders(std::string &request_content) {
       pos = request_content.find("\n", _bytesRead);
       if (_bytesRead >= request_content.size())
         return 0;
-      if (validNewLine(request_content) == 1){
-        std::cout << "FUCKKfd\n";
+      if (validNewLine(request_content) == 1)
         return 1;
-      }
       exctractContent(request_content, pos);
       _currentState = FIELD_NAME;
       break ;
     case EOH:
       if (_bytesRead >= request_content.size())
         return 0;
-      if (validNewLine(request_content) == 1){
-        std::cout << "FUCKKda\n";
+      if (validNewLine(request_content) == 1)
         return 1;
-      }
       ++_bytesRead;
       _currentState = BODY;
     default:
@@ -199,6 +194,7 @@ int HttpRequest::parseHttpRequest(std::string request_content,
       return 1;
     }
     _parsingDone = true;
+    std::cout << "hey\n";
     _statusCode = 200;
   }
   return 0;

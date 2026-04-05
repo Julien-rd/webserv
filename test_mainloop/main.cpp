@@ -16,7 +16,7 @@ int	main(void) {
 	}
 
 	while (1) {
-		std::cout << "waiting for request \n";
+		// std::cout << "waiting for request \n";
 		try {
 			server.epollWait();
 			server.loopReadyEvents();
