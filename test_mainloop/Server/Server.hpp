@@ -19,37 +19,39 @@ class Server {
 		typedef std::set<int>	IntSet;
 		t_server_config			_config;
 		std::string				_name;
-
-		Client					_clients[1024]; // maximum clients is in conf file
+		Client					_clients[1024]; // TODO maximum clients is in conf file
 		int						_serverSocket;
 		sockaddr_in				_serverSockAddr;
 		int						_epfd;
+		std::map<int, IntSet>&	_clientsMap;
 
-		void	initServerSocket(void);
-		void	setServerSockAddr(void);
-		void	addSocketToEpoll(int socketFd);
-		void	bindAndListen(void);
-		void	setToNonBlocking(int socketFd);
+		void		initServerSocket(void);
+		void		setServerSockAddr(void);
+		void		addSocketToEpoll(int socketFd);
+		void		bindAndListen(void);
+		void		setToNonBlocking(int socketFd);
 
 	public:
 		// Server(void);
-		Server(int epfd);
-		Server(const t_server_config& conf, int epfd);
-		~Server(void);
+		// Server(int epfd);
+		Server(const t_server_config& conf, int epfd, std::map<int, IntSet>& _clientsMap);
 		Server(const Server& obj);
+		~Server(void);
 		// Server&	operator=(const Server& obj);
 
-		void	handleServerEvent(std::map<int, IntSet>& managersClients);
-		void	handleClientEvent(int clientFd);
+		void		handleServerEvent(void);
+		void		handleClientEvent(int clientFd);
+		void		removeClientFd(const int clientFd);
 
-		int		start(void);
+		int			start(void);
+		void		closeClientFds(void) const;
 
 		std::string	getName(void) const;
-		int			getServerSocket(void) const;
-		void		setConfig(const t_server_config& config);
-		void		setEpfd(int epfd);
+		// int			getServerSocket(void) const;
+		// void		setConfig(const t_server_config& config);
+		// void		setEpfd(int epfd);
 
-		int		error_msg(ErrorType type);
+		int			error_msg(ErrorType type);
 };
 
 #endif /* SERVER_CLASS_HPP */

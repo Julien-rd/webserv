@@ -3,20 +3,31 @@
 #include <exception>
 #include <iostream>
 
+#define KB * 1024
+#define MB * 1024 * 1024
+
 t_config	parseConfig(const char *fileName) {
 	(void)fileName;
 	std::vector<t_server_config>	serverConfigs;
 	std::string						global_1;
 	std::string						global_2;
 
-	t_server_config	server_conf = {global_1, global_2, "8080",
-		"intranet", 2 * 1024, 1 * 1024 * 1024};
-	t_server_config	server_conf_2 = {global_2, "", "9090",
-		"youtube", 4 * 1024, 8 * 1024 * 1024};
+	t_server_config	server_conf = {global_1,
+		global_2,
+		8080,
+		"intra not net",
+		2 KB,
+		4};
+	t_server_config	server_conf_2 = {global_2,
+		global_1,
+		9090,
+		"you not tube",
+		4 KB,
+		4};
 
 	serverConfigs.push_back(server_conf);
 	serverConfigs.push_back(server_conf_2);
-	t_config	config = {"global_111", "global_222", serverConfigs};
+	t_config	config = {global_1, global_2, serverConfigs};
 	return config;
 }
 

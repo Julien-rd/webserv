@@ -9,12 +9,12 @@
 
 #define CLIENTS 1024 // FIXME hardcode
 
-Server::Server(int epfd):
-_epfd(epfd) {
-	for (size_t i = 0; i < CLIENTS; i++) {
-		_clients[i].setFd(-1);
-	}
-}
+// Server::Server(int epfd):
+// _epfd(epfd) {
+// 	for (size_t i = 0; i < CLIENTS; i++) {
+// 		_clients[i].setFd(-1);
+// 	}
+// }
 
 // Server::Server(void) {
 // 	for (size_t i = 0; i < CLIENTS; i++) {
@@ -22,30 +22,22 @@ _epfd(epfd) {
 // 	}
 // }
 
-Server::Server(const t_server_config& config, int epfd):
-_config(config), _name(config.name), _epfd(epfd) {
+Server::Server(const t_server_config& config, int epfd, std::map<int, IntSet>& clientsMap):
+_config(config), _name(config.name), _epfd(epfd), _clientsMap(clientsMap) {
 	for (size_t i = 0; i < CLIENTS; i++) {
 		_clients[i].setFd(-1);
 	}
 }
 
-Server::~Server(void) {
-	// int fd;
-
-	// for (size_t i = 3; i < CLIENTS; i++) {
-	// 	fd = _clients[i].getFd();
-	// 	if (fd != -1)
-	// 		close(fd);
-	// }
-}
-
-Server::Server(const Server& obj): // TODO Implement
+Server::Server(const Server& obj):
 _config(obj._config), _name(obj._name), _serverSocket(obj._serverSocket),
-_serverSockAddr(obj._serverSockAddr), _epfd(obj._epfd) {
+_serverSockAddr(obj._serverSockAddr), _epfd(obj._epfd), _clientsMap(obj._clientsMap) {
 	for (size_t i = 0; i < CLIENTS; i++) {
 		_clients[i] = obj._clients[i];
 	}
 }
+
+Server::~Server(void) {}
 
 // Server&	Server::operator=(const Server& obj) {
 // 	if (this == &obj) {
@@ -56,7 +48,6 @@ _serverSockAddr(obj._serverSockAddr), _epfd(obj._epfd) {
 // 	for (size_t i = 0; i < CLIENTS; i++) {
 // 		_clients[i] = obj._clients[i];
 // 	}
-// 	// TODO do we need to copy more attributes?
 // 	return *this;
 // }
 
@@ -75,10 +66,7 @@ void	Server::initServerSocket(void) {
 
 void	Server::setServerSockAddr(void) {
 	_serverSockAddr.sin_family = AF_INET;
-	if (_config.host == "8080")
-		_serverSockAddr.sin_port = htons(8080); // FIXME from conf
-	else
-		_serverSockAddr.sin_port = htons(9090); // FIXME from conf
+	_serverSockAddr.sin_port = htons(_config.host); // FIXME from conf
 	_serverSockAddr.sin_addr.s_addr = INADDR_ANY;
 }
 
@@ -90,7 +78,6 @@ void	Server::addSocketToEpoll(int socketFd) {
 		error_msg(ERR_EPOLL_CTL);
 		throw std::exception();
 	}
-	// std::cout << "server __" << _name << "__ adding its socket " << _serverSocket << " to epoll with FD " << _epfd << std::endl;
 }
 
 void	Server::bindAndListen(void) {
@@ -111,7 +98,7 @@ void Server::setToNonBlocking(int socketFd) {
   }
 }
 
-void	Server::handleServerEvent(std::map<int, IntSet>& managersClients) {
+void	Server::handleServerEvent(void) {
 	int clientSocket;
 
 	while (true) {
@@ -127,12 +114,15 @@ void	Server::handleServerEvent(std::map<int, IntSet>& managersClients) {
 			break;
 		} // TODO FIXXXXXXXXXXXXXxFIXXXXXXXXXXXXXxFIXXXXXXXXXXXXXxFIXXXXXXXXXXXXXxFIXXXXXXXXXXXXXxFIXXXXXXXXXXXXXxFIXXXXXXXXXXXXXxFIXXXXXXXXXXXXXxFIXXXXXXXXXXXXXxFIXXXXXXXXXXXXXx means 1024 limit is shared between all servers
 		_clients[clientSocket].setFd(clientSocket); // FIXME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Indexing with the new clientSocket FD is now shared between all servers !!!!!!!!!! MUST FIX FIRST
-		std::cout << "_serverSocket is " << _serverSocket << std::endl;
-		managersClients.at(_serverSocket).insert(clientSocket);
+		_clientsMap.at(_serverSocket).insert(clientSocket);
 		setToNonBlocking(clientSocket);
 		addSocketToEpoll(clientSocket);
 		std::cout << "Server __" << _name << "__: Client accepted: FD " << clientSocket << "\n";
 	}
+}
+
+void	Server::removeClientFd(const int clientFd) {
+	_clientsMap.at(_serverSocket).erase(clientFd);
 }
 
 #define BUFFER_SIZE                                                            \
@@ -145,6 +135,7 @@ void	Server::handleClientEvent(const int clientFd) {
   // std::cout << "message from client FD " << clientFd << " received!\n";
   bytesRead = recv(clientFd, buffer, BUFFER_SIZE, 0);
   if (bytesRead == 0) {
+	removeClientFd(clientFd);
 	std::cout << "Server __" << _name << "__: client FD " << clientFd << " closed connection!\n";
 	if (epoll_ctl(_epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
 	  error_msg(ERR_EPOLL_CTL);
@@ -163,6 +154,7 @@ void	Server::handleClientEvent(const int clientFd) {
   }
   buffer[bytesRead] = 0;
   if (_clients[clientFd].loop(buffer) == 1) { // TODO passing char* to std::string parameter is implicitly converting. Be careful!
+	removeClientFd(clientFd);
 	std::cout << "Server __" << _name << "__: client FD " << clientFd << " connection has been closed!\n";
 	if (epoll_ctl(_epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
 	  error_msg(ERR_EPOLL_CTL);
@@ -180,23 +172,33 @@ void	Server::handleClientEvent(const int clientFd) {
 int		Server::start(void) {
 	initServerSocket();
 	setServerSockAddr();
-	// addSocketToEpoll(_serverSocket);
+	addSocketToEpoll(_serverSocket);
 	bindAndListen();
 	return _serverSocket;
+}
+
+void	Server::closeClientFds(void) const {
+	int fd;
+
+	for (size_t i = 3; i < CLIENTS; i++) {
+		fd = _clients[i].getFd();
+		if (fd != -1)
+			close(fd);
+	}
 }
 
 std::string	Server::getName(void) const {
 	return _name;
 }
 
-int			Server::getServerSocket(void) const {
-	return _serverSocket;
-}
-
-void		Server::setConfig(const t_server_config& config) {
-	_config = config;
-}
-
-// void		Server::setEpfd(int epfd) {
-// 	_epfd = epfd;
+// int			Server::getServerSocket(void) const {
+// 	return _serverSocket;
 // }
+
+// void		Server::setConfig(const t_server_config& config) {
+// 	_config = config;
+// }
+
+// // void		Server::setEpfd(int epfd) {
+// // 	_epfd = epfd;
+// // }

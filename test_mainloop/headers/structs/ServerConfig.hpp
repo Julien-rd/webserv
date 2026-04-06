@@ -6,7 +6,7 @@
 typedef struct s_server_config {
 	std::string	globalDirective_1;
 	std::string	globalDirective_2;
-	std::string	host;
+	int			host;
 	std::string	name;
 	size_t		maxBodySize;
 	size_t		maxClients;
