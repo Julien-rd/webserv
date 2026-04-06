@@ -55,7 +55,7 @@ class	ServerManager {
 		void	initServers(void);
 		void	initServerSocket(void);
 		void	createEpoll(void);
-		
+
 		void	setServerSockAddr(void);
 		void	addSocketToEpfd(int socketFd);
 		void	bindAndListen(void);
