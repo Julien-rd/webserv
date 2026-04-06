@@ -9,9 +9,9 @@ t_config	parseConfig(const char *fileName) {
 	std::string						global_1;
 	std::string						global_2;
 
-	t_server_config	server_conf = {global_1, global_2, "0.0.0.0",
+	t_server_config	server_conf = {global_1, global_2, "8080",
 		"intranet", 2 * 1024, 1 * 1024 * 1024};
-	t_server_config	server_conf_2 = {global_2, "", "7.7.7.7",
+	t_server_config	server_conf_2 = {global_2, "", "9090",
 		"youtube", 4 * 1024, 8 * 1024 * 1024};
 
 	serverConfigs.push_back(server_conf);
@@ -21,7 +21,7 @@ t_config	parseConfig(const char *fileName) {
 }
 
 int	main(int argc, char **argv) {
-	if (argc != 2) {
+	if (argc != 1) {
 		return 1;
 	}
 	t_config		config = parseConfig(argv[1]);

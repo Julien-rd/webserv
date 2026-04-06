@@ -7,7 +7,7 @@
 #include <cstring>
 #include <cerrno>
 
-void	custom_perror(const char *spec, char *errnoMsg) {
+static void	custom_perror(const char *spec, char *errnoMsg) {
   std::cout << spec << errnoMsg << "\n";
 }
 

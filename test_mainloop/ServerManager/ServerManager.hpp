@@ -34,7 +34,7 @@ class	ServerManager {
 		// Client					_clients[CLIENTS]; // maximum clients is in conf file // this is now moved to Server class
 		// std::set<int>			_serversFds;
 		std::map<int, Server>		_servers; // Key: the fd of the server. Value: the server
-		std::map<int, IntSet>		_ServersClientsFds; // Key: the fd of the server. Value: all of its current clients
+		std::map<int, IntSet>		_serversClientsFds; // Key: the fd of the server. Value: all of its current clients
 		std::vector<epoll_event>	_requestBuf;
 		int							_readyEvents;
 
@@ -44,6 +44,7 @@ class	ServerManager {
 		void	validateConfig(void) const;
 		void	validateServerConfig(const t_server_config config) const;
 		void	createEpoll(void);
+		void	addSocketToEpoll(int socketFd);
 		void	startServers(void);
 
 		int		error_msg(ErrorType type);
@@ -55,6 +56,7 @@ class	ServerManager {
 		void	init(void);
 		void	epollWait(void);
 		void	loopReadyEvents(void);
+		int		matchClientToServer(int fd);
 		void	handleCGI(void) const;
 };
 

@@ -46,21 +46,35 @@ void	ServerManager::createEpoll(void) {
 	// _clients[_epfd].setFd(_epfd);
 }
 
+void	ServerManager::addSocketToEpoll(int socketFd) {
+	struct epoll_event	ev;
+	ev.events = EPOLLIN;
+	ev.data.fd = socketFd;
+	// std::cout << "adding " << socketFd << " to epoll " << _epfd << std::endl;
+	if (epoll_ctl(_epfd, EPOLL_CTL_ADD, socketFd, &ev) == -1) {
+		error_msg(ERR_EPOLL_CTL);
+		throw std::exception();
+	}
+}
+
 void	ServerManager::startServers() {
-	int	serverSocket;
+	int		serverSocket;
 
 	for (size_t i = 0; i < _config.serverConfigs.size(); i++) {
+		Server	server(_config.serverConfigs[i], _epfd);
 		try {
 			validateServerConfig(_config.serverConfigs[i]);
-			serverSocket = _servers.at(i).start();
+			serverSocket = server.start();
 		}
 		catch (std::exception& e) {
 			std::cerr << "ERROR: Couldn't start server: " << e.what() << std::endl;
 			continue ;
 		}
-		std::cout << "Started Server " << i << ": " << _servers.at(i).getName() << " successfully" << std::endl;
-		Server	server(_config.serverConfigs[i], _epfd);
 		_servers.insert(std::pair<int, Server>(serverSocket, server));
+		_serversClientsFds.insert(std::pair<int, IntSet>(serverSocket, IntSet()));
+		addSocketToEpoll(serverSocket);
+		std::cout << "Started Server " << serverSocket << " __" << _servers.at(serverSocket).getName() << "__ successfully" << std::endl;
+		// _servers.at(serverSocket) = server;
 		// _serversFds.insert(serverSocket);
 		
 	}
@@ -69,11 +83,12 @@ void	ServerManager::startServers() {
 void	ServerManager::init(void) {
 	validateConfig();
 	createEpoll();
-	// initServers();
 	startServers();
+	// std::cout << "map 4:" << _servers.at(4).getName() << " FD: " << _servers.at(4).getServerSocket() << std::endl;
 }
 
 void	ServerManager::epollWait() {
+	// std::cout << "calling epoll_wait(" << _epfd << ", " << _requestBuf.data() << ", " << CLIENTS << ", " << -1 << ")" << std::endl;
 	_readyEvents = epoll_wait(_epfd, _requestBuf.data(), CLIENTS, -1); // FIXME hardcode
 	// if (gSignalStatus)
 	//   break;
@@ -83,51 +98,6 @@ void	ServerManager::epollWait() {
 		throw std::exception();
 	}
 }
-
-// void ServerManager::handleServerEvent(void) {
-// }
-
-// #define BUFFER_SIZE                                                            
-//   4096 // we should move this to another spot but i need it to test parsing for
-// 	 // diff sizes
-// void ServerManager::handleClientEvent(const int clientFd) {
-//   char buffer[BUFFER_SIZE + 1];
-//   ssize_t bytesRead = 0;
-
-//   // std::cout << "message from client FD " << clientFd << " received!\n";
-//   bytesRead = recv(clientFd, buffer, BUFFER_SIZE, 0);
-//   if (bytesRead == 0) {
-// 	std::cout << "client FD " << clientFd << " closed connection!\n";
-// 	if (epoll_ctl(epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
-// 	  error_msg(ERR_EPOLL_CTL);
-// 	  throw std::exception();
-// 	}
-// 	if (close(clientFd) == -1) {
-// 	  error_msg(ERR_CLOSE);
-// 	  throw std::exception();
-// 	}
-// 	_clients[clientFd].reset();
-// 	return;
-//   }
-//   if (bytesRead == -1) {
-// 	error_msg(ERR_RECV);
-// 	throw std::exception();
-//   }
-//   buffer[bytesRead] = 0;
-//   if (_clients[clientFd].loop(buffer) == 1) { // TODO passing char* to std::string parameter is implicitly converting. Be careful!
-// 	std::cout << "client FD " << clientFd << " connection has been closed!\n";
-// 	if (epoll_ctl(epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
-// 	  error_msg(ERR_EPOLL_CTL);
-// 	  throw std::exception();
-// 	}
-// 	if (close(clientFd) == -1) {
-// 	  error_msg(ERR_CLOSE);
-// 	  throw std::exception();
-// 	}
-// 	_clients[clientFd].reset();
-// 	return;
-//   }
-// }
 
 void ServerManager::handleCGI(void) const {
   CGI cgi;
@@ -142,16 +112,31 @@ void ServerManager::handleCGI(void) const {
   // cgi.redirectIO(); // I don't think I need this ¯\_(ツ)_/¯
 }
 
+int		ServerManager::matchClientToServer(int fd) {
+	for (std::map<int, IntSet>::iterator it = _serversClientsFds.begin(); it != _serversClientsFds.end(); it++) {
+		if (it->second.find(fd) != it->second.end()) {
+			return it->first;
+		}
+	}
+	return -1;
+}
+
 void	ServerManager::loopReadyEvents(void) {
 	int	fd;
 
 	for (int i = 0; i < _readyEvents; i++) {
 		fd = _requestBuf[i].data.fd;
 		if (_servers.find(fd) != _servers.end()) {
-			_servers.at(fd).handleServerEvent(_ServersClientsFds);
+			std::cout << "fd is " << fd << std::endl;
+			_servers.at(fd).handleServerEvent(_serversClientsFds);
 		}
 		else {
-			_servers.at(fd).handleClientEvent(fd); // TODO make this server specific. map clients to servers somehow
+			int	serverFd = matchClientToServer(fd);
+			if (serverFd == -1) {
+				std::cerr << "something wrong happened, couldn't match client to any server";
+				continue ;
+			}
+			_servers.at(serverFd).handleClientEvent(fd);
 			// parseHttpRequest();
 			// this->request.print();
 			// handleCGI();

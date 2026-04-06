@@ -2,10 +2,25 @@
 
 #include <iostream>
 
+#include <cerrno>
+
 #include <fcntl.h>
 #include <unistd.h>
 
 #define CLIENTS 1024 // FIXME hardcode
+
+Server::Server(int epfd):
+_epfd(epfd) {
+	for (size_t i = 0; i < CLIENTS; i++) {
+		_clients[i].setFd(-1);
+	}
+}
+
+// Server::Server(void) {
+// 	for (size_t i = 0; i < CLIENTS; i++) {
+// 		_clients[i].setFd(-1);
+// 	}
+// }
 
 Server::Server(const t_server_config& config, int epfd):
 _config(config), _name(config.name), _epfd(epfd) {
@@ -15,23 +30,33 @@ _config(config), _name(config.name), _epfd(epfd) {
 }
 
 Server::~Server(void) {
-	int fd;
+	// int fd;
 
-	for (size_t i = 3; i < CLIENTS; i++) {
-		fd = _clients[i].getFd();
-		if (fd != -1)
-			close(fd);
-	}
+	// for (size_t i = 3; i < CLIENTS; i++) {
+	// 	fd = _clients[i].getFd();
+	// 	if (fd != -1)
+	// 		close(fd);
+	// }
 }
 
-// Server::Server(const Server& obj): // TODO Implement
-// config(obj.config) {}
+Server::Server(const Server& obj): // TODO Implement
+_config(obj._config), _name(obj._name), _serverSocket(obj._serverSocket),
+_serverSockAddr(obj._serverSockAddr), _epfd(obj._epfd) {
+	for (size_t i = 0; i < CLIENTS; i++) {
+		_clients[i] = obj._clients[i];
+	}
+}
 
 // Server&	Server::operator=(const Server& obj) {
 // 	if (this == &obj) {
 // 		return *this;
 // 	}
-// 	// TODO Implement
+// 	_config = obj._config;
+// 	_epfd = obj._epfd;
+// 	for (size_t i = 0; i < CLIENTS; i++) {
+// 		_clients[i] = obj._clients[i];
+// 	}
+// 	// TODO do we need to copy more attributes?
 // 	return *this;
 // }
 
@@ -41,7 +66,6 @@ void	Server::initServerSocket(void) {
 		error_msg(ERR_SOCKET);
 		throw std::exception();
 	}
-	_clients[_serverSocket].setFd(_serverSocket); // TODO should we also add it to ServerManager's _clients?
 	int opt = 1;
 	if (setsockopt(_serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
 		error_msg(ERR_SETSOCKOPT);
@@ -51,7 +75,10 @@ void	Server::initServerSocket(void) {
 
 void	Server::setServerSockAddr(void) {
 	_serverSockAddr.sin_family = AF_INET;
-	_serverSockAddr.sin_port = htons(8080); // FIXME from conf
+	if (_config.host == "8080")
+		_serverSockAddr.sin_port = htons(8080); // FIXME from conf
+	else
+		_serverSockAddr.sin_port = htons(9090); // FIXME from conf
 	_serverSockAddr.sin_addr.s_addr = INADDR_ANY;
 }
 
@@ -63,6 +90,7 @@ void	Server::addSocketToEpoll(int socketFd) {
 		error_msg(ERR_EPOLL_CTL);
 		throw std::exception();
 	}
+	// std::cout << "server __" << _name << "__ adding its socket " << _serverSocket << " to epoll with FD " << _epfd << std::endl;
 }
 
 void	Server::bindAndListen(void) {
@@ -70,7 +98,7 @@ void	Server::bindAndListen(void) {
 		error_msg(ERR_BIND);
 		throw std::exception();
 	}
-	if (listen(_serverSocket, 5) == -1) {
+	if (listen(_serverSocket, 5) == -1) { // TODO hardocded 5 ?
 		error_msg(ERR_LISTEN);
 		throw std::exception();
 	}
@@ -83,7 +111,7 @@ void Server::setToNonBlocking(int socketFd) {
   }
 }
 
-void	Server::handleServerEvent(std::map<int, IntSet>& ManagersClients) {
+void	Server::handleServerEvent(std::map<int, IntSet>& managersClients) {
 	int clientSocket;
 
 	while (true) {
@@ -99,7 +127,8 @@ void	Server::handleServerEvent(std::map<int, IntSet>& ManagersClients) {
 			break;
 		} // TODO FIXXXXXXXXXXXXXxFIXXXXXXXXXXXXXxFIXXXXXXXXXXXXXxFIXXXXXXXXXXXXXxFIXXXXXXXXXXXXXxFIXXXXXXXXXXXXXxFIXXXXXXXXXXXXXxFIXXXXXXXXXXXXXxFIXXXXXXXXXXXXXxFIXXXXXXXXXXXXXx means 1024 limit is shared between all servers
 		_clients[clientSocket].setFd(clientSocket); // FIXME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Indexing with the new clientSocket FD is now shared between all servers !!!!!!!!!! MUST FIX FIRST
-		ManagersClients.at(_serverSocket).insert(clientSocket);
+		std::cout << "_serverSocket is " << _serverSocket << std::endl;
+		managersClients.at(_serverSocket).insert(clientSocket);
 		setToNonBlocking(clientSocket);
 		addSocketToEpoll(clientSocket);
 		std::cout << "Server __" << _name << "__: Client accepted: FD " << clientSocket << "\n";
@@ -151,7 +180,7 @@ void	Server::handleClientEvent(const int clientFd) {
 int		Server::start(void) {
 	initServerSocket();
 	setServerSockAddr();
-	addSocketToEpoll(_serverSocket);
+	// addSocketToEpoll(_serverSocket);
 	bindAndListen();
 	return _serverSocket;
 }
@@ -159,3 +188,15 @@ int		Server::start(void) {
 std::string	Server::getName(void) const {
 	return _name;
 }
+
+int			Server::getServerSocket(void) const {
+	return _serverSocket;
+}
+
+void		Server::setConfig(const t_server_config& config) {
+	_config = config;
+}
+
+// void		Server::setEpfd(int epfd) {
+// 	_epfd = epfd;
+// }

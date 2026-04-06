@@ -17,7 +17,7 @@
 class Server {
 	private:
 		typedef std::set<int>	IntSet;
-		const t_server_config	_config;
+		t_server_config			_config;
 		std::string				_name;
 
 		Client					_clients[1024]; // maximum clients is in conf file
@@ -32,17 +32,22 @@ class Server {
 		void	setToNonBlocking(int socketFd);
 
 	public:
+		// Server(void);
+		Server(int epfd);
 		Server(const t_server_config& conf, int epfd);
 		~Server(void);
 		Server(const Server& obj);
-		Server&	operator=(const Server& obj);
+		// Server&	operator=(const Server& obj);
 
-		void	handleServerEvent(std::map<int, IntSet>& ManagersClients);
+		void	handleServerEvent(std::map<int, IntSet>& managersClients);
 		void	handleClientEvent(int clientFd);
 
 		int		start(void);
 
 		std::string	getName(void) const;
+		int			getServerSocket(void) const;
+		void		setConfig(const t_server_config& config);
+		void		setEpfd(int epfd);
 
 		int		error_msg(ErrorType type);
 };
