@@ -1,12 +1,19 @@
 #include "HttpRequest.hpp"
+#include <cctype>
 #include <iostream>
 #include <sstream>
+#include <string>
+#include <cctype>
 
 void HttpRequest::addHeader() {
-  if (_headers.count(_fieldName) > 0) {
-    _headers[_fieldName] += ", " + _fieldValue;
+  std::string data = "Abc";
+  std::string fieldNameToLow = _fieldName;
+  for(size_t it = 0; it < _fieldName.size(); ++it )
+    fieldNameToLow[it] = tolower(_fieldName[it]);
+  if (_headers.count(fieldNameToLow) > 0) {
+    _headers[fieldNameToLow] += ", " + _fieldValue;
   } else
-    _headers[_fieldName] = _fieldValue;
+    _headers[fieldNameToLow] = _fieldValue;
   _fieldName.clear();
   _fieldValue.clear();
 }
@@ -104,7 +111,7 @@ bool HttpRequest::validHttpsVersion() {
 }
 
 bool HttpRequest::hasHostHeader() {
-  std::map<std::string, std::string>::iterator it = _headers.find("Host");
+  std::map<std::string, std::string>::iterator it = _headers.find("host");
   if (it == _headers.end())
     return false;
   return true;
@@ -112,13 +119,13 @@ bool HttpRequest::hasHostHeader() {
 
 bool HttpRequest::hasContentLength() {
   std::map<std::string, std::string>::iterator it =
-      _headers.find("Content-Length");
+      _headers.find("content-length");
   if (it != _headers.end()) {
     if (_currentState == BODY_CHUNKED) {
       std::cerr << "Header has both transfer-encoding and content-length\n";
       return false;
     }
-    std::stringstream ss(_headers["Content-Length"]);
+    std::stringstream ss(_headers["content-length"]);
     ss >> _contentLength;
     if (ss.fail()) {
       std::cerr << "Invalid Content-Length\n";
@@ -134,7 +141,7 @@ bool HttpRequest::hasContentLength() {
 
 void HttpRequest::isChunked() {
   std::map<std::string, std::string>::iterator it =
-      _headers.find("Transfer-Encoding");
+      _headers.find("transfer-encoding");
   if (it == _headers.end())
     return;
   if (it->second == "chunked")
@@ -145,10 +152,6 @@ void HttpRequest::isChunked() {
 bool HttpRequest::validateMandatoryHeaders() {
   if (_method == "POST") {
     isChunked();
-    if(hasHostHeader() == false)
-      std::cout << "hesd\n";
-    if(hasContentLength() == false)
-      std::cout << "hes\n";
     return (hasHostHeader() && hasContentLength());
   }
   _currentState = METHOD;
@@ -169,4 +172,3 @@ void HttpRequest::reset() {
   _headers.clear();
   _body.clear();
 }
-

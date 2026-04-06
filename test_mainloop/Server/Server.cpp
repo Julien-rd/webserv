@@ -114,6 +114,19 @@ void Server::setToNonBlocking(int socketFd) {
   }
 }
 
+void Server::closeConnection(int clientFd){
+    std::cout << "client FD " << clientFd << " connection has been closed!\n";
+    if (epoll_ctl(epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
+      error_msg(ERR_EPOLL_CTL);
+      throw std::exception();
+    }
+    if (close(clientFd) == -1) {
+      error_msg(ERR_CLOSE);
+      throw std::exception();
+    }
+    _clients[clientFd].reset();
+}
+
 void Server::handleServerEvent(void) {
   int clientSocket;
 
@@ -139,41 +152,17 @@ void Server::handleServerEvent(void) {
      // diff sizes
 void Server::handleClientEvent(const int clientFd) {
   char buffer[BUFFER_SIZE + 1];
-  ssize_t bytesRead = 0;
 
-  // std::cout << "message from client FD " << clientFd << " received!\n";
-  bytesRead = recv(clientFd, buffer, BUFFER_SIZE, 0);
-  if (bytesRead == 0) {
-    std::cout << "client FD " << clientFd << " closed connection!\n";
-    if (epoll_ctl(epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
-      error_msg(ERR_EPOLL_CTL);
-      throw std::exception();
-    }
-    if (close(clientFd) == -1) {
-      error_msg(ERR_CLOSE);
-      throw std::exception();
-    }
-    _clients[clientFd].reset();
-    return;
-  }
+  ssize_t bytesRead = recv(clientFd, buffer, BUFFER_SIZE, 0);
+  if (bytesRead == 0)
+    return closeConnection(clientFd);
   if (bytesRead == -1) {
     error_msg(ERR_RECV);
-    throw std::exception();
+    return closeConnection(clientFd);
   }
   buffer[bytesRead] = 0;
-  if (_clients[clientFd].loop(buffer) == 1) {
-    std::cout << "client FD " << clientFd << " connection has been closed!\n";
-    if (epoll_ctl(epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
-      error_msg(ERR_EPOLL_CTL);
-      throw std::exception();
-    }
-    if (close(clientFd) == -1) {
-      error_msg(ERR_CLOSE);
-      throw std::exception();
-    }
-    _clients[clientFd].reset();
-    return;
-  }
+  if (_clients[clientFd].loop(buffer) == 1)
+    return closeConnection(clientFd);
 }
 
 void Server::handleCGI(void) const {

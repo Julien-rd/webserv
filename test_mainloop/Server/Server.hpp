@@ -56,6 +56,7 @@ class	Server {
 
 		void	handleServerEvent(void);
 		void	handleClientEvent(const int clientFd);
+		void	closeConnection(int clientFd);
 
 	public:
 		Server(const t_config config);

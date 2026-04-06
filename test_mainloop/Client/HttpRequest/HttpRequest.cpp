@@ -8,11 +8,9 @@ HttpRequest::HttpRequest(size_t client_max_body_size)
 
 HttpRequest::HttpRequest()
     : _currentState(METHOD), _contentLength(0), _parsingDone(false),
-      _client_max_body_size(4096) {} //TODO hardcoded fix accordingly 
+      _client_max_body_size(300000) {} // TODO hardcoded fix accordingly
 
-std::vector<char> HttpRequest::getBody() const{
-  return _body;
-}
+std::vector<char> HttpRequest::getBody() const { return _body; }
 
 void HttpRequest::print() {
   std::cout << "---------------------RequestLine---------------------\n";
@@ -29,9 +27,9 @@ void HttpRequest::print() {
 bool HttpRequest::parsingDone() { return _parsingDone; }
 
 bool HttpRequest::validNewLine(std::string request_content) {
-  if (!request_content.empty() && request_content[_bytesRead] == '\n') 
+  if (!request_content.empty() && request_content[_bytesRead] == '\n')
     return 0;
-  else{
+  else {
     _statusCode = 400;
     return 1;
   }
@@ -80,7 +78,7 @@ int HttpRequest::parseRequestLine(std::string &request_content) {
     pos = request_content.find("\n", _bytesRead);
     if (_bytesRead >= request_content.size())
       return 0;
-    if (validNewLine(request_content) == 1) 
+    if (validNewLine(request_content) == 1)
       return 1;
     exctractContent(request_content, pos);
     _currentState = FIELD_NAME;
@@ -89,15 +87,15 @@ int HttpRequest::parseRequestLine(std::string &request_content) {
   return 0;
 }
 
-bool HttpRequest::containsWhiteSpaces(){
+bool HttpRequest::containsWhiteSpaces() {
   size_t pos;
   pos = _fieldName.find_first_of(" \t\r\n");
-  if (pos != std::string::npos){
+  if (pos != std::string::npos) {
     _statusCode = 400;
     return true;
   }
   pos = _fieldName.find_last_of(" \t\r\n");
-  if (pos != std::string::npos){
+  if (pos != std::string::npos) {
     _statusCode = 400;
     return true;
   }
@@ -111,19 +109,19 @@ int HttpRequest::parseHeaders(std::string &request_content) {
     switch (_currentState) {
     case FIELD_NAME:
       findSeperator(request_content, ':', pos, max_pos);
-      if (pos == std::string::npos && max_pos != std::string::npos) {
+      if (pos > max_pos) {
         // add safguard to check if it is really last line so \r\n
         _bytesRead += 1;
         _currentState = EOH;
-        break ;
+        break;
       }
       if (pos == std::string::npos) {
         _fieldName += request_content.substr(_bytesRead);
         return 0;
       }
       exctractContent(request_content, pos);
-      if(containsWhiteSpaces() == true){
-        std::cout << "[" << request_content << "]\n";
+      if (containsWhiteSpaces() == true) {
+        // print();
         return 1;
       }
       _currentState = FIELD_VALUE;
@@ -145,8 +143,8 @@ int HttpRequest::parseHeaders(std::string &request_content) {
         return 1;
       exctractContent(request_content, pos);
       _currentState = FIELD_NAME;
-      break ;
-    case EOH:
+      break;
+    case EOH: // TODO what if \r \n are sent seperatly
       if (_bytesRead >= request_content.size())
         return 0;
       if (validNewLine(request_content) == 1)
@@ -165,10 +163,20 @@ int HttpRequest::parse_body(std::string request_content) {
     size_t bytes_needed = _contentLength - _body.size();
     std::string::iterator start = request_content.begin() + _bytesRead;
     std::string::iterator end = request_content.end();
-    if (start + bytes_needed > end)
+    if (start + bytes_needed > end) {
+      std::cout << "BIG L\n";
       _body.insert(_body.end(), start, end);
-    else
+    } else {
+      std::cout << "BIG W\n";
       _body.insert(_body.end(), start, start + bytes_needed);
+      _parsingDone = true;
+      _statusCode = 200;
+    }
+    _bytesRead += end - start;
+    std::cout << "bytesRead: " << _bytesRead << "\n";
+    std::cout << "end - start : " << end - start << "\n";
+    std::cout << "contentLength: " << _contentLength << "\n";
+    std::cout << "bogySize: " << _body.size() << "\n";
   }
   if (_currentState == BODY_CHUNKED) {
     // implement code for chunked
@@ -193,13 +201,15 @@ int HttpRequest::parseHttpRequest(std::string request_content,
       std::cout << "validation of mandatory header issue\n";
       return 1;
     }
+    if (_currentState != BODY) {
+      _parsingDone = true;
+      _statusCode = 200;
+      return 0;
+    }
     if (parse_body(request_content) == 1) {
       std::cout << "body issue\n";
       return 1;
     }
-    _parsingDone = true;
-    std::cout << "hey\n";
-    _statusCode = 200;
   }
   return 0;
 }
@@ -207,4 +217,3 @@ int HttpRequest::parseHttpRequest(std::string request_content,
 int HttpRequest::getStatusCode() const { return _statusCode; }
 
 size_t HttpRequest::getBytesRead() const { return _bytesRead; }
-

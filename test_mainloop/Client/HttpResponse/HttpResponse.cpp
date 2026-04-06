@@ -21,8 +21,11 @@ HttpResponse::HttpResponse() {
   _mimeTypes["ico"] = "image/x-icon";
   _mimeTypes["txt"] = "text/plain";
 
-  // _uri["/"] = "/home/jromann/webserv/mySites/index.html";
-  _uri["/"] = "/home/jromann/webserv/mySites/form.html";
+
+  _uri["/ronaldo"] = "//home/jromann/webserv/mySites/ronaldo.png";
+  _uri["/"] = "/home/jromann/webserv/mySites/index.html";
+  _uri["/form"] = "/home/jromann/webserv/mySites/form.html";
+  _uri["/upload"] = "/home/jromann/webserv/mySites/upload.html";
   _uri["/styles.css"] = "/home/jromann/webserv/mySites/styles.css";
   _uri["/favicon.ico"] = "//home/jromann/webserv/mySites/ronaldo.png";
 }
@@ -90,7 +93,7 @@ void HttpResponse::addBody(HttpRequest request) {
   std::string path; 
   std::string uri = request.getURI();
   std::cout << uri << std::endl;
-  if(uri == "/password.php"){
+  if(uri == "/password.html"){
     serveSuccessPage(request);
     return ;
   }
@@ -99,6 +102,7 @@ void HttpResponse::addBody(HttpRequest request) {
     _statusCode = 404;
     return ; // URI not found
   }
+  // check if method is allowed for this uri, if not _statusCode = 405
   path = it->second;
   // end
   std::fstream htmlPage(path.c_str(), std::ios::in | std::ios::binary);
