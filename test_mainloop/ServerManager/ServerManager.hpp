@@ -7,28 +7,18 @@
 # include "../Client/client.hpp"
 
 # include "../headers/structs/ServerConfig.hpp"
+# include "../headers/structs/ErrorType.hpp"
 
 # include <vector>
 # include <string>
-
-# include <cstddef>
+# include <set>
+# include <map>
 
 # include <netinet/in.h>
 # include <sys/epoll.h>
 
-enum Type {
-	ERR_EPOLL_WAIT,
-	ERR_SOCKET,
-	ERR_ACCEPT,
-	ERR_FCNTL,
-	ERR_SETSOCKOPT,
-	ERR_EPOLL_CREATE1,
-	ERR_EPOLL_CTL,
-	ERR_BIND,
-	ERR_LISTEN,
-	ERR_RECV,
-	ERR_CLOSE
-};
+# define CLIENTS 1024 // FIXME Remove hardcode
+# define SERVER_LIMIT 1024 // FIXME
 
 typedef struct s_config { // TODO This just contains things we get from the config parser. REMOVE THIS
 	std::string						globalDirective;
@@ -38,33 +28,25 @@ typedef struct s_config { // TODO This just contains things we get from the conf
 
 class	ServerManager {
 	private:
+		typedef std::set<int>		IntSet;
 		t_config					_config; // TODO remove this later
-		std::vector<Server>			_servers;
-		// int							*openFds;
-		Client						_clients[1024]; // maximum clients is in conf file
-		int							serverSocket;
-		sockaddr_in					serverSockAddr;
-		int							epfd;
-		std::vector<epoll_event>	requestBuf;
-		int							readyEvents;
+		int							_epfd;
+		// Client					_clients[CLIENTS]; // maximum clients is in conf file // this is now moved to Server class
+		// std::set<int>			_serversFds;
+		std::map<int, Server>		_servers; // Key: the fd of the server. Value: the server
+		std::map<int, IntSet>		_ServersClientsFds; // Key: the fd of the server. Value: all of its current clients
+		std::vector<epoll_event>	_requestBuf;
+		int							_readyEvents;
+
 		// std::string					content; prob not needed, please check
-		HttpRequest					request;
+		HttpRequest					request; // TODO This is unhandled in multi-server structure
 
 		void	validateConfig(void) const;
 		void	validateServerConfig(const t_server_config config) const;
-		void	initServers(void);
-		void	initServerSocket(void);
 		void	createEpoll(void);
+		void	startServers(void);
 
-		void	setServerSockAddr(void);
-		void	addSocketToEpfd(int socketFd);
-		void	bindAndListen(void);
-		int		error_msg(Type type);
-
-		void	setToNonBlocking(int socketFd);
-
-		void	handleServerEvent(void);
-		void	handleClientEvent(const int clientFd);
+		int		error_msg(ErrorType type);
 
 	public:
 		ServerManager(const t_config config);
