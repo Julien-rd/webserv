@@ -42,7 +42,7 @@ class	ServerManager {
 		int		error_msg(ErrorType type);
 
 	public:
-		ServerManager(const t_config config);
+		ServerManager(const t_config& config);
 		~ServerManager(void);
 
 		void	init(void);

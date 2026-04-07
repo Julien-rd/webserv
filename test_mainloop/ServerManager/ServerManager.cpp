@@ -16,7 +16,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-ServerManager::ServerManager(const t_config config):
+ServerManager::ServerManager(const t_config& config):
 _config(config) {
 	_requestBuf.reserve(MAX_EVENTS);
 }
@@ -63,7 +63,7 @@ void	ServerManager::createEpoll(void) {
 void	ServerManager::startServers(void) {
 	int	serverSocket;
 
-	for (size_t i = 0; i < _config.serverConfigs.size(); i++) {
+	for (size_t i = 0; i < _config.serverConfigs.size(); ++i) {
 		Server	server(_config.serverConfigs[i], _epfd, _clientsMap);
 		try {
 			validateServerConfig(_config.serverConfigs[i]);
@@ -96,7 +96,7 @@ void	ServerManager::epollWait() {
 }
 
 int		ServerManager::matchClientToServer(int ClientFd) {
-	for (std::map<int, IntSet>::iterator it = _clientsMap.begin(); it != _clientsMap.end(); it++) {
+	for (std::map<int, IntSet>::iterator it = _clientsMap.begin(); it != _clientsMap.end(); ++it) {
 		if (it->second.find(ClientFd) != it->second.end()) {
 			return it->first;
 		}
@@ -107,7 +107,7 @@ int		ServerManager::matchClientToServer(int ClientFd) {
 void	ServerManager::loopReadyEvents(void) {
 	int	fd;
 
-	for (int i = 0; i < _readyEvents; i++) {
+	for (int i = 0; i < _readyEvents; ++i) {
 		fd = _requestBuf[i].data.fd;
 		if (_serversMap.find(fd) != _serversMap.end()) {
 			_serversMap.at(fd).handleServerEvent();

@@ -14,7 +14,7 @@ class Client {
     void setFd(int fd);
     int getFd() const;
     private:
-    int closeConnection();
+    int closeConnection(); 
     HttpRequest _request;
     HttpResponse _response;
     size_t _bytesRead;

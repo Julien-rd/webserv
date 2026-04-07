@@ -1,3 +1,4 @@
+#include "Client/HttpRequest/HttpRequest.hpp"
 #include "ServerManager/ServerManager.hpp"
 
 #include <csetjmp>

@@ -9,45 +9,57 @@
 #include <string>
 #include <vector>
 
-Node *directive(Tokenizer& stream, std::vector<std::string>& args) {
-    Node *directiveNode = new Node(); 
-    if (args.size() != 2)
-        throw std::runtime_error("directive doesn't have exactly one argument");
-    int spec = 0;
-    while (spec < d.size() && args.at(0).compare(d.at(spec).first))
-        ++spec;
-    if (spec == d.size())
-        throw std::runtime_error(args.at(0) + " -> directive unknown");
-    directiveNode->tag = d.at(spec).second;
-    directiveNode->type = DIRECTIVE;
-    for (unsigned int i = 1;i < args.size(); ++i)
-        directiveNode->args.push_back(args.at(i));
-    return directiveNode;
+Node *context(Tokenizer& stream, std::vector<std::string>& args);
+Node *directive(std::vector<std::string>& args);
+    
+template<typename T>
+
+int validateName(const std::string& specifier, const T& table) {
+    int iter = 0;
+    while (iter < table.size() && specifier.compare(table.at(iter).first)) //replace table.size with DIRECTIVECOUNT
+        ++iter;
+    if (iter == table.size())
+        return -1;
+    return iter;
 }
 
-Node *context(Tokenizer& stream, std::vector<std::string>& args) {
-    Node *contextNode = new Node();
-    if (args.empty())
-        throw std::runtime_error("brackets opened without context");
-    int spec = 0;
-    while (spec < c.size() && args[0] != c[spec].first)
-        ++spec;
-    if (spec == c.size())
-        throw std::runtime_error("context unknown");
-    contextNode->tag = c[spec].second;
-    contextNode->type = CONTEXT;
+template<typename T>
+int    validate(const std::vector<std::string>& args, const T& table, const char* errormsg) {
+    if (args.size() < 2)
+        throw std::runtime_error(errormsg);
+    int spec;
+    spec = validateName(args.at(0), d);
+    if (spec == -1)
+        throw std::runtime_error(args.at(0) + " -> unknown");
+    return spec;
+}
+
+void    fillDirective(Node *node, const std::vector<std::string>& args, const int spec) {
+    node->tag = d.at(spec).second;
+    node->type = DIRECTIVE;
     for (unsigned int i = 1;i < args.size(); ++i)
-        contextNode->args.push_back(args.at(i));
+        node->args.push_back(args.at(i));
+}
+
+
+void    fillContext(Node *node, const std::vector<std::string>& args, const int spec) {
+    node->tag = c.at(spec).second;
+    node->type = CONTEXT;
+    for (unsigned int i = 1;i < args.size(); ++i)
+        node->args.push_back(args.at(i));
+}
+
+void    fillContent(Node *node, Tokenizer&stream, int type) {
     std::string token = stream.next();
     std::vector<std::string> specifier;
-    while (token.at(0) != '}') {
+    while ((token.at(0) != '}' && type == CONTEXT) || (token.at(0) != EOF && type == BASE)) {
         switch (token.at(0)) {
-            case '{':   contextNode->content.push_back(context(stream, specifier));
-                        specifier.clear();
-                        break;
-            case ';':   contextNode->content.push_back(directive(stream, specifier));
-                        specifier.clear();
-                        break;
+            case '{':   node->content.push_back(context(stream, specifier));
+            specifier.clear();
+            break;
+            case ';':   node->content.push_back(directive(specifier));
+            specifier.clear();
+            break;
             case EOF:   throw std::runtime_error("bracket not closed");
             default:    specifier.push_back(token);
         }
@@ -55,6 +67,21 @@ Node *context(Tokenizer& stream, std::vector<std::string>& args) {
     }
     if (!specifier.empty())
         throw std::runtime_error("something unfinished in context");
+}
+
+Node *directive(std::vector<std::string>& args) {
+    int spec = validate(args, d, "empty directive");
+    Node *directiveNode = new Node(); 
+    fillDirective(directiveNode, args, spec);
+    return directiveNode;
+}
+
+Node *context(Tokenizer& stream, std::vector<std::string>& args) {
+    int spec = 0;
+    validate(args, spec, "brackets opened without context");
+    Node *contextNode = new Node();
+    fillContext(contextNode, args, spec);
+    fillContent(contextNode, stream, CONTEXT);
     return contextNode;
 }
 
@@ -64,19 +91,7 @@ Node *base(Tokenizer& stream) {
     base->type = CONTEXT;
     std::string token = stream.next();
     std::vector<std::string> specifier;
-    while (token.at(0) != EOF) {
-        if (token.at(0) == '{') {
-            base->content.push_back(context(stream, specifier));
-            specifier.clear();
-        }
-        else if (token.at(0) == ';') {
-            base->content.push_back(directive(stream, specifier));
-            specifier.clear();
-        }
-        else
-            specifier.push_back(token);
-        token = stream.next();
-    }
+    fillContent(base, stream, BASE);
     return base;
 }
 
@@ -151,8 +166,7 @@ void freeTree(Node *node) {
     delete node;
 }
 
-void parser(const char *fileName) {
-    
+const t_conf& parser(const char *fileName) {
     Node *tree = NULL;
     try {
         Tokenizer stream(fileName);
@@ -165,7 +179,7 @@ void parser(const char *fileName) {
         if (tree)
             freeTree(tree);
         std::cout << "Error\n" << e.what() << "\n";
-    } 
+    }
 }
 
 int main() {
