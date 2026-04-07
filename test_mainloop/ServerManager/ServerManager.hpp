@@ -14,7 +14,7 @@
 # include <netinet/in.h>
 # include <sys/epoll.h>
 
-# define CLIENT_LIMIT 2048
+# define CLIENT_LIMIT 1024
 # define MAX_EVENTS 1024
 
 typedef struct s_config {
