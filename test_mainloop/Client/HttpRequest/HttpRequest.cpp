@@ -54,6 +54,7 @@ int HttpRequest::parseRequestLine(std::string &request_content) {
     if (validMethod() == false)
       return 1;
     _currentState = URI;
+	/* fall through */
   case URI:
     findSeperator(request_content, ' ', pos, max_pos);
     if (brokenSyntax(pos, max_pos))
@@ -66,6 +67,7 @@ int HttpRequest::parseRequestLine(std::string &request_content) {
     if (validUri() == false)
       return 1;
     _currentState = HTTP_VERSION;
+	/* fall through */
   case HTTP_VERSION:
     pos = request_content.find("\r", _bytesRead);
     if (pos == std::string::npos) {
@@ -76,6 +78,7 @@ int HttpRequest::parseRequestLine(std::string &request_content) {
     if (validHttpsVersion() == false)
       return 1;
     _currentState = CR;
+	/* fall through */
   case CR:
     pos = request_content.find("\n", _bytesRead);
     if (_bytesRead >= request_content.size())
@@ -127,6 +130,7 @@ int HttpRequest::parseHeaders(std::string &request_content) {
         return 1;
       }
       _currentState = FIELD_VALUE;
+	/* fall through */
     case FIELD_VALUE:
       pos = request_content.find("\r", _bytesRead);
       if (pos == std::string::npos) {
@@ -137,6 +141,7 @@ int HttpRequest::parseHeaders(std::string &request_content) {
       trim();
       addHeader();
       _currentState = CR;
+	/* fall through */
     case CR:
       pos = request_content.find("\n", _bytesRead);
       if (_bytesRead >= request_content.size())
@@ -153,6 +158,7 @@ int HttpRequest::parseHeaders(std::string &request_content) {
         return 1;
       ++_bytesRead;
       _currentState = BODY;
+	/* fall through */
     default:
       return 0;
     }

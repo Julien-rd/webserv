@@ -4,12 +4,10 @@
 # include <string>
 
 typedef struct s_server_config {
-	std::string	globalDirective_1;
-	std::string	globalDirective_2;
+	size_t		maxClients;
 	int			host;
 	std::string	name;
 	size_t		maxBodySize;
-	size_t		maxClients;
 }	t_server_config;
 
 
