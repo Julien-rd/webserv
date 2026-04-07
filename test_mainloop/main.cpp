@@ -8,7 +8,7 @@
 
 void	signalHandler(int sig) {
 	std::cout << "Exiting " << sig << std::endl;
-	throw std::exception();
+	throw std::exception(); // TODO we shouldn't use exceptions for normal logic routes
 }
 
 t_config	parseConfig(const char *fileName) {
