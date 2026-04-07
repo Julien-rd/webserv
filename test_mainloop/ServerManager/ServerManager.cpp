@@ -1,6 +1,4 @@
 #include "ServerManager.hpp"
-#include "../CGI/CGI.hpp"
-// # include "../Client/HttpRequest/HttpRequest.hpp"
 
 #include <exception>
 #include <iostream>
