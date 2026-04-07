@@ -8,7 +8,7 @@
 
 void	signalHandler(int sig) {
 	std::cout << "Exiting " << sig << std::endl;
-	throw std::exception(); // TODO we shouldn't use exceptions for normal logic routes
+	throw std::exception(); // TODO we shouldn't use exceptions for normal logic routes, except that ctrl+c is not normal??? idk
 }
 
 t_config	parseConfig(const char *fileName) {
