@@ -29,6 +29,7 @@ class	ServerManager {
 		int							_epfd;
 		std::map<int, Server>		_serversMap; // Key: the fd of the server. Value: the server
 		std::map<int, IntSet>		_clientsMap; // Key: the fd of the server. Value: all of its current clients
+		std::map<int, Client>		_clients;
 		std::vector<epoll_event>	_requestBuf;
 		int							_readyEvents;
 

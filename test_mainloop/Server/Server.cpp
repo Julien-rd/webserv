@@ -7,39 +7,42 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-Server::Server(const t_server_config& config, int epfd, std::map<int, IntSet>& clientsMap):
-_config(config), _name(config.name), _epfd(epfd), _clientsMap(clientsMap) {
-	for (size_t i = 0; i < _config.maxClients; i++) {
-		_clients[i].setFd(-1);
-	}
-}
+Server::Server(const t_server_config& config, int epfd,
+	std::map<int, IntSet>& clientsMap, std::map<int, Client>& clients):
+_config(config), _name(config.name), _epfd(epfd), _clientsMap(clientsMap), _clients(clients) {}
 
 Server::Server(const Server& obj):
-_config(obj._config), _name(obj._name), _serverSocket(obj._serverSocket),
-_serverSockAddr(obj._serverSockAddr), _epfd(obj._epfd), _clientsMap(obj._clientsMap) {
-	for (size_t i = 0; i < _config.maxClients; i++) {
-		_clients[i] = obj._clients[i];
-	}
-}
+_config(obj._config), _name(obj._name),
+_serverSocket(obj._serverSocket), _serverSockAddr(obj._serverSockAddr),
+_epfd(obj._epfd), _clientsMap(obj._clientsMap), _clients(obj._clients) {}
 
 Server::~Server(void) {}
 
-void	Server::closeClientFds(void) const {
+void	Server::closeClientFds(void) {
 	int fd;
 
-	for (size_t i = 3; i < _config.maxClients; i++) {
-		fd = _clients[i].getFd();
+	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); it++) {
+		fd = it->second.getFd();
 		if (fd != -1)
 			close(fd);
 	}
 }
 
-void	Server::removeClientFd(const int clientFd) {
-	_clientsMap.at(_serverSocket).erase(clientFd);
+void	Server::updateClientsMap(enum e_operation operation, const int clientFd) {
+	switch (operation) {
+		case ADD:
+			_clients[clientFd].setFd(clientFd);
+			_clientsMap.at(_serverSocket).insert(clientFd);
+			break;
+		case REMOVE:
+			_clients[clientFd].reset();
+			_clients.erase(clientFd);
+			_clientsMap.at(_serverSocket).erase(clientFd);
+	}
 }
 
 void	Server::closeConnection(int clientFd) {
-	removeClientFd(clientFd);
+	updateClientsMap(REMOVE, clientFd);
 	std::cout << "Server __" << _name << "__ closed connection with Client " << clientFd << std::endl;
 	if (epoll_ctl(_epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
 	  error_msg(ERR_EPOLL_CTL);
@@ -49,7 +52,6 @@ void	Server::closeConnection(int clientFd) {
 	  error_msg(ERR_CLOSE);
 	  throw std::exception();
 	}
-	_clients[clientFd].reset();
 	return;
 }
 
@@ -108,6 +110,12 @@ int		Server::start(void) {
 	return _serverSocket;
 }
 
+void	Server::checkClientCap(void) {
+	if (_clients.size() == _config.maxClients) {
+		throw std::runtime_error("WARNING: client capacity reached. can't accept more connections");
+	}
+}
+
 void	Server::handleServerEvent(void) {
 	int clientSocket;
 
@@ -122,22 +130,24 @@ void	Server::handleServerEvent(void) {
 				throw std::exception();
 			}
 		}
-		_clients[clientSocket].setFd(clientSocket);
-		_clientsMap.at(_serverSocket).insert(clientSocket);
+		try {
+			checkClientCap();
+		}
+		catch (std::exception& e) {
+			std::cout << e.what() << std::endl;
+			return ;
+		}
+		updateClientsMap(ADD, clientSocket);
 		setToNonBlocking(clientSocket);
 		addSocketToEpoll(clientSocket);
 		std::cout << "Server __" << _name << "__ accepted Client: " << clientSocket << std::endl;
 	}
 }
 
-#define BUFFER_SIZE                                                            \
-  4096 // we should move this to another spot but i need it to test parsing for
-	 // diff sizes
 void	Server::handleClientEvent(const int clientFd) {
 	char	buffer[BUFFER_SIZE + 1];
 	ssize_t	bytesRead = 0;
 
-	// std::cout << "message from client FD " << clientFd << " received!\n";
 	bytesRead = recv(clientFd, buffer, BUFFER_SIZE, 0);
 	if (bytesRead == 0) {
 		closeConnection(clientFd);

@@ -13,7 +13,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-Client::Client() { ; }
+Client::Client(): _fd(-1) { ; }
 
 #include <sys/socket.h>
 #include <sys/types.h>

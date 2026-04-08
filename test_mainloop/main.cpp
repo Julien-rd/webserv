@@ -16,19 +16,19 @@ t_config	parseConfig(const char *fileName) {
 	std::vector<t_server_config>	serverConfigs;
 
 	t_server_config	server_conf = {
-		1024,
+		3,
 		8080,
-		"intra not net",
+		"intra-not-net",
 		4};
 	t_server_config	server_conf_2 = {
-		1024,
+		3,
 		9090,
-		"you not tube",
+		"you-not-tube",
 		4};
 
 	serverConfigs.push_back(server_conf);
 	serverConfigs.push_back(server_conf_2);
-	t_config	config = {1024, serverConfigs};
+	t_config	config = {9, serverConfigs};
 	return config;
 }
 

@@ -62,7 +62,7 @@ void	ServerManager::startServers(void) {
 	int	serverSocket;
 
 	for (size_t i = 0; i < _config.serverConfigs.size(); ++i) {
-		Server	server(_config.serverConfigs[i], _epfd, _clientsMap);
+		Server	server(_config.serverConfigs[i], _epfd, _clientsMap, _clients);
 		try {
 			validateServerConfig(_config.serverConfigs[i]);
 			serverSocket = server.start();
@@ -91,8 +91,6 @@ bool	ServerManager::init(void) {
 
 void	ServerManager::epollWait() {
 	_readyEvents = epoll_wait(_epfd, _requestBuf.data(), MAX_EVENTS, -1);
-	// if (gSignalStatus)
-	//   break;
 	if (_readyEvents == -1) {
 		error_msg(ERR_EPOLL_WAIT);
 		perror(strerror(errno));
