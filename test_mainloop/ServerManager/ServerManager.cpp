@@ -3,7 +3,7 @@
 #include <exception>
 #include <iostream>
 #include <stdexcept>
-#include <vector>
+#include <set>
 
 #include <cerrno>
 #include <csignal>
@@ -12,10 +12,9 @@
 
 #include <fcntl.h>
 #include <netinet/in.h>
-#include <poll.h>
-#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <sys/event.h>
 
 ServerManager::ServerManager(const t_config& config):
 _config(config) {
@@ -51,7 +50,7 @@ void	ServerManager::validateConfig() const {
 }
 
 void	ServerManager::createEpoll(void) {
-	_epfd = epoll_create1(0);
+	_epfd = kqueue();
 	if (_epfd == -1) {
 		error_msg(ERR_EPOLL_CREATE1);
 		throw std::exception();
@@ -90,7 +89,7 @@ bool	ServerManager::init(void) {
 }
 
 void	ServerManager::epollWait() {
-	_readyEvents = epoll_wait(_epfd, _requestBuf.data(), MAX_EVENTS, -1);
+	_readyEvents = kevent(_epfd, NULL, 0, _requestBuf.data(), MAX_EVENTS, NULL);
 	if (_readyEvents == -1) {
 		error_msg(ERR_EPOLL_WAIT);
 		perror(strerror(errno));
@@ -98,9 +97,9 @@ void	ServerManager::epollWait() {
 	}
 }
 
-int		ServerManager::matchClientToServer(int ClientFd) {
+int		ServerManager::matchClientToServer(int clientFd) {
 	for (std::map<int, IntSet>::iterator it = _clientsMap.begin(); it != _clientsMap.end(); ++it) {
-		if (it->second.find(ClientFd) != it->second.end()) {
+		if (it->second.find(clientFd) != it->second.end()) {
 			return it->first;
 		}
 	}
@@ -111,7 +110,7 @@ void	ServerManager::loopReadyEvents(void) {
 	int	fd;
 
 	for (int i = 0; i < _readyEvents; ++i) {
-		fd = _requestBuf[i].data.fd;
+		fd = _requestBuf[i].ident;
 		if (_serversMap.find(fd) != _serversMap.end()) {
 			_serversMap.at(fd).handleServerEvent();
 		}

@@ -6,6 +6,7 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+# include <sys/event.h>
 
 Server::Server(const t_server_config& config, int epfd,
 	std::map<int, IntSet>& clientsMap, std::map<int, Client>& clients):
@@ -42,9 +43,12 @@ void	Server::updateClientsMap(enum e_operation operation, const int clientFd) {
 }
 
 void	Server::closeConnection(int clientFd) {
+	struct kevent	ke;
+
 	updateClientsMap(REMOVE, clientFd);
 	std::cout << "Server __" << _name << "__ closed connection with Client " << clientFd << std::endl;
-	if (epoll_ctl(_epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
+	EV_SET(&ke, clientFd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+	if (kevent (_epfd, &ke, 1, NULL, 0, NULL) == -1) {
 	  error_msg(ERR_EPOLL_CTL);
 	  throw std::exception();
 	}
@@ -63,11 +67,12 @@ void Server::setToNonBlocking(int socketFd) {
 }
 
 void	Server::initServerSocket(void) {
-	_serverSocket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+	_serverSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (_serverSocket == -1) {
 		error_msg(ERR_SOCKET);
 		throw std::exception();
 	}
+	setToNonBlocking(_serverSocket);
 	int opt = 1;
 	if (setsockopt(_serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
 		error_msg(ERR_SETSOCKOPT);
@@ -82,10 +87,9 @@ void	Server::setServerSockAddr(void) {
 }
 
 void	Server::addSocketToEpoll(int socketFd) {
-	struct epoll_event	ev;
-	ev.events = EPOLLIN;
-	ev.data.fd = socketFd;
-	if (epoll_ctl(_epfd, EPOLL_CTL_ADD, socketFd, &ev) == -1) {
+	struct kevent	ke;
+	EV_SET(&ke, socketFd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
+	if (kevent (_epfd, &ke, 1, NULL, 0, NULL) == -1) {
 		error_msg(ERR_EPOLL_CTL);
 		throw std::exception();
 	}

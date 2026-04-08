@@ -11,7 +11,7 @@
 # include <map>
 
 # include <netinet/in.h>
-# include <sys/epoll.h>
+# include <sys/event.h>
 
 # define CLIENT_LIMIT 1024
 # define MAX_EVENTS 1024
@@ -30,7 +30,7 @@ class	ServerManager {
 		std::map<int, Server>		_serversMap; // Key: the fd of the server. Value: the server
 		std::map<int, IntSet>		_clientsMap; // Key: the fd of the server. Value: all of its current clients
 		std::map<int, Client>		_clients;
-		std::vector<epoll_event>	_requestBuf;
+		std::vector<struct kevent>	_requestBuf;
 		int							_readyEvents;
 
 		void	validateServerConfig(const t_server_config config) const;
@@ -48,7 +48,7 @@ class	ServerManager {
 		bool	init(void);
 		void	epollWait(void);
 		void	loopReadyEvents(void);
-		int		matchClientToServer(int fd);
+		int		matchClientToServer(int clientFd);
 };
 
 #endif /* SERVER_MANAGER_CLASS_HPP */

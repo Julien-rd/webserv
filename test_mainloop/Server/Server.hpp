@@ -10,7 +10,6 @@
 # include <set>
 
 # include <netinet/in.h>
-# include <sys/epoll.h>
 
 #define BUFFER_SIZE 4096
 

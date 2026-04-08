@@ -5,7 +5,6 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <sys/sendfile.h>
 
 const std::string HttpResponse::_httpVersion = "HTTP/1.1";
 
