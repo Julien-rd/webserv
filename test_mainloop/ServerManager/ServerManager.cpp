@@ -2,6 +2,7 @@
 
 #include <exception>
 #include <iostream>
+#include <stdexcept>
 #include <vector>
 
 #include <cerrno>
@@ -31,12 +32,10 @@ ServerManager::~ServerManager(void) {
 
 void	ServerManager::validateServerConfig(const t_server_config config) const {
 	if (config.host == 0) {
-		std::cerr << "host can't be 0 or unset" << std::endl;
-		throw std::exception();
+		throw std::runtime_error("host can't be 0 or unset");
 	}
 	if (config.name == "") {
-		std::cerr << "name can't be empty or unset" << std::endl;
-		throw std::exception();
+		throw std::runtime_error("name can't be empty or unset");
 	}
 }
 
@@ -47,8 +46,7 @@ void	ServerManager::addServerToMaps(int serverSocket, Server& server) {
 
 void	ServerManager::validateConfig() const {
 	if (_config.max_clients > CLIENT_LIMIT) {
-		std::cerr << "ERROR: too many max_clients" << std::endl;
-		throw std::exception();
+		throw std::runtime_error("ERROR: too many max_clients");
 	}
 }
 
@@ -78,10 +76,17 @@ void	ServerManager::startServers(void) {
 	}
 }
 
-void	ServerManager::init(void) {
-	validateConfig();
-	createEpoll();
-	startServers();
+bool	ServerManager::init(void) {
+	try {
+		validateConfig();
+		createEpoll();
+		startServers();
+	}
+	catch (std::exception& e) {
+		std::cerr << e.what() << std::endl;
+		return true;
+	}
+	return false;
 }
 
 void	ServerManager::epollWait() {
@@ -101,7 +106,7 @@ int		ServerManager::matchClientToServer(int ClientFd) {
 			return it->first;
 		}
 	}
-	throw std::exception();
+	throw std::runtime_error("ERROR: couldn't match event ClientFd to an existing entry in clientsMap");
 }
 
 void	ServerManager::loopReadyEvents(void) {

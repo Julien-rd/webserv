@@ -8,9 +8,9 @@ SOURCES = main.cpp
 CLASS_SOURCES = ServerManager/ServerManager.cpp ServerManager/ServerManagerError.cpp \
 				Server/Server.cpp Server/ServerError.cpp \
 				CGI/CGI.cpp CGI/CGI_helpers.cpp CGI/CGI_php.cpp CGI/CGI_python.cpp \
+				Client/client.cpp \
 				Client/HttpRequest/HttpRequest.cpp Client/HttpRequest/HttpRequestGetters.cpp Client/HttpRequest/HttpRequestHelpers.cpp \
-				Client/HttpResponse/HttpResponse.cpp Client/HttpResponse/ReasonPhrase.cpp Client/client.cpp
-				#HttpRequest/HttpRequest.cpp HttpRequest/HttpRequestHelpers.cpp \#
+				Client/HttpResponse/HttpResponse.cpp Client/HttpResponse/ReasonPhrase.cpp
 ALL_SOURCES = $(SOURCES) $(CLASS_SOURCES)
 
 HEADERS = ServerManager.hpp HttpRequest.hpp

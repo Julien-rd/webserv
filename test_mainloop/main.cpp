@@ -1,4 +1,3 @@
-#include "Client/HttpRequest/HttpRequest.hpp"
 #include "ServerManager/ServerManager.hpp"
 
 #include <csetjmp>
@@ -39,16 +38,11 @@ int	main(int argc, char **argv) {
 	t_config		config = parseConfig(argv[1]);
 	ServerManager	serverManager(config);
 	//TODO make fieldnames case INSENSITIVE
-	try {
-		serverManager.init();
-	}
-	catch (std::exception& e) {
-		std::cerr << e.what() << std::endl;
+	if (serverManager.init()) {
+		std::cerr << "Couldn't start." << std::endl;
 		return 1;
 	}
-
 	while (1) {
-		// std::cout << "waiting for request \n";
 		try {
 			serverManager.epollWait();
 			serverManager.loopReadyEvents();

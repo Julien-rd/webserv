@@ -1,7 +1,6 @@
 #ifndef SERVER_MANAGER_CLASS_HPP
 # define SERVER_MANAGER_CLASS_HPP
 
-// # include "../Client/HttpResponse/HttpResponse.hpp"
 # include "../Server/Server.hpp"
 
 # include "../headers/structs/ServerConfig.hpp"
@@ -45,7 +44,7 @@ class	ServerManager {
 		ServerManager(const t_config& config);
 		~ServerManager(void);
 
-		void	init(void);
+		bool	init(void);
 		void	epollWait(void);
 		void	loopReadyEvents(void);
 		int		matchClientToServer(int fd);
