@@ -10,8 +10,9 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
-CGI::CGI(void): envp(new const char*[12]),
+CGI::CGI(const HttpRequest& request): request(request),
 pythonScriptName("/cgi-bin/python.py"),
 phpScriptName("/cgi-bin/php.php") {
 	this->pipefd[0] = -1;
@@ -19,7 +20,6 @@ phpScriptName("/cgi-bin/php.php") {
 }
 
 CGI::~CGI(void) {
-	delete []this->envp;
 	if (this->pipefd[0] > -1) {
 		close(this->pipefd[0]);
 	}
@@ -36,24 +36,24 @@ CGI::~CGI(void) {
 // 	this->pid = pid;
 // }
 
-bool	CGI::validateRequest(const HttpRequest& request) const {
-	if (request._uri.compare(0, this->pythonScriptName.size(), this->pythonScriptName)
-		&& request._uri.compare(0, this->phpScriptName.size(), this->phpScriptName)) { // TODO Or could replace this with a dynamic array of known scripts and check if URI matches one of them, then set a variable indicating that we will work with this specifi script for the rest of the execution oF CGI
+bool	CGI::validateRequest(void) const {
+	if (this->request._uri.compare(0, this->pythonScriptName.size(), this->pythonScriptName) == 0
+		|| this->request._uri.compare(0, this->phpScriptName.size(), this->phpScriptName) == 0) { // TODO Or could replace this with a dynamic array of known scripts and check if URI matches one of them, then set a variable indicating that we will work with this specifi script for the rest of the execution oF CGI
 		// std::cout << "URI doesn't contain a known script" << std::endl;
-		return 1;
+		return true;
 		// throw CGI::StandardException();
 	}
 	// TODO Validate minimum requirements needed for CGI execution (maybe headers for GET or POST. specific requirements for attributes of HttpRequest)???
-	return 0;
+	return false;
 }
 
-void	CGI::initCGI(const HttpRequest& request) {
-	this->scriptName = getScriptName(request._uri, this->pythonScriptName, this->phpScriptName);
-	if (this->scriptName == this->pythonScriptName) {
-		initPythonScript(request);
+void	CGI::initCGI(void) {
+	// this->scriptName = getScriptName(request._uri, this->pythonScriptName, this->phpScriptName);
+	if (this->request._uri.compare(0, this->pythonScriptName.size(), this->pythonScriptName) == 0) {
+		initPythonScript();
 	}
-	else if (this->scriptName == this->phpScriptName) {
-		initPhpScript(request);
+	else if (this->request._uri.compare(0, this->pythonScriptName.size(), this->pythonScriptName) == 0) {
+		initPhpScript();
 	}
 	else {
 		std::cerr << "shouldn't reach here" << std::endl;
@@ -64,10 +64,16 @@ void	CGI::pipeIO(void) {
 	if (pipe(this->pipefd) == -1) {
 		throw CGI::StandardException();
 	}
-	if (fcntl(this->pipefd[0], F_SETFD, O_NONBLOCK) == -1) {
+	if (fcntl(this->pipefd[0], F_SETFD, FD_CLOEXEC) == -1) {
 		throw CGI::StandardException();
 	}
-	if (fcntl(this->pipefd[1], F_SETFD, O_NONBLOCK) == -1) {
+	if (fcntl(this->pipefd[0], F_SETFL, O_NONBLOCK) == -1) {
+		throw CGI::StandardException();
+	}
+	if (fcntl(this->pipefd[1], F_SETFD, FD_CLOEXEC) == -1) {
+		throw CGI::StandardException();
+	}
+	if (fcntl(this->pipefd[1], F_SETFL, O_NONBLOCK) == -1) {
 		throw CGI::StandardException();
 	}
 }
@@ -100,7 +106,7 @@ void	CGI::execute(void) {
 	// std::cout << "caling execve with parameters, path:\n" << this->executable << " ================\n" << this->argv[0] << "------" << this->argv[1] << "================\n" << this->envp[0] << std::endl;
 	if (execve(this->executable, this->argv, const_cast<char **>(this->envp)) == -1) {
 		std::cerr << "execve() failed. shouldn't reach here, maybe invalid arguments (path or argv))" << std::endl;
-		throw CGI::StandardException();
+		_exit(1);
 	}
 }
 
@@ -136,7 +142,7 @@ void	CGI::execute(void) {
 // 	request.parseHttpRequest(content);
 // 	try {
 // 		cgi.validateRequest(request);
-// 		cgi.initCGI(request);
+// 		cgi.initCGI();
 // 		cgi.pipeIO();
 // 		cgi.spawnProcess();
 // 		cgi.wait();

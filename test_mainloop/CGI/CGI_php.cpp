@@ -42,7 +42,7 @@ void	CGI::setPOSTVariablesPhp(void) {
 	
 }
 
-void	CGI::initMetaPhp(const HttpRequest& request) {
+void	CGI::initMetaPhp(void) {
 	// this->meta.auth_type = ""; // RFC 3875 - 4.1.1 // Implement?
 	std::stringstream	ss;
 	ss << request._contentLength;
@@ -68,8 +68,8 @@ void	CGI::initMetaPhp(const HttpRequest& request) {
 	// this->meta.x = "";
 }
 
-void	CGI::initPhpScript(const HttpRequest& request) {
-	this->initMetaPhp(request);
+void	CGI::initPhpScript(void) {
+	this->initMetaPhp();
 	this->setScriptAttributesPhp();
 	if (request._method == "GET") {
 		this->setGETVariablesPhp();

@@ -38,6 +38,7 @@ typedef struct s_metaVariables {
 
 class	CGI {
 	private:
+		const HttpRequest&	request;
 		std::string			scriptName;
 		t_metaVariables		meta;
 		int					pid;
@@ -50,14 +51,14 @@ class	CGI {
 		const std::string	pythonScriptName;
 		const std::string	phpScriptName;
 
-		void	initPythonScript(const HttpRequest& request);
-		void	initMetaPython(const HttpRequest& request);
+		void	initPythonScript(void);
+		void	initMetaPython(void);
 		void	setScriptAttributesPython(void);
 		void	setGETVariablesPython(void);
 		void	setPOSTVariablesPython(void);
 
-		void	initPhpScript(const HttpRequest& request);
-		void	initMetaPhp(const HttpRequest& request);
+		void	initPhpScript(void);
+		void	initMetaPhp(void);
 		void	setScriptAttributesPhp(void);
 		void	setGETVariablesPhp(void);
 		void	setPOSTVariablesPhp(void);
@@ -65,14 +66,14 @@ class	CGI {
 		void	execute(void);
 
 	public:
-		CGI(void);
+		CGI(const HttpRequest& request);
 		~CGI(void);
 
 		// pid_t	getPid(void) const;
 		// void	setPid(pid_t pid);
 
-		bool	validateRequest(const HttpRequest& request) const;
-		void	initCGI(const HttpRequest& request);
+		bool	validateRequest(void) const;
+		void	initCGI(void);
 		void	pipeIO(void);
 		void	spawnProcess(void);
 		void	wait(void) const;
@@ -84,6 +85,6 @@ class	CGI {
 
 std::string	parsePathInfo(const std::string& _uri, const std::string& scriptName);
 std::string	parseQueryString(const std::string& _uri);
-std::string	getScriptName(const std::string& _uri, const std::string& name1, const std::string& name2);
+// std::string	getScriptName(const std::string& _uri, const std::string& name1, const std::string& name2);
 
 #endif /* CGI_HPP */

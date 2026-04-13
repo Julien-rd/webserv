@@ -34,12 +34,12 @@ void	CGI::setPOSTVariablesPython(void) {
 	
 }
 
-void	CGI::initMetaPython(const HttpRequest& request) {
+void	CGI::initMetaPython(void) {
 	// this->meta.auth_type = ""; // RFC 3875 - 4.1.1 // Implement?
 	std::stringstream	ss;
 	ss << request._contentLength;
 
-	this->meta.content_length = std::string("CONTENT_LENGTH=").append(ss.str()); // What about chunks?
+	this->meta.content_length = std::string("CONTENT_LENGTH=").append(ss.str());
 	this->meta.content_type = std::string("CONTENT_TYPE=").append("text/html"); // ?? Default value is "US-ASCII"
 	// this->meta.gateway_interface = "CGI/1.1";
 	this->meta.path_info = std::string("PATH_INFO=").append(parsePathInfo(request._uri, this->scriptName));
@@ -58,8 +58,8 @@ void	CGI::initMetaPython(const HttpRequest& request) {
 	// this->meta.x = "";
 }
 
-void	CGI::initPythonScript(const HttpRequest& request) {
-	this->initMetaPython(request);
+void	CGI::initPythonScript(void) {
+	this->initMetaPython();
 	this->setScriptAttributesPython();
 	if (request._method == "GET") {
 		this->setGETVariablesPython();

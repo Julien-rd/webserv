@@ -21,13 +21,13 @@ HttpResponse::HttpResponse() {
   _mimeTypes["ico"] = "image/x-icon";
   _mimeTypes["txt"] = "text/plain";
 
-
-  _uri["/ronaldo"] = "//home/jromann/webserv/mySites/ronaldo.png";
-  _uri["/"] = "/home/jromann/webserv/mySites/index.html";
-  _uri["/form"] = "/home/jromann/webserv/mySites/form.html";
-  _uri["/upload"] = "/home/jromann/webserv/mySites/upload.html";
-  _uri["/styles.css"] = "/home/jromann/webserv/mySites/styles.css";
-  _uri["/favicon.ico"] = "//home/jromann/webserv/mySites/ronaldo.png";
+  std::string	webServDir = "..";
+  _uri["/ronaldo"] = webServDir + "/mySites/ronaldo.png";
+  _uri["/"] = webServDir + "/mySites/index.html";
+  _uri["/form"] = webServDir + "/mySites/form.html";
+  _uri["/upload"] = webServDir + "/mySites/upload.html";
+  _uri["/styles.css"] = webServDir + "/mySites/styles.css";
+  _uri["/favicon.ico"] = webServDir + "/mySites/ronaldo.png";
 }
 
 std::vector<char> HttpResponse::getResponseBody(){
@@ -105,6 +105,7 @@ void HttpResponse::addBody(HttpRequest request) {
   // check if method is allowed for this uri, if not _statusCode = 405
   path = it->second;
   // end
+  std::cout << "== trying to open (" << path.c_str() << ")\n";
   std::fstream htmlPage(path.c_str(), std::ios::in | std::ios::binary);
   if (!htmlPage.is_open())  { // or empty file
     std::cout << "open: " << strerror(errno);

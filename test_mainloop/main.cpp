@@ -7,7 +7,8 @@
 #include <csignal>
 
 void	signalHandler(int sig) {
-	std::cout << "Exiting " << sig << std::endl;
+	std::cout << "Exiting with signal: " << sig << std::endl;
+	// _exit(sig);
 	throw std::exception(); // TODO we shouldn't use exceptions for normal logic routes, except that ctrl+c is not normal??? idk
 }
 

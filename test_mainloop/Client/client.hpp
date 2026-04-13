@@ -4,6 +4,7 @@
 #include <string>
 #include "HttpRequest/HttpRequest.hpp"
 #include "HttpResponse/HttpResponse.hpp"
+#include "../CGI/CGI.hpp"
 
 class Client {
 	private:
@@ -11,6 +12,7 @@ class Client {
 		HttpRequest		_request;
 		HttpResponse	_response;
 		size_t			_bytesRead;
+		CGI				_cgi;
 
 		int		closeConnection(); 
 
@@ -19,6 +21,7 @@ class Client {
 
 		int		loop(std::string input);
 		size_t	getBytesRead();
+		void	handleCGI(void);
 		void	reset();
 		void	setFd(int fd);
 		int		getFd() const;
