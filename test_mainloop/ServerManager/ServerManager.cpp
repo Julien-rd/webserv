@@ -30,24 +30,9 @@ ServerManager::~ServerManager(void) {
 	}
 }
 
-void	ServerManager::validateServerConfig(const t_server_config config) const { //DELETE: unnecessary
-	if (config.host == 0) {
-		throw std::runtime_error("host can't be 0 or unset");
-	}
-	if (config.name == "") {
-		throw std::runtime_error("name can't be empty or unset");
-	}
-}
-
 void	ServerManager::addServerToMaps(int serverSocket, Server& server) {
 	_serversMap.insert(std::pair<int, Server>(serverSocket, server));
 	_clientsMap.insert(std::pair<int, IntSet>(serverSocket, IntSet()));
-}
-
-void	ServerManager::validateConfig() const { //DELETE: unnecessary
-	if (_config.max_clients > CLIENT_LIMIT) {
-		throw std::runtime_error("ERROR: too many max_clients");
-	}
 }
 
 void	ServerManager::createEpoll(void) {
@@ -61,24 +46,27 @@ void	ServerManager::createEpoll(void) {
 void	ServerManager::startServers(void) { // FIX IT: adapt to new logic
 	int	serverSocket;
 	
-	for (size_t i = 0; i < _config.serverConfigs.size(); ++i) {
-		Server	server(_config.serverConfigs[i], _epfd, _clientsMap, _clients); //INFO: server struct is now t_server if the name is not occupied already
+	for (size_t i = 0; i < _config.servers.size(); ++i) {
+	    /* */
+	    /* */
+	    /* please help: why does every server get _clientsMap?? doesnt everyone only need their clients and not every client there is */
+	    /* */
+	    /* */
+		Server	server(_config.servers[i], _epfd, _clientsMap, _clients, i); //INFO: server struct is now t_server if the name is not occupied already
 		try {
-			validateServerConfig(_config.serverConfigs[i]); //DELETE
 			serverSocket = server.start();
 		}
 		catch (std::exception& e) {
-			std::cerr << "ERROR: Couldn't start server __" << _config.serverConfigs[i].name << "__: " << e.what() << std::endl; //INFO: server name wont exist any longer
+			std::cerr << "Error\nserver nr. " << server.getIdentifier() << " was not started properly\n" << e.what() << std::endl;
 			continue ;
 		}
 		addServerToMaps(serverSocket, server);
-		std::cout << "Started Server __" << _serversMap.at(serverSocket).getName() <<"__ with socket " <<  serverSocket << " successfully" << std::endl;		
+		std::cout << "Started Server __" << _serversMap.at(serverSocket).getIdentifier() <<"__ with socket " <<  serverSocket << " successfully" << std::endl;		
 	}
 }
 
 bool	ServerManager::init(void) {
 	try {
-		validateConfig();
 		createEpoll();
 		startServers();
 	}

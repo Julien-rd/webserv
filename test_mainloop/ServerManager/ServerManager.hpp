@@ -3,8 +3,6 @@
 
 # include "../Server/Server.hpp"
 # include "../ParseConfig/Parser.hpp"
-
-# include "../headers/structs/ServerConfig.hpp"
 # include "../headers/structs/ErrorType.hpp"
 
 # include <vector>
@@ -29,8 +27,6 @@ class	ServerManager {
 		std::vector<epoll_event>	_requestBuf;
 		int							_readyEvents;
 
-		void	validateServerConfig(const t_server_config config) const;
-		void	validateConfig(void) const;
 		void	createEpoll(void);
 		void	addServerToMaps(int serverSocket, Server& server);
 		void	startServers(void);

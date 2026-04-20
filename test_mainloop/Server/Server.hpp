@@ -2,8 +2,7 @@
 # define SERVER_CLASS_HPP
 
 # include "../Client/client.hpp" // FIXME fix file name "client.hpp" > "Client.hpp"
-
-# include "../headers/structs/ServerConfig.hpp"
+# include "../ParseConfig/Parser.hpp"
 # include "../headers/structs/ErrorType.hpp"
 
 # include <string>
@@ -23,8 +22,8 @@ class Server {
 	private:
 		typedef std::set<int>			IntSet;
 
-		t_server_config				_config;
-		std::string					_name;
+		const   t_server&				_config;
+		int                         _sid; //server identifier
 		int							_serverSocket;
 		sockaddr_in					_serverSockAddr;
 		int							_epfd;
@@ -41,7 +40,7 @@ class Server {
 		void		updateClientsMap(enum e_operation opeartion, const int clientFd);
 
 	public:
-		Server(const t_server_config& conf, int epfd, std::map<int, IntSet>& _clientsMap, std::map<int, Client>& clients);
+		Server(const t_config& conf, int epfd, std::map<int, IntSet>& _clientsMap, std::map<int, Client>& clients, int sid);
 		Server(const Server& obj);
 		~Server(void);
 
@@ -52,7 +51,7 @@ class Server {
 		int			start(void);
 		void		closeClientFds(void);
 
-		std::string	getName(void) const;
+		int	getIdentifier(void) const;
 
 		int			error_msg(ErrorType type);
 };

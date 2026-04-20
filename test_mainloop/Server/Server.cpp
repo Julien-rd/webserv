@@ -7,12 +7,12 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-Server::Server(const t_server_config& config, int epfd,
-	std::map<int, IntSet>& clientsMap, std::map<int, Client>& clients):
-_config(config), _name(config.name), _epfd(epfd), _clientsMap(clientsMap), _clients(clients) {}
+Server::Server(const t_config& config, int epfd,
+	std::map<int, IntSet>& clientsMap, std::map<int, Client>& clients, int sid):
+_config(config.servers.at(sid)), _sid(sid), _epfd(epfd), _clientsMap(clientsMap), _clients(clients) {}
 
 Server::Server(const Server& obj):
-_config(obj._config), _name(obj._name),
+_config(obj._config), _sid(obj._sid),
 _serverSocket(obj._serverSocket), _serverSockAddr(obj._serverSockAddr),
 _epfd(obj._epfd), _clientsMap(obj._clientsMap), _clients(obj._clients) {}
 
@@ -43,7 +43,7 @@ void	Server::updateClientsMap(enum e_operation operation, const int clientFd) {
 
 void	Server::closeConnection(int clientFd) {
 	updateClientsMap(REMOVE, clientFd);
-	std::cout << "Server __" << _name << "__ closed connection with Client " << clientFd << std::endl;
+	std::cout << "Server __" << _sid << "__ closed connection with Client " << clientFd << std::endl;
 	if (epoll_ctl(_epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
 	  error_msg(ERR_EPOLL_CTL);
 	  throw std::exception();
@@ -77,8 +77,8 @@ void	Server::initServerSocket(void) {
 
 void	Server::setServerSockAddr(void) {
 	_serverSockAddr.sin_family = AF_INET;
-	_serverSockAddr.sin_port = htons(_config.host);
-	_serverSockAddr.sin_addr.s_addr = INADDR_ANY;
+	_serverSockAddr.sin_port = htons(_config.port);
+	_serverSockAddr.sin_addr.s_addr = INADDR_ANY; // FIX IT: this needs to be modifiable with config ip
 }
 
 void	Server::addSocketToEpoll(int socketFd) {
@@ -111,7 +111,7 @@ int		Server::start(void) {
 }
 
 void	Server::checkClientCap(void) {
-	if (_clients.size() == _config.maxClients) {
+	if (_clients.size() == _config.maxClients) { // FIX: either every server stores max client or we create a context struct with the maps, globals, and epfd (maxclients is a global)
 		throw std::runtime_error("WARNING: client capacity reached. can't accept more connections");
 	}
 }
@@ -140,7 +140,7 @@ void	Server::handleServerEvent(void) {
 		updateClientsMap(ADD, clientSocket);
 		setToNonBlocking(clientSocket);
 		addSocketToEpoll(clientSocket);
-		std::cout << "Server __" << _name << "__ accepted Client: " << clientSocket << std::endl;
+		std::cout << "Server __" << _sid << "__ accepted Client: " << clientSocket << std::endl;
 	}
 }
 
@@ -165,6 +165,6 @@ void	Server::handleClientEvent(const int clientFd) {
 	}
 }
 
-std::string	Server::getName(void) const {
-	return _name;
+int	Server::getIdentifier(void) const {
+	return _sid;
 }
