@@ -30,7 +30,7 @@ ServerManager::~ServerManager(void) {
 	}
 }
 
-void	ServerManager::validateServerConfig(const t_server_config config) const {
+void	ServerManager::validateServerConfig(const t_server_config config) const { //DELETE: unnecessary
 	if (config.host == 0) {
 		throw std::runtime_error("host can't be 0 or unset");
 	}
@@ -44,7 +44,7 @@ void	ServerManager::addServerToMaps(int serverSocket, Server& server) {
 	_clientsMap.insert(std::pair<int, IntSet>(serverSocket, IntSet()));
 }
 
-void	ServerManager::validateConfig() const {
+void	ServerManager::validateConfig() const { //DELETE: unnecessary
 	if (_config.max_clients > CLIENT_LIMIT) {
 		throw std::runtime_error("ERROR: too many max_clients");
 	}
@@ -58,17 +58,17 @@ void	ServerManager::createEpoll(void) {
 	}
 }
 
-void	ServerManager::startServers(void) {
+void	ServerManager::startServers(void) { // FIX IT: adapt to new logic
 	int	serverSocket;
-
+	
 	for (size_t i = 0; i < _config.serverConfigs.size(); ++i) {
-		Server	server(_config.serverConfigs[i], _epfd, _clientsMap, _clients);
+		Server	server(_config.serverConfigs[i], _epfd, _clientsMap, _clients); //INFO: server struct is now t_server if the name is not occupied already
 		try {
-			validateServerConfig(_config.serverConfigs[i]);
+			validateServerConfig(_config.serverConfigs[i]); //DELETE
 			serverSocket = server.start();
 		}
 		catch (std::exception& e) {
-			std::cerr << "ERROR: Couldn't start server __" << _config.serverConfigs[i].name << "__: " << e.what() << std::endl;
+			std::cerr << "ERROR: Couldn't start server __" << _config.serverConfigs[i].name << "__: " << e.what() << std::endl; //INFO: server name wont exist any longer
 			continue ;
 		}
 		addServerToMaps(serverSocket, server);

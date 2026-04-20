@@ -1,10 +1,13 @@
+#include "ParseConfig/Structs.hpp"
 #include "ServerManager/ServerManager.hpp"
-
+#include "ParseConfig/Parser.hpp"
 #include <csetjmp>
+#include <cstdlib>
 #include <exception>
 #include <iostream>
 
 #include <csignal>
+#include <stdexcept>
 
 void	signalHandler(int sig) {
 	std::cout << "Exiting with signal: " << sig << std::endl;
@@ -12,45 +15,31 @@ void	signalHandler(int sig) {
 	throw std::exception(); // TODO we shouldn't use exceptions for normal logic routes, except that ctrl+c is not normal??? idk
 }
 
-t_config	parseConfig(const char *fileName) {
-	(void)fileName;
-	std::vector<t_server_config>	serverConfigs;
-
-	t_server_config	server_conf = {
-		3,
-		8080,
-		"intra-not-net",
-		4};
-	t_server_config	server_conf_2 = {
-		3,
-		9090,
-		"you-not-tube",
-		4};
-
-	serverConfigs.push_back(server_conf);
-	serverConfigs.push_back(server_conf_2);
-	t_config	config = {9, serverConfigs};
-	return config;
-}
-
 int	main(int argc, char **argv) {
 	(void)argc, (void)argv;
 	signal(SIGINT, signalHandler);
-	t_config		config = parseConfig(argv[1]);
+	t_config  config{};
+	try {
+    	if (argc != 2)
+            throw std::runtime_error("Error\nprovide exactly one argument ./webserv [filename]");
+	    parser(config, argv[1]);
+	} catch (std::exception &e) {
+        return -1;
+	}
 	ServerManager	serverManager(config);
 	//TODO make fieldnames case INSENSITIVE
 	if (serverManager.init()) {
-		std::cerr << "Couldn't start." << std::endl;
-		return 1;
+	std::cerr << "Couldn't start." << std::endl;
+	return 1;
 	}
 	while (1) {
-		try {
-			serverManager.epollWait();
-			serverManager.loopReadyEvents();
-		}
-		catch (std::exception& e) {
-			std::cerr << e.what() << std::endl;
-			return 1;
-		}
+	try {
+	serverManager.epollWait();
+	serverManager.loopReadyEvents();
+	}
+	catch (std::exception& e) {
+	std::cerr << e.what() << std::endl;
+	return 1;
+	}
 	}
 }

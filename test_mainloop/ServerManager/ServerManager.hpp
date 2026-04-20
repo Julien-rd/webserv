@@ -2,6 +2,7 @@
 # define SERVER_MANAGER_CLASS_HPP
 
 # include "../Server/Server.hpp"
+# include "../ParseConfig/Parser.hpp"
 
 # include "../headers/structs/ServerConfig.hpp"
 # include "../headers/structs/ErrorType.hpp"
@@ -16,16 +17,11 @@
 # define CLIENT_LIMIT 1024
 # define MAX_EVENTS 1024
 
-typedef struct s_config {
-	size_t							max_clients;
-	std::vector<t_server_config>	serverConfigs;
-}	t_config;
-
 class	ServerManager {
 	private:
 		typedef std::set<int>		IntSet;
 
-		t_config					_config;
+		const t_config&					_config;
 		int							_epfd;
 		std::map<int, Server>		_serversMap; // Key: the fd of the server. Value: the server
 		std::map<int, IntSet>		_clientsMap; // Key: the fd of the server. Value: all of its current clients
