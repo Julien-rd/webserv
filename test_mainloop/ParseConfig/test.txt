@@ -19,4 +19,5 @@ server {
         root /;
         index /biidiitch;
     }
+    listen  324 124.234.234.234:80;
 }
