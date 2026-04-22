@@ -30,22 +30,11 @@ enum d_tags {
     LOCALHOST
 }   ;
 
-static const std::vector<std::pair<std::string, int> > d = {
-                                                {"server_name", SERVER_NAME}, {"index", INDEX},
-                                                {"client_max_body_size", CLIENT_MAX_BODY_SIZE},
-                                                {"root", ROOT}, {"listen", LISTEN}, {"autoindex", AUTOINDEX}, 
-                                                {"allow_methods", ALLOWMETHODS},
-                                                {"max_clients", MAX_CLIENTS},
-                                                {"clients_per_server", CLIENTS_PER_SERVER},
-                                                {"localhost", LOCALHOST}
-                                                }   ;
-
 enum c_tags {
     SERVER,
     LOCATION,
     MAIN
 }   ;
-static const std::vector<std::pair<std::string, int> > c = {{"server", SERVER}, {"location", LOCATION} };
 
 typedef struct s_location {
     std::string name;

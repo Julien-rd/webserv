@@ -18,10 +18,12 @@ void	signalHandler(int sig) {
 int	main(int argc, char **argv) {
 	(void)argc, (void)argv;
 	signal(SIGINT, signalHandler);
-	t_config  config{};
+	t_config  config;
+	if (argc != 2) {
+		std::cerr << "Error\nprovide exactly one argument ./webserv [filename]" << std::endl;
+		return 1;
+	}
 	try {
-    	if (argc != 2)
-            throw std::runtime_error("Error\nprovide exactly one argument ./webserv [filename]");
 	    parser(config, argv[1]);
 	} catch (std::exception &e) {
         return -1;
@@ -29,17 +31,17 @@ int	main(int argc, char **argv) {
 	ServerManager	serverManager(config);
 	//TODO make fieldnames case INSENSITIVE
 	if (serverManager.init()) {
-	std::cerr << "Couldn't start." << std::endl;
-	return 1;
+		std::cerr << "Couldn't start." << std::endl;
+		return 1;
 	}
 	while (1) {
-	try {
-	serverManager.epollWait();
-	serverManager.loopReadyEvents();
-	}
-	catch (std::exception& e) {
-	std::cerr << e.what() << std::endl;
-	return 1;
-	}
+		try {
+			serverManager.epollWait();
+			serverManager.loopReadyEvents();
+		}
+		catch (std::exception& e) {
+			std::cerr << e.what() << std::endl;
+			return 1;
+		}
 	}
 }

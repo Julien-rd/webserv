@@ -40,7 +40,7 @@ class Server {
 		void		updateClientsMap(enum e_operation opeartion, const int clientFd);
 
 	public:
-		Server(const t_config& conf, int epfd, std::map<int, IntSet>& _clientsMap, std::map<int, Client>& clients, int sid);
+		Server(const t_server& conf, int epfd, std::map<int, IntSet>& _clientsMap, std::map<int, Client>& clients, int sid);
 		Server(const Server& obj);
 		~Server(void);
 

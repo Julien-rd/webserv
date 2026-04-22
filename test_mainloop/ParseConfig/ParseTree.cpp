@@ -1,12 +1,15 @@
 #include "Parser.hpp"
 
+static std::vector<std::pair<std::string, int> > d;
+static std::vector<std::pair<std::string, int> > c;
+
 Node *context(Tokenizer& stream, std::vector<std::string>& args);
 Node *directive(std::vector<std::string>& args);
     
 template<typename T>
 
 int validateName(const std::string& specifier, const T& table) {
-    int iter = 0;
+    size_t iter = 0;
     while (iter < table.size() && specifier.compare(table.at(iter).first)) //replace table.size with DIRECTIVECOUNT
         ++iter;
     if (iter == table.size())
@@ -77,7 +80,23 @@ Node *context(Tokenizer& stream, std::vector<std::string>& args) {
     return contextNode;
 }
 
+void	initDefaults(void) {
+	d.push_back(std::pair<std::string, int>("server_name", SERVER_NAME));
+	d.push_back(std::pair<std::string, int>("index", INDEX));
+	d.push_back(std::pair<std::string, int>("client_max_body_size", CLIENT_MAX_BODY_SIZE));
+	d.push_back(std::pair<std::string, int>("root", ROOT));
+	d.push_back(std::pair<std::string, int>("listen", LISTEN));
+	d.push_back(std::pair<std::string, int>("autoindex", AUTOINDEX));
+	d.push_back(std::pair<std::string, int>("allow_methods", ALLOWMETHODS));
+	d.push_back(std::pair<std::string, int>("max_clients", MAX_CLIENTS));
+	d.push_back(std::pair<std::string, int>("clients_per_server", CLIENTS_PER_SERVER));
+	d.push_back(std::pair<std::string, int>("localhost", LOCALHOST));
+	c.push_back(std::pair<std::string, int>("server", SERVER));
+	c.push_back(std::pair<std::string, int>("location", LOCATION));
+}
+
 Node *parseTree(Tokenizer& stream) {
+	initDefaults();
     Node *base = new Node();
     base->tag = MAIN;
     base->type = CONTEXT;

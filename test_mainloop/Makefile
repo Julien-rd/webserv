@@ -10,7 +10,8 @@ CLASS_SOURCES = ServerManager/ServerManager.cpp ServerManager/ServerManagerError
 				CGI/CGI.cpp CGI/CGI_helpers.cpp CGI/CGI_php.cpp CGI/CGI_python.cpp \
 				Client/client.cpp \
 				Client/HttpRequest/HttpRequest.cpp Client/HttpRequest/HttpRequestGetters.cpp Client/HttpRequest/HttpRequestHelpers.cpp \
-				Client/HttpResponse/HttpResponse.cpp Client/HttpResponse/ReasonPhrase.cpp
+				Client/HttpResponse/HttpResponse.cpp Client/HttpResponse/ReasonPhrase.cpp \
+				ParseConfig/DirectiveHandlers.cpp ParseConfig/EvalTree.cpp ParseConfig/Parser.cpp ParseConfig/ParseTree.cpp
 ALL_SOURCES = $(SOURCES) $(CLASS_SOURCES)
 
 HEADERS = ServerManager.hpp HttpRequest.hpp
