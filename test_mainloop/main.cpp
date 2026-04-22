@@ -16,17 +16,14 @@ void	signalHandler(int sig) {
 }
 
 int	main(int argc, char **argv) {
-	(void)argc, (void)argv;
 	signal(SIGINT, signalHandler);
 	t_config  config;
 	if (argc != 2) {
 		std::cerr << "Error\nprovide exactly one argument ./webserv [filename]" << std::endl;
 		return 1;
 	}
-	try {
-	    parser(config, argv[1]);
-	} catch (std::exception &e) {
-        return -1;
+	if (parser(config, argv[1])) {
+		return -1;
 	}
 	ServerManager	serverManager(config);
 	//TODO make fieldnames case INSENSITIVE

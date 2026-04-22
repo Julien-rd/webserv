@@ -14,7 +14,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-Client::Client(): _fd(-1), _request(), _cgi(_request)  { ; }
+Client::Client(): _fd(-1), _request(), _cgi(_request)  { std::cout << "default constructor called\n"; }
 
 #include <sys/socket.h>
 #include <sys/types.h>

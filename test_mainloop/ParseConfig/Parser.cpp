@@ -16,7 +16,7 @@ void setDefault(t_config &config) {
     config.maxClients = 1024;
 }
 
-void parser(t_config& config, const char *fileName) {
+bool parser(t_config& config, const char *fileName) {
     Node *tree = NULL;
     setDefault(config);
     try {
@@ -29,6 +29,7 @@ void parser(t_config& config, const char *fileName) {
         if (tree)
             freeTree(tree);
         std::cout << "Error\n" << e.what() << "\n";
-        throw   ;
+		return true;
     }
+	return false;
 }

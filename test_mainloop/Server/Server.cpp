@@ -6,6 +6,7 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 
 Server::Server(const t_server& config, int epfd,
 	std::map<int, IntSet>& clientsMap, std::map<int, Client>& clients, int sid):
@@ -31,7 +32,7 @@ void	Server::closeClientFds(void) {
 void	Server::updateClientsMap(enum e_operation operation, const int clientFd) {
 	switch (operation) {
 		case ADD:
-			_clients[clientFd].setFd(clientFd);
+			_clients[clientFd].setFd(clientFd); // This constructs a client instance at this key implicitly
 			_clientsMap.at(_serverSocket).insert(clientFd);
 			break;
 		case REMOVE:
@@ -78,7 +79,7 @@ void	Server::initServerSocket(void) {
 void	Server::setServerSockAddr(void) {
 	_serverSockAddr.sin_family = AF_INET;
 	_serverSockAddr.sin_port = htons(_config.port);
-	_serverSockAddr.sin_addr.s_addr = INADDR_ANY; // FIX IT: this needs to be modifiable with config ip
+	_serverSockAddr.sin_addr.s_addr = inet_addr(_config.ip.c_str()); // TODO: this needs to be modifiable with config ip
 }
 
 void	Server::addSocketToEpoll(int socketFd) {
@@ -159,6 +160,7 @@ void	Server::handleClientEvent(const int clientFd) {
 		return ;
 	}
 	buffer[bytesRead] = 0;
+	std::cout << "hifrom loop\n";
 	if (_clients[clientFd].loop(buffer) == 1) {
 		closeConnection(clientFd);
 		return ;
