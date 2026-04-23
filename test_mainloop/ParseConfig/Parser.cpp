@@ -12,6 +12,8 @@ void freeTree(Node *node) {
 }
 
 void setDefault(t_config &config) {
+	config.serverFlag = false;
+	config.locationFlag = false;
     config.clientsPerServer = 1024;
     config.maxClients = 1024;
 }

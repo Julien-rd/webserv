@@ -120,13 +120,7 @@ void	Server::addSocketToEpoll(int socketFd) {
 }
 
 void	Server::bindAndListen(void) {
-	// std::cout << "server _" << _serverSocket << "_ _addrInfo: " << _addrInfo->ai_addr << " == " << std::endl;
-	// std::cout << _serverSocket;
-	// std::cout << _addrInfo->ai_addr;
-	// std::cout << _addrInfo->ai_addrlen;
-	// std::cout << std::endl;
 	if (bind(_serverSocket, _addrInfo->ai_addr, _addrInfo->ai_addrlen) == -1) {
-		// std::cerr << "errno is: " << hstrerror(errno) << std::endl;
 		freeaddrinfo(_addrInfo);
 		error_msg(ERR_BIND);
 		throw std::runtime_error("couldn't bind server");
@@ -141,8 +135,8 @@ void	Server::bindAndListen(void) {
 int		Server::start(void) {
 	initServerSocket();
 	setServerSockAddr();
-	bindAndListen();
 	addSocketToEpoll(_serverSocket);
+	bindAndListen();
 	return _serverSocket;
 }
 

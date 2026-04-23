@@ -29,7 +29,7 @@ class Server {
 	private:
 		typedef std::set<int>			IntSet;
 
-		const   t_server&				_config;
+		const   t_server&			_config;
 		int                         _sid; //server identifier
 		t_serverContext             _context;
 		int							_serverSocket;

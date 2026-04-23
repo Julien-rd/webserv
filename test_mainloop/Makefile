@@ -35,7 +35,7 @@ run: re
 
 runval: CXXFLAGS:= -Wall -Wextra -Werror -std=c++98 -pedantic -g
 runval: re
-	valgrind --leak-check=full --show-leak-kinds=all --trace-children=yes --track-fds=all ./$(NAME)
+	valgrind --leak-check=full --show-leak-kinds=all --trace-children=yes --track-fds=all ./$(NAME) ParseConfig/test.txt
 	
 runsan: CXXFLAGS:= -std=c++98 -g -fsanitize=address,leak,undefined,bounds,float-divide-by-zero
 runsan: re

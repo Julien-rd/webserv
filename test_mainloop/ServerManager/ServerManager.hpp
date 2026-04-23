@@ -19,7 +19,7 @@ class	ServerManager {
 	private:
 		typedef std::set<int>		IntSet;
 
-		const t_config&					_config;
+		const t_config&				_config;
 		int							_epfd;
 		std::map<int, Server>		_serversMap; // Key: the fd of the server. Value: the server
 		std::map<int, IntSet>		_clientsMap; // Key: the fd of the server. Value: all of its current clients
