@@ -8,14 +8,13 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-Server::Server(const t_server& config, int epfd,
-	std::map<int, IntSet>& clientsMap, std::map<int, Client>& clients, int sid):
-_config(config), _sid(sid), _epfd(epfd), _clientsMap(clientsMap), _clients(clients) {}
+Server::Server(const t_server& config, const t_serverContext& context, std::map<int, IntSet>& clientsMap, std::map<int, Client>& clients, int sid):
+_config(config), _context(context), _sid(sid),  _clientsMap(clientsMap), _clients(clients) {}
 
 Server::Server(const Server& obj):
-_config(obj._config), _sid(obj._sid),
+_config(obj._config),  _context(obj._context),_sid(obj._sid),
 _serverSocket(obj._serverSocket), _serverSockAddr(obj._serverSockAddr),
-_epfd(obj._epfd), _clientsMap(obj._clientsMap), _clients(obj._clients) {}
+ _clientsMap(obj._clientsMap), _clients(obj._clients) {}
 
 Server::~Server(void) {}
 
@@ -112,7 +111,7 @@ int		Server::start(void) {
 }
 
 void	Server::checkClientCap(void) {
-	if (_clients.size() == 1024 /* _config.maxClients */) { // FIX: either every server stores max client or we create a context struct with the maps, globals, and epfd (maxclients is a global)
+	if (_clients.size() ==  _context.maxClients) {
 		throw std::runtime_error("WARNING: client capacity reached. can't accept more connections");
 	}
 }

@@ -1,4 +1,5 @@
 #include "ServerManager.hpp"
+#include "../headers/structs/ServerStructs.hpp"
 
 #include <exception>
 #include <iostream>
@@ -43,16 +44,11 @@ void	ServerManager::createEpoll(void) {
 	}
 }
 
-void	ServerManager::startServers(void) { // FIX IT: adapt to new logic
+void	ServerManager::startServers(void) {
 	int	serverSocket;
-	
-	for (size_t i = 0; i < _config.servers.size(); ++i) {
-	    /* */
-	    /* */
-	    /* please help: why does every server get _clientsMap?? doesnt everyone only need their clients and not every client there is */
-	    /* */
-	    /* */
-		Server	server(_config.servers[i], _epfd, _clientsMap, _clients, i); //INFO: server struct is now t_server if the name is not occupied already
+	t_serverContext context = { _epfd, _config.maxClients, _config.clientsPerServer};
+	for (size_t sid = 0; sid < _config.servers.size(); ++sid) {
+		Server	server(_config.servers[sid], context, _clientsMap, _clients, sid); //INFO: server struct is now t_server if the name is not occupied already
 		try {
 			serverSocket = server.start();
 		}

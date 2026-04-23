@@ -15,7 +15,7 @@ void    parseLocalhost(const std::vector<std::string> &args, t_server &server) {
         server.localhost = true;
 }
 
-void    parseNumberGlobal(const std::vector<std::string> &args, int *number) {
+void    parseNumberGlobal(const std::vector<std::string> &args, unsigned int *number) {
     char *end;
     long val = strtol(args.at(0).c_str(),  &end, 10);
     if (*end != 0 || val < 0 || val > 5000 || args.size() != 1)

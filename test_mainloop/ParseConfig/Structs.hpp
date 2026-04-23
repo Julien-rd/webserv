@@ -56,10 +56,10 @@ typedef struct s_server {
 
 typedef struct s_config {
     bool    serverFlag, locationFlag;
-    int maxClients;
+    unsigned int maxClients;
     // int errorLog;
     // int errorlvl;
-    int clientsPerServer;
+    unsigned int clientsPerServer;
     // int totalServerAmount;
     std::vector<t_server> servers;
 }   t_config;

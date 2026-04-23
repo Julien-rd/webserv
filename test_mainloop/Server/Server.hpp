@@ -4,6 +4,7 @@
 # include "../Client/client.hpp" // FIXME fix file name "client.hpp" > "Client.hpp"
 # include "../ParseConfig/Parser.hpp"
 # include "../headers/structs/ErrorType.hpp"
+# include "../headers/structs/ServerStructs.hpp"
 
 # include <string>
 # include <set>
@@ -23,6 +24,7 @@ class Server {
 		typedef std::set<int>			IntSet;
 
 		const   t_server&				_config;
+		const   t_serverContext&				_context;
 		int                         _sid; //server identifier
 		int							_serverSocket;
 		sockaddr_in					_serverSockAddr;
@@ -40,7 +42,7 @@ class Server {
 		void		updateClientsMap(enum e_operation opeartion, const int clientFd);
 
 	public:
-		Server(const t_server& conf, int epfd, std::map<int, IntSet>& _clientsMap, std::map<int, Client>& clients, int sid);
+		Server(const t_server& conf, const t_serverContext& context, std::map<int, IntSet>& _clientsMap, std::map<int, Client>& clients, int sid);
 		Server(const Server& obj);
 		~Server(void);
 
