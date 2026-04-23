@@ -28,10 +28,6 @@ server {
         root /;
         index /biiiitch;
     }
-<<<<<<< HEAD
-    listen  127.0.0.2;
-=======
     
     listen 127.0.0.2;
->>>>>>> origin/eric_compile
 }

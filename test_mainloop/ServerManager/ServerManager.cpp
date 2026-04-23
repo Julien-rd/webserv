@@ -54,7 +54,7 @@ void	ServerManager::startServers(void) {
 			serverSocket = server.start();
 		}
 		catch (std::exception& e) {
-			std::cerr << "Error\nserver nr. " << server.getIdentifier() << " was not started properly\n" << e.what() << std::endl;
+			std::cerr << "Error\nserver _" << server.getIdentifier() << "_ was not started properly\n" << e.what() << std::endl;
 			continue ;
 		}
 		addServerToMaps(serverSocket, server);

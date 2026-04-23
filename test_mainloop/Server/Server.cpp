@@ -127,20 +127,22 @@ void	Server::bindAndListen(void) {
 	// std::cout << std::endl;
 	if (bind(_serverSocket, _addrInfo->ai_addr, _addrInfo->ai_addrlen) == -1) {
 		// std::cerr << "errno is: " << hstrerror(errno) << std::endl;
+		freeaddrinfo(_addrInfo);
 		error_msg(ERR_BIND);
-		throw std::exception();
+		throw std::runtime_error("couldn't bind server");
 	}
+	freeaddrinfo(_addrInfo);
 	if (listen(_serverSocket, 5) == -1) { // TODO hardocded 5?
 		error_msg(ERR_LISTEN);
-		throw std::exception();
+		throw std::runtime_error("couldn't listen from server");
 	}
 }
 
 int		Server::start(void) {
 	initServerSocket();
 	setServerSockAddr();
-	addSocketToEpoll(_serverSocket);
 	bindAndListen();
+	addSocketToEpoll(_serverSocket);
 	return _serverSocket;
 }
 
