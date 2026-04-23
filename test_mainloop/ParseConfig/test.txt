@@ -12,12 +12,21 @@ server {
         index /biiiitch;
     }
     
-    listen 127.24.255.255;
+    listen 10.18.167.21;
 }
 server {
-    location / {
+    client_max_body_size        1;
+        
+    
+    
+    
+    root /;
+    
+    
+    location /etc/dev {
         root /;
-        index /biidiitch;
+        index /biiiitch;
     }
-    listen  324 124.234.234.234:80;
+    
+    listen 127.0.0.2;
 }

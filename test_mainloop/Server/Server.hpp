@@ -10,6 +10,12 @@
 
 # include <netinet/in.h>
 # include <sys/epoll.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
 #define BUFFER_SIZE 4096
 
@@ -25,9 +31,10 @@ class Server {
 		const   t_server&				_config;
 		int                         _sid; //server identifier
 		int							_serverSocket;
-		sockaddr_in					_serverSockAddr;
+		addrinfo					*_addrInfo;
 		int							_epfd;
 		std::map<int, IntSet>&		_clientsMap;
+		std::map<int, int>&			_clientToServerMap;
 		std::map<int, Client>&		_clients;
 
 		void		initServerSocket(void);
@@ -40,7 +47,8 @@ class Server {
 		void		updateClientsMap(enum e_operation opeartion, const int clientFd);
 
 	public:
-		Server(const t_server& conf, int epfd, std::map<int, IntSet>& _clientsMap, std::map<int, Client>& clients, int sid);
+		Server(const t_server& conf, int epfd, std::map<int, IntSet>& _clientsMap,
+			std::map<int, Client>& clients, std::map<int, int>& _clientToServerMap, int sid);
 		Server(const Server& obj);
 		~Server(void);
 

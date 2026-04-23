@@ -52,7 +52,7 @@ void	ServerManager::startServers(void) { // FIX IT: adapt to new logic
 	    /* please help: why does every server get _clientsMap?? doesnt everyone only need their clients and not every client there is */
 	    /* */
 	    /* */
-		Server	server(_config.servers[i], _epfd, _clientsMap, _clients, i); //INFO: server struct is now t_server if the name is not occupied already
+		Server	server(_config.servers[i], _epfd, _clientsMap, _clients, _clientToServerMap, i); //INFO: server struct is now t_server if the name is not occupied already
 		try {
 			serverSocket = server.start();
 		}
@@ -86,15 +86,6 @@ void	ServerManager::epollWait() {
 	}
 }
 
-int		ServerManager::matchClientToServer(int ClientFd) {
-	for (std::map<int, IntSet>::iterator it = _clientsMap.begin(); it != _clientsMap.end(); ++it) {
-		if (it->second.find(ClientFd) != it->second.end()) {
-			return it->first;
-		}
-	}
-	throw std::runtime_error("ERROR: couldn't match event ClientFd to an existing entry in clientsMap");
-}
-
 void	ServerManager::loopReadyEvents(void) {
 	int	fd;
 
@@ -104,7 +95,7 @@ void	ServerManager::loopReadyEvents(void) {
 			_serversMap.at(fd).handleServerEvent();
 		}
 		else {
-			int	serverFd = matchClientToServer(fd);
+			int	serverFd = _clientToServerMap[fd];
 			_serversMap.at(serverFd).handleClientEvent(fd);
 		}
 	}
