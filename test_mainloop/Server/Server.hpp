@@ -28,7 +28,6 @@ class Server {
 		int                         _sid; //server identifier
 		int							_serverSocket;
 		sockaddr_in					_serverSockAddr;
-		int							_epfd;
 		std::map<int, IntSet>&		_clientsMap;
 		std::map<int, Client>&		_clients;
 

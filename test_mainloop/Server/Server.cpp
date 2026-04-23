@@ -44,7 +44,7 @@ void	Server::updateClientsMap(enum e_operation operation, const int clientFd) {
 void	Server::closeConnection(int clientFd) {
 	updateClientsMap(REMOVE, clientFd);
 	std::cout << "Server __" << _sid << "__ closed connection with Client " << clientFd << std::endl;
-	if (epoll_ctl(_epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
+	if (epoll_ctl(_context.epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
 	  error_msg(ERR_EPOLL_CTL);
 	  throw std::exception();
 	}
@@ -85,7 +85,7 @@ void	Server::addSocketToEpoll(int socketFd) {
 	struct epoll_event	ev;
 	ev.events = EPOLLIN;
 	ev.data.fd = socketFd;
-	if (epoll_ctl(_epfd, EPOLL_CTL_ADD, socketFd, &ev) == -1) {
+	if (epoll_ctl(_context.epfd, EPOLL_CTL_ADD, socketFd, &ev) == -1) {
 		error_msg(ERR_EPOLL_CTL);
 		throw std::exception();
 	}
