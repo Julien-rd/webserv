@@ -12,7 +12,7 @@ server {
         index /biiiitch;
     }
     
-    listen 10.18.167.21;
+    listen 192.168.122.1;
 }
 
 server {

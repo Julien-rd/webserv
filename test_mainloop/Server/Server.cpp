@@ -59,11 +59,11 @@ void	Server::closeConnection(int clientFd) {
 	std::cout << "Server __" << _sid << "__ closed connection with Client " << clientFd << std::endl;
 	if (epoll_ctl(_context.epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
 	  error_msg(ERR_EPOLL_CTL);
-	  throw std::exception();
+	  throw std::runtime_error("couldn't close connection");
 	}
 	if (close(clientFd) == -1) {
 	  error_msg(ERR_CLOSE);
-	  throw std::exception();
+	  throw std::runtime_error("couldn't close connection");
 	}
 	return;
 }
@@ -71,7 +71,7 @@ void	Server::closeConnection(int clientFd) {
 void Server::setToNonBlocking(int socketFd) {
   if (fcntl(socketFd, F_SETFL, FD_CLOEXEC | O_NONBLOCK) == -1) {
 	error_msg(ERR_FCNTL);
-	throw std::exception();
+	throw std::runtime_error("couldn't set fd to nonblocking");
   }
 }
 
@@ -79,12 +79,12 @@ void	Server::initServerSocket(void) {
 	_serverSocket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
 	if (_serverSocket == -1) {
 		error_msg(ERR_SOCKET);
-		throw std::exception();
+		throw std::runtime_error("couldn't init server socket");
 	}
 	int opt = 1;
 	if (setsockopt(_serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
 		error_msg(ERR_SETSOCKOPT);
-		throw std::exception();
+		throw std::runtime_error("couldn't init server socket");
 	}
 }
 
@@ -115,7 +115,7 @@ void	Server::addSocketToEpoll(int socketFd) {
 	ev.data.fd = socketFd;
 	if (epoll_ctl(_context.epfd, EPOLL_CTL_ADD, socketFd, &ev) == -1) {
 		error_msg(ERR_EPOLL_CTL);
-		throw std::exception();
+		throw std::runtime_error("couldn't add socket to epoll");
 	}
 }
 
