@@ -1,4 +1,4 @@
-#include "client.hpp"
+#include "Client.hpp"
 #include "HttpRequest/HttpRequest.hpp"
 #include "HttpResponse/HttpResponse.hpp"
 #include "../CGI/CGI.hpp"

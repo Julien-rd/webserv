@@ -3,7 +3,6 @@
 
 #include <exception>
 #include <iostream>
-#include <stdexcept>
 #include <vector>
 
 #include <cerrno>

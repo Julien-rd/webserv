@@ -1,12 +1,11 @@
 #ifndef SERVER_CLASS_HPP
 # define SERVER_CLASS_HPP
 
-# include "../Client/client.hpp" // FIXME fix file name "client.hpp" > "Client.hpp"
-# include "../ParseConfig/Parser.hpp"
+# include "../Client/Client.hpp" // FIXME fix file name "client.hpp" > "Client.hpp"
 # include "../headers/structs/ErrorType.hpp"
 # include "../headers/structs/ServerStructs.hpp"
+# include "../ParseConfig/Structs.hpp"
 
-# include <string>
 # include <set>
 
 # include <netinet/in.h>
@@ -29,7 +28,7 @@ class Server {
 	private:
 		typedef std::set<int>			IntSet;
 
-		const   t_server&			_config;
+		const t_server&				_config;
 		int                         _sid; //server identifier
 		t_serverContext             _context;
 		int							_serverSocket;
