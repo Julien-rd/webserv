@@ -49,7 +49,7 @@ void parseListen(const std::vector<std::string> &args, t_server &server) {
     long val = strtol(convert,  &end, 10);
     if (*end != 0 || end == convert || val < 0 || val > 65535 || args.size() != 1)
         throw std::runtime_error("listen directive invalid");
-    server.port = (int)val;
+    server.port = std::string(convert);
 }
 
 int allowMethods(std::vector<std::string> &args) {

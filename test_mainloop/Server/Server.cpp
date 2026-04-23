@@ -95,18 +95,11 @@ void	Server::setServerSockAddr(void) {
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_flags = AI_NUMERICHOST;
-	std::stringstream iss;
-	iss << _config.port;
 	std::cout << "ip is: " << _config.ip.c_str() << "\n";
-	res = getaddrinfo(_config.ip.c_str(), iss.str().c_str(), &hints, &_addrInfo);
+	res = getaddrinfo(_config.ip.c_str(), _config.port.c_str(), &hints, &_addrInfo);
 	if (res) {
-		std::cout << "failed with err: " << gai_strerror(res) << std::endl;
-		throw std::runtime_error("gettaddrinfo() failed");
+		throw std::runtime_error(std::string("gettaddrinfo() failed: ") + gai_strerror(res));
 	}
-	// _serverSockAddr.sin_family = AF_INET;
-	// _serverSockAddr.sin_port = htons(_config.port);
-	// std::cout << "in setSErverSockAddr: _config.ip: " << _config.ip << " == inet_addr(_config.ip): " << inet_addr(_config.ip.c_str()) << std::endl;
-	// _serverSockAddr.sin_addr.s_addr = inet_addr(_config.ip.c_str()); // FIX IT: this needs to be modifiable with config ip
 }
 
 void	Server::addSocketToEpoll(int socketFd) {
@@ -126,7 +119,7 @@ void	Server::bindAndListen(void) {
 		throw std::runtime_error("couldn't bind server");
 	}
 	freeaddrinfo(_addrInfo);
-	if (listen(_serverSocket, 5) == -1) { // TODO hardocded 5?
+	if (listen(_serverSocket, 20) == -1) { // TODO hardocded 20?
 		error_msg(ERR_LISTEN);
 		throw std::runtime_error("couldn't listen from server");
 	}

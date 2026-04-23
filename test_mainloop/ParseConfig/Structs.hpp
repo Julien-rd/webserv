@@ -49,7 +49,7 @@ typedef struct s_server {
     bool localhost;
     // std::string server_name;
     std::string ip;
-    int port;
+    std::string	port;
     int client_max_body;
     std::vector<t_location> locations;
 }   t_server;
