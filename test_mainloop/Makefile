@@ -31,7 +31,7 @@ $(OBJ_DIR)%.o: %.cpp
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
 run: re
-	./$(NAME)
+	./$(NAME) ParseConfig/test.txt
 
 runval: CXXFLAGS:= -Wall -Wextra -Werror -std=c++98 -pedantic -g
 runval: re

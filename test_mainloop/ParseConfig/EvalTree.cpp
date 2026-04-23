@@ -51,7 +51,7 @@ void    evalContext(Node *tree, t_config &evalData) {
         t_server server;
         setServer(server);
         evalData.servers.push_back(server);
-        t_location rootLocation;
+        t_location rootLocation{};
         setLocation(rootLocation);
         rootLocation.name = "/";
         evalData.servers.back().locations.push_back(rootLocation);
@@ -60,7 +60,7 @@ void    evalContext(Node *tree, t_config &evalData) {
         if (!evalData.serverFlag || evalData.locationFlag || tree->args.size() != 1) 
             throw std::runtime_error("bad location block");
         evalData.locationFlag = true;
-        t_location  newLocation;
+        t_location  newLocation{};
         setLocation(newLocation);
         newLocation.name = tree->args[0];
         evalData.servers.back().locations.push_back(newLocation);

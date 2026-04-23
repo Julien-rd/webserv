@@ -46,9 +46,10 @@ void	ServerManager::createEpoll(void) {
 
 void	ServerManager::startServers(void) {
 	int	serverSocket;
-	t_serverContext context = { _epfd, _config.maxClients, _config.clientsPerServer};
-	for (size_t sid = 0; sid < _config.servers.size(); ++sid) {
-		Server	server(_config.servers[sid], context, _clientsMap, _clients, sid); //INFO: server struct is now t_server if the name is not occupied already
+	
+	t_serverContext context = {_epfd, _config.maxClients, _config.clientsPerServer};
+	for (size_t i = 0; i < _config.servers.size(); ++i) {
+		Server	server(_config.servers[i], _epfd, _clientsMap, _clients, _clientToServerMap, context, i); //INFO: server struct is now t_server if the name is not occupied already
 		try {
 			serverSocket = server.start();
 		}
@@ -82,15 +83,6 @@ void	ServerManager::epollWait() {
 	}
 }
 
-int		ServerManager::matchClientToServer(int ClientFd) {
-	for (std::map<int, IntSet>::iterator it = _clientsMap.begin(); it != _clientsMap.end(); ++it) {
-		if (it->second.find(ClientFd) != it->second.end()) {
-			return it->first;
-		}
-	}
-	throw std::runtime_error("ERROR: couldn't match event ClientFd to an existing entry in clientsMap");
-}
-
 void	ServerManager::loopReadyEvents(void) {
 	int	fd;
 
@@ -100,7 +92,7 @@ void	ServerManager::loopReadyEvents(void) {
 			_serversMap.at(fd).handleServerEvent();
 		}
 		else {
-			int	serverFd = matchClientToServer(fd);
+			int	serverFd = _clientToServerMap[fd];
 			_serversMap.at(serverFd).handleClientEvent(fd);
 		}
 	}

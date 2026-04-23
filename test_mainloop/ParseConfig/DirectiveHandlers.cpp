@@ -34,11 +34,11 @@ void    parseMaxBody(const std::vector<std::string> &args, t_server &server) {
 void parseListen(const std::vector<std::string> &args, t_server &server) {
     size_t colon = args.at(0).find(':');
     const char *convert;
-    if (colon != std::string::npos) {
+    if (false) {
         server.ip = args.at(0).substr(0, colon);
         convert = args.at(0).c_str() + colon + 1;
     }
-    else if (args.at(0).find('.') != std::string::npos) {
+    else if (true) {
         server.ip = args.at(0);
         return;
     } else {

@@ -1,20 +1,29 @@
 #include "Server.hpp"
 
 #include <iostream>
+#include <sstream>
 
 #include <cerrno>
 
 #include <fcntl.h>
+#include <stdexcept>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <string>
+#include <error.h>
+#include <errno.h>
 
-Server::Server(const t_server& config, const t_serverContext& context, std::map<int, IntSet>& clientsMap, std::map<int, Client>& clients, int sid):
-_config(config), _context(context), _sid(sid),  _clientsMap(clientsMap), _clients(clients) {}
+Server::Server(const t_server& config, int epfd,
+	std::map<int, IntSet>& clientsMap, std::map<int, Client>& clients,  std::map<int, int>& clientToServerMap, t_serverContext &context, int sid):
+_config(config),  _sid(sid), _context(context), _clientsMap(clientsMap), _clientToServerMap(clientToServerMap), _clients(clients) {}
 
 Server::Server(const Server& obj):
-_config(obj._config),  _context(obj._context),_sid(obj._sid),
-_serverSocket(obj._serverSocket), _serverSockAddr(obj._serverSockAddr),
- _clientsMap(obj._clientsMap), _clients(obj._clients) {}
+_config(obj._config), _sid(obj._sid),
+_serverSocket(obj._serverSocket), _addrInfo(obj._addrInfo), _context(obj._context),
+_clientsMap(obj._clientsMap), _clientToServerMap(obj._clientToServerMap), _clients(obj._clients) {}
 
 Server::~Server(void) {}
 
@@ -31,10 +40,12 @@ void	Server::closeClientFds(void) {
 void	Server::updateClientsMap(enum e_operation operation, const int clientFd) {
 	switch (operation) {
 		case ADD:
-			_clients[clientFd].setFd(clientFd); // This constructs a client instance at this key implicitly
+			_clientToServerMap[clientFd] = _serverSocket;
+			_clients[clientFd].setFd(clientFd);
 			_clientsMap.at(_serverSocket).insert(clientFd);
 			break;
 		case REMOVE:
+			_clientToServerMap.erase(clientFd);
 			_clients[clientFd].reset();
 			_clients.erase(clientFd);
 			_clientsMap.at(_serverSocket).erase(clientFd);
@@ -76,9 +87,24 @@ void	Server::initServerSocket(void) {
 }
 
 void	Server::setServerSockAddr(void) {
-	_serverSockAddr.sin_family = AF_INET;
-	_serverSockAddr.sin_port = htons(_config.port);
-	_serverSockAddr.sin_addr.s_addr = inet_addr(_config.ip.c_str()); // TODO: this needs to be modifiable with config ip
+	addrinfo	hints = {0, 0, 0, 0, 0, 0, 0, 0};
+	int			res;
+
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_flags = AI_NUMERICHOST;
+	std::stringstream iss;
+	iss << _config.port;
+	std::cout << "ip is: " << _config.ip.c_str() << "\n";
+	res = getaddrinfo(_config.ip.c_str(), iss.str().c_str(), &hints, &_addrInfo);
+	if (res) {
+		std::cout << "failed with err: " << gai_strerror(res) << std::endl;
+		throw std::runtime_error("gettaddrinfo() failed");
+	}
+	// _serverSockAddr.sin_family = AF_INET;
+	// _serverSockAddr.sin_port = htons(_config.port);
+	// std::cout << "in setSErverSockAddr: _config.ip: " << _config.ip << " == inet_addr(_config.ip): " << inet_addr(_config.ip.c_str()) << std::endl;
+	// _serverSockAddr.sin_addr.s_addr = inet_addr(_config.ip.c_str()); // FIX IT: this needs to be modifiable with config ip
 }
 
 void	Server::addSocketToEpoll(int socketFd) {
@@ -92,7 +118,13 @@ void	Server::addSocketToEpoll(int socketFd) {
 }
 
 void	Server::bindAndListen(void) {
-	if (bind(_serverSocket, (struct sockaddr *)&_serverSockAddr, sizeof(_serverSockAddr)) == -1) {
+	// std::cout << "server _" << _serverSocket << "_ _addrInfo: " << _addrInfo->ai_addr << " == " << std::endl;
+	// std::cout << _serverSocket;
+	// std::cout << _addrInfo->ai_addr;
+	// std::cout << _addrInfo->ai_addrlen;
+	// std::cout << std::endl;
+	if (bind(_serverSocket, _addrInfo->ai_addr, _addrInfo->ai_addrlen) == -1) {
+		// std::cerr << "errno is: " << hstrerror(errno) << std::endl;
 		error_msg(ERR_BIND);
 		throw std::exception();
 	}
@@ -111,7 +143,7 @@ int		Server::start(void) {
 }
 
 void	Server::checkClientCap(void) {
-	if (_clients.size() ==  _context.maxClients) {
+	if (_clients.size() ==  _context.maxClients) { //FIX
 		throw std::runtime_error("WARNING: client capacity reached. can't accept more connections");
 	}
 }
