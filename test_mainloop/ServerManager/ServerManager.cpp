@@ -49,7 +49,7 @@ void	ServerManager::startServers(void) {
 	
 	t_serverContext context = {_epfd, _config.maxClients, _config.clientsPerServer};
 	for (size_t i = 0; i < _config.servers.size(); ++i) {
-		Server	server(_config.servers[i], _epfd, _clientsMap, _clients, _clientToServerMap, context, i); //INFO: server struct is now t_server if the name is not occupied already
+		Server	server(_config.servers[i], _clientsMap, _clients, _clientToServerMap, context, i); //INFO: server struct is now t_server if the name is not occupied already
 		try {
 			serverSocket = server.start();
 		}

@@ -16,13 +16,15 @@
 #include <error.h>
 #include <errno.h>
 
-Server::Server(const t_server& config, int epfd,
-	std::map<int, IntSet>& clientsMap, std::map<int, Client>& clients,  std::map<int, int>& clientToServerMap, t_serverContext &context, int sid):
-_config(config),  _sid(sid), _context(context), _clientsMap(clientsMap), _clientToServerMap(clientToServerMap), _clients(clients) {}
+Server::Server(const t_server& config, std::map<int, IntSet>& clientsMap,
+	std::map<int, Client>& clients,  std::map<int, int>& clientToServerMap,
+	t_serverContext &context, int sid):
+_config(config),  _sid(sid), _context(context), _clientsMap(clientsMap),
+_clientToServerMap(clientToServerMap), _clients(clients) {}
 
 Server::Server(const Server& obj):
-_config(obj._config), _sid(obj._sid),
-_serverSocket(obj._serverSocket), _addrInfo(obj._addrInfo), _context(obj._context),
+_config(obj._config), _sid(obj._sid), _context(obj._context), 
+_serverSocket(obj._serverSocket), _addrInfo(obj._addrInfo), 
 _clientsMap(obj._clientsMap), _clientToServerMap(obj._clientToServerMap), _clients(obj._clients) {}
 
 Server::~Server(void) {}

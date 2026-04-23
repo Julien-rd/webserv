@@ -30,8 +30,8 @@ class Server {
 		typedef std::set<int>			IntSet;
 
 		const   t_server&				_config;
-		t_serverContext             _context;
 		int                         _sid; //server identifier
+		t_serverContext             _context;
 		int							_serverSocket;
 		addrinfo					*_addrInfo;
 		std::map<int, IntSet>&		_clientsMap;
@@ -48,7 +48,7 @@ class Server {
 		void		updateClientsMap(enum e_operation opeartion, const int clientFd);
 
 	public:
-		Server(const t_server& conf, int epfd, std::map<int, IntSet>& _clientsMap,
+		Server(const t_server& conf, std::map<int, IntSet>& _clientsMap,
 			std::map<int, Client>& clients, std::map<int, int>& _clientToServerMap, t_serverContext &context, int sid);
 		Server(const Server& obj);
 		~Server(void);
