@@ -113,7 +113,7 @@ int HttpRequest::parseHeaders(std::string &request_content) {
     case FIELD_NAME:
       findSeperator(request_content, ':', pos, max_pos);
       if (pos > max_pos) {
-        // add safguard to check if it is really last line so \r\n
+        // TODO add safguard to check if it is really last line so \r\n
         _bytesRead += 1;
         _currentState = EOH;
         break;

@@ -14,7 +14,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-Client::Client(): _fd(-1), _request(), _cgi(_request)  { std::cout << "default constructor called\n"; }
+Client::Client(): _fd(-1), _request(), _cgi(_request)  {}
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -76,11 +76,11 @@ int Client::loop(std::string input) {
     if (_request.parsingDone() == false)
       return 0;
     _bytesRead += _request.getBytesRead();
-	// if (_cgi.validateRequest()) {
-	// 	std::cout << "handling CGI" << std::endl;
-	// 	handleCGI();
-	// 	return 0;
-	// }
+	if (_cgi.validateRequest()) {
+		std::cout << "handling CGI" << std::endl;
+		handleCGI();
+		return 0;
+	}
     if (_response.build(_request) == 1)
       err = true;
     const char *response = _response.getResponse();
@@ -94,7 +94,7 @@ int Client::loop(std::string input) {
     _response.reset();
     if (err == true)
       return 1;
-    std::cout << "SUCCESS\n";
+    // std::cout << "SUCCESS\n";
   }
   return 0;
 }

@@ -182,7 +182,6 @@ void	Server::handleClientEvent(const int clientFd) {
 		return ;
 	}
 	buffer[bytesRead] = 0;
-	std::cout << "hifrom loop\n";
 	if (_clients[clientFd].loop(buffer) == 1) {
 		closeConnection(clientFd);
 		return ;

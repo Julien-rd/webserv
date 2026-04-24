@@ -92,7 +92,7 @@ void HttpResponse::extractContentLength() {
 void HttpResponse::addBody(HttpRequest request) {
   std::string path; 
   std::string uri = request.getURI();
-  std::cout << uri << std::endl;
+  std::cout << uri;
   if(uri == "/password.html"){
     serveSuccessPage(request);
     return ;
@@ -105,10 +105,10 @@ void HttpResponse::addBody(HttpRequest request) {
   // check if method is allowed for this uri, if not _statusCode = 405
   path = it->second;
   // end
-  std::cout << "== trying to open (" << path.c_str() << ")\n";
+  std::cout << " == trying to open (" << path.c_str() << ")\n";
   std::fstream htmlPage(path.c_str(), std::ios::in | std::ios::binary);
   if (!htmlPage.is_open())  { // or empty file
-    std::cout << "open: " << strerror(errno);
+    std::cout << "error opening html file: " << strerror(errno);
     return; // error handling
   }
   htmlPage.seekg(0, std::ios::end);
