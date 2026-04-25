@@ -48,12 +48,13 @@ void	ServerManager::startServers(void) {
 	
 	t_serverContext context = {_epfd, _config.maxClients, _config.clientsPerServer};
 	for (size_t i = 0; i < _config.servers.size(); ++i) {
-		Server	server(_config.servers[i], _clientsMap, _clients, _clientToServerMap, context, i); //INFO: server struct is now t_server if the name is not occupied already
+		Server	server(_config.servers[i], _clientsMap, _clients,
+			_clientToServerMap, context, i); //INFO: server struct is now t_server if the name is not occupied already
 		try {
 			serverSocket = server.start();
 		}
 		catch (std::exception& e) {
-			std::cerr << "Error\nserver _" << server.getIdentifier() << "_ was not started properly\n" << e.what() << std::endl;
+			std::cerr << "WARNING: couldn't start server _" << server.getIdentifier() << "_: " << e.what() << std::endl;
 			continue ;
 		}
 		addServerToMaps(serverSocket, server);
@@ -70,6 +71,7 @@ bool	ServerManager::init(void) {
 		std::cerr << e.what() << std::endl;
 		return true;
 	}
+	std::cout << std::endl;
 	return false;
 }
 
@@ -77,7 +79,7 @@ void	ServerManager::epollWait() {
 	_readyEvents = epoll_wait(_epfd, _requestBuf.data(), MAX_EVENTS, -1);
 	if (_readyEvents == -1) {
 		error_msg(ERR_EPOLL_WAIT);
-		perror(strerror(errno));
+		// perror(strerror(errno));
 		throw std::exception();
 	}
 }

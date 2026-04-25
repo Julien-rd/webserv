@@ -1,7 +1,6 @@
 #include "Server.hpp"
 
 #include <iostream>
-#include <sstream>
 
 #include <cerrno>
 
@@ -39,8 +38,8 @@ void	Server::closeClientFds(void) {
 	}
 }
 
-void	Server::updateClientsMap(enum e_operation operation, const int clientFd) {
-	switch (operation) {
+void	Server::updateClientsMap(enum e_map_operation op, const int clientFd) {
+	switch (op) {
 		case ADD:
 			_clientToServerMap[clientFd] = _serverSocket;
 			_clients[clientFd].setFd(clientFd);
@@ -95,7 +94,7 @@ void	Server::setServerSockAddr(void) {
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_flags = AI_NUMERICHOST;
-	std::cout << "ip is: " << _config.ip.c_str() << "\n";
+	std::cout << "ip: " << _config.ip.c_str() << " == ";
 	res = getaddrinfo(_config.ip.c_str(), _config.port.c_str(), &hints, &_addrInfo);
 	if (res) {
 		throw std::runtime_error(std::string("gettaddrinfo() failed: ") + gai_strerror(res));

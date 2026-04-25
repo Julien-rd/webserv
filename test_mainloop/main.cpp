@@ -7,7 +7,6 @@
 #include <iostream>
 
 #include <csignal>
-#include <stdexcept>
 
 void	signalHandler(int sig) {
 	std::cout << "Exiting with signal: " << sig << std::endl;
@@ -37,7 +36,7 @@ int	main(int argc, char **argv) {
 			serverManager.loopReadyEvents();
 		}
 		catch (std::exception& e) {
-			std::cerr << e.what() << std::endl;
+			// std::cerr << e.what() << std::endl;
 			return 1;
 		}
 	}

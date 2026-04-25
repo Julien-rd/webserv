@@ -1,7 +1,7 @@
 #ifndef SERVER_CLASS_HPP
 # define SERVER_CLASS_HPP
 
-# include "../Client/Client.hpp" // FIXME fix file name "client.hpp" > "Client.hpp"
+# include "../Client/Client.hpp"
 # include "../headers/structs/ErrorType.hpp"
 # include "../headers/structs/ServerStructs.hpp"
 # include "../ParseConfig/Structs.hpp"
@@ -19,7 +19,7 @@
 
 #define BUFFER_SIZE 4096
 
-enum e_operation {
+enum e_map_operation {
 	ADD,
 	REMOVE
 };
@@ -44,7 +44,7 @@ class Server {
 		void		setToNonBlocking(int socketFd);
 
 		void		closeConnection(int clientFd);
-		void		updateClientsMap(enum e_operation opeartion, const int clientFd);
+		void		updateClientsMap(enum e_map_operation op, const int clientFd);
 
 	public:
 		Server(const t_server& conf, std::map<int, IntSet>& _clientsMap,
@@ -59,7 +59,7 @@ class Server {
 		int			start(void);
 		void		closeClientFds(void);
 
-		int	getIdentifier(void) const;
+		int			getIdentifier(void) const;
 
 		int			error_msg(ErrorType type);
 };
