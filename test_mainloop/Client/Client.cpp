@@ -77,7 +77,7 @@ int Client::loop(std::string input) {
       return 0;
     _bytesRead += _request.getBytesRead();
 	if (_cgi.validateRequest()) {
-		std::cout << "handling CGI" << std::endl;
+		std::cout << "handling CGI..." << std::endl;
 		handleCGI();
 		return 0;
 	}

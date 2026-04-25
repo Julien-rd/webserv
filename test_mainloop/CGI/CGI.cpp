@@ -39,9 +39,8 @@ CGI::~CGI(void) {
 bool	CGI::validateRequest(void) const {
 	if (this->request._uri.compare(0, this->pythonScriptName.size(), this->pythonScriptName) == 0
 		|| this->request._uri.compare(0, this->phpScriptName.size(), this->phpScriptName) == 0) { // TODO Or could replace this with a dynamic array of known scripts and check if URI matches one of them, then set a variable indicating that we will work with this specifi script for the rest of the execution oF CGI
-		// std::cout << "URI doesn't contain a known script" << std::endl;
+		std::cout << "URI doesn't contain a known script" << std::endl;
 		return true;
-		// throw CGI::StandardException();
 	}
 	// TODO Validate minimum requirements needed for CGI execution (maybe headers for GET or POST. specific requirements for attributes of HttpRequest)???
 	return false;
@@ -62,19 +61,19 @@ void	CGI::initCGI(void) {
 
 void	CGI::pipeIO(void) {
 	if (pipe(this->pipefd) == -1) {
-		throw CGI::StandardException();
+		throw std::runtime_error("CGI pipe failed");
 	}
 	if (fcntl(this->pipefd[0], F_SETFD, FD_CLOEXEC) == -1) {
-		throw CGI::StandardException();
+		throw std::runtime_error("CGI fcntl");
 	}
 	if (fcntl(this->pipefd[0], F_SETFL, O_NONBLOCK) == -1) {
-		throw CGI::StandardException();
+		throw std::runtime_error("CGI fcntl");
 	}
 	if (fcntl(this->pipefd[1], F_SETFD, FD_CLOEXEC) == -1) {
-		throw CGI::StandardException();
+		throw std::runtime_error("CGI fcntl");
 	}
 	if (fcntl(this->pipefd[1], F_SETFL, O_NONBLOCK) == -1) {
-		throw CGI::StandardException();
+		throw std::runtime_error("CGI fcntl");
 	}
 }
 
