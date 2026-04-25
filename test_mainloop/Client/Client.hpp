@@ -21,7 +21,7 @@ class Client {
 
 		int		loop(std::string input);
 		size_t	getBytesRead();
-		void	handleCGI(void);
+		void	handleCGI(CGI& cgi);
 		void	reset();
 		void	setFd(int fd);
 		int		getFd() const;

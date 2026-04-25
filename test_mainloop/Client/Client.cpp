@@ -38,18 +38,20 @@ int Client::closeConnection() {
   return 1;
 }
 
-void	Client::handleCGI(void) {
+void	Client::handleCGI(CGI& cgi) {
 	// bool err = false;
 
 	try {
-		_cgi.initCGI();
-		_cgi.pipeIO();
-		_cgi.spawnProcess();
-		_cgi.wait();
+		cgi.initCGI();
+		std::cout << "here\n";
+		cgi.pipeIO();
+		// cgi.redirectIO();
+		cgi.spawnProcess();
+		cgi.wait();
 		// cgi.redirectIO(); // I don't think I need this ¯\_(ツ)_/¯
 	}
 	catch (std::exception& e) {
-		std::cerr << e.what() << std::endl;
+		std::cerr << "exception caught in handleCGI(): " << e.what() << std::endl;
 	}
     // if (_response.build(_request) == 1)
     //   err = true;
@@ -67,6 +69,18 @@ void	Client::handleCGI(void) {
     // std::cout << "SUCCESS\n";
 }
 
+bool	isCGIRequest(const HttpRequest& request) {
+	std::string	pythonScriptName = "/python.py";
+	std::string	phpScriptName = "/php.php";
+	// std::cout << "calling isCGIRequest(): request._uri is: (" << request._uri << ")" << " pythonScriptName is: (" << pythonScriptName << ") " << std::endl;
+	if (request._uri.compare(0, pythonScriptName.size(), pythonScriptName) == 0
+		|| request._uri.compare(0, phpScriptName.size(), phpScriptName) == 0) { // TODO Or could replace this with a dynamic array of known scripts and check if URI matches one of them, then set a variable indicating that we will work with this specifi script for the rest of the execution oF CGI
+		return true;
+	}
+	std::cout << "URI doesn't contain a known script" << std::endl;
+	return false;
+}
+
 int Client::loop(std::string input) {
   _bytesRead = 0;
   bool err = false;
@@ -76,9 +90,10 @@ int Client::loop(std::string input) {
     if (_request.parsingDone() == false)
       return 0;
     _bytesRead += _request.getBytesRead();
-	if (_cgi.validateRequest()) {
-		std::cout << "handling CGI..." << std::endl;
-		handleCGI();
+	_request.print();
+	if (isCGIRequest(_request)) {
+		CGI	cgi(_request);
+		handleCGI(cgi);
 		return 0;
 	}
     if (_response.build(_request) == 1)

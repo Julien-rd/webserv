@@ -75,9 +75,9 @@ class	CGI {
 		bool	validateRequest(void) const;
 		void	initCGI(void);
 		void	pipeIO(void);
+		void	redirectIO(void);
 		void	spawnProcess(void);
 		void	wait(void) const;
-		// void	redirectIO(void);
 
 		FT_DEFINE_EXCEPTION(StandardException, "ERROR: Standard Exception");
 		FT_DEFINE_EXCEPTION(WaitException, "EXCEPTION CAUGHT IN PARENT: waiting");

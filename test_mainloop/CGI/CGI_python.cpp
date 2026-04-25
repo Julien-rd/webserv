@@ -51,18 +51,25 @@ void	CGI::initMetaPython(void) {
 	// this->meta.remote_user = "";
 	this->meta.request_method = std::string("REQUEST_METHOD=").append(request._method);
 	this->meta.script_name = std::string("SCRIPT_NAME=").append(this->scriptName);
-	this->meta.server_name = std::string("SERVER_NAME=").append(request._headers.at("Host")); // TODO get this from result of config_parser instead
-	this->meta.server_port = std::string("SERVER_PORT=").append(request._headers.at("Host").substr(request._headers.at("Host").find(':') + 1)); // TODO get this from result of config_parser instead
+	// this->meta.server_name = std::string("SERVER_NAME=").append(request._headers.at("host")); // TODO get this from result of config_parser instead
+	std::cout << "request._headers.at(host) is: " << request._headers.at("host") << std::endl;
+	std::cout << "request._headers.at(host).substr(request._headers).at(host) is: " << request._headers.at("host") << std::endl;
+	std::cout << "request._headers.at(host).substr(request._headers).at(host).find(:) + 1 is: " << request._headers.at("host").find(':') + 1 << std::endl;
+	this->meta.server_port = std::string("SERVER_PORT=").append(request._headers.at("host").substr(request._headers.at("host").find(':') + 1)); // TODO get this from result of config_parser instead
 	this->meta.server_protocol = std::string("SERVER_PROTOCOL=").append("HTTP/1.1");
 	// this->meta.server_software = "";
 	// this->meta.x = "";
 }
 
 void	CGI::initPythonScript(void) {
+	// std::cout << "here2\n";
 	this->initMetaPython();
+	// std::cout << "here3\n";
 	this->setScriptAttributesPython();
 	if (request._method == "GET") {
+		// std::cout << "here4\n";
 		this->setGETVariablesPython();
+		// std::cout << "here5\n";
 	}
 	else if (request._method == "POST") {
 		this->setPOSTVariablesPython();

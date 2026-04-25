@@ -5,6 +5,7 @@
 #include <cstring>
 #include <cstdio>
 
+#include <stdexcept>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -13,8 +14,8 @@
 #include <unistd.h>
 
 CGI::CGI(const HttpRequest& request): request(request),
-pythonScriptName("/cgi-bin/python.py"),
-phpScriptName("/cgi-bin/php.php") {
+pythonScriptName("/python.py"),
+phpScriptName("/php.php") {
 	this->pipefd[0] = -1;
 	this->pipefd[1] = -1;
 }
@@ -36,15 +37,15 @@ CGI::~CGI(void) {
 // 	this->pid = pid;
 // }
 
-bool	CGI::validateRequest(void) const {
-	if (this->request._uri.compare(0, this->pythonScriptName.size(), this->pythonScriptName) == 0
-		|| this->request._uri.compare(0, this->phpScriptName.size(), this->phpScriptName) == 0) { // TODO Or could replace this with a dynamic array of known scripts and check if URI matches one of them, then set a variable indicating that we will work with this specifi script for the rest of the execution oF CGI
-		std::cout << "URI doesn't contain a known script" << std::endl;
-		return true;
-	}
-	// TODO Validate minimum requirements needed for CGI execution (maybe headers for GET or POST. specific requirements for attributes of HttpRequest)???
-	return false;
-}
+// bool	CGI::validateRequest(void) const {
+// 	if (this->request._uri.compare(0, this->pythonScriptName.size(), this->pythonScriptName) == 0
+// 		|| this->request._uri.compare(0, this->phpScriptName.size(), this->phpScriptName) == 0) { // TODO Or could replace this with a dynamic array of known scripts and check if URI matches one of them, then set a variable indicating that we will work with this specifi script for the rest of the execution oF CGI
+// 		std::cout << "URI doesn't contain a known script" << std::endl;
+// 		return true;
+// 	}
+// 	// TODO Validate minimum requirements needed for CGI execution (maybe headers for GET or POST. specific requirements for attributes of HttpRequest)???
+// 	return false;
+// }
 
 void	CGI::initCGI(void) {
 	// this->scriptName = getScriptName(request._uri, this->pythonScriptName, this->phpScriptName);
@@ -77,10 +78,20 @@ void	CGI::pipeIO(void) {
 	}
 }
 
+void	CGI::redirectIO(void) {
+
+	if (dup2(this->pipefd[1], STDOUT_FILENO) == -1) {
+		throw CGI::StandardException();
+	}
+	if (dup2(this->pipefd[0], STDIN_FILENO) == -1) {
+		throw CGI::StandardException();
+	}
+}
+
 void	CGI::spawnProcess(void) {
 	this->pid = fork();
 	if (this->pid == -1) {
-		throw CGI::StandardException();
+		throw std::runtime_error("CGI fork failed");
 	}
 	if (this->pid == 0) {
 		this->execute();
@@ -96,6 +107,7 @@ void	CGI::wait(void) const {
 void	CGI::execute(void) {
 	close(this->pipefd[0]);
 	close(this->pipefd[1]);
+	std::cout << "executing CGI" << std::endl;
 	// int fd = open("cgi_output.txt", O_CREAT | O_NONBLOCK | O_RDWR, 0777);
 	// dup2(fd, STDOUT_FILENO);
 	// std::cout << "executable is (" << this->executable << ") argv[0] is (" << this->argv[0] << ")" << std::endl;
@@ -108,16 +120,6 @@ void	CGI::execute(void) {
 		_exit(1);
 	}
 }
-
-// void	CGI::redirectIO(void) {
-
-// 	if (dup2(this->pipefd[1], STDOUT_FILENO) == -1) {
-// 		throw CGI::StandardException();
-// 	}
-// 	if (dup2(this->pipefd[0], STDIN_FILENO) == -1) {
-// 		throw CGI::StandardException();
-// 	}
-// }
 
 // int	main(const int argc, const char **argv, const char **envp) {
 // 	(void)argc, void(argv), (void)envp;
