@@ -15,6 +15,8 @@
 // # define FT_THROW(class_name, exception_name)
 // 	throw class_name##_##exception_name()
 
+class	Client;
+
 typedef struct s_metaVariables {
 	std::string	auth_type;
     std::string	content_length;
@@ -42,11 +44,12 @@ class	CGI {
 		std::string			scriptName;
 		t_metaVariables		meta;
 		int					pid;
-		int					pipefd[2];
+		int					epfd;
+		Client&				client;
 
 		const char			*executable;
 		char				*argv[3];
-		const char			**envp;
+		const char			*envp[20];
 
 		const std::string	pythonScriptName;
 		const std::string	phpScriptName;
@@ -66,17 +69,20 @@ class	CGI {
 		void	execute(void);
 
 	public:
-		CGI(const HttpRequest& request);
+		CGI(const HttpRequest& request, Client& client, int epfd);
 		~CGI(void);
+		const CGI&	operator=(const CGI& obj);
 
 		// pid_t	getPid(void) const;
 		// void	setPid(pid_t pid);
 
+		int					pipefd[2];
 		bool	validateRequest(void) const;
 		void	initCGI(void);
 		void	pipeIO(void);
 		void	redirectIO(void);
 		void	spawnProcess(void);
+		void	addPipeToEpoll(void);
 		void	wait(void) const;
 
 		FT_DEFINE_EXCEPTION(StandardException, "ERROR: Standard Exception");

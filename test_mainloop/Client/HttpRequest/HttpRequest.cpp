@@ -12,6 +12,26 @@ HttpRequest::HttpRequest()
 
 std::vector<char> HttpRequest::getBody() const { return _body; }
 
+const HttpRequest& HttpRequest::operator=(const HttpRequest& obj) {
+	if (&obj == this) {
+		return *this;
+	}
+    _method = obj._method;
+    _uri = obj._uri;
+    _headers = obj._headers;
+    _currentState = obj._currentState;
+    _contentLength = obj._contentLength;
+    _httpVersion = obj._httpVersion;
+    _fieldName = obj._fieldName;
+    _fieldValue = obj._fieldName;
+    _bytesRead = obj._bytesRead;
+    _statusCode = obj._statusCode;
+    _parsingDone = obj._parsingDone;
+    _body = obj._body;
+    _client_max_body_size = obj._client_max_body_size;
+	return *this;
+}
+
 void HttpRequest::print() {
   std::cout << "---------------------RequestLine---------------------\n";
   std::cout << "Method: [" << _method << "]\n"

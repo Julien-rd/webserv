@@ -33,6 +33,7 @@ class HttpRequest{
     void print();
     HttpRequest(size_t client_max_body_size);
     HttpRequest();
+    const HttpRequest& operator=(const HttpRequest& obj);
     int getStatusCode() const;
     bool parsingDone();
     void reset();

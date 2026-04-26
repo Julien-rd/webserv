@@ -8,6 +8,10 @@
 
 #include <csignal>
 
+/* TODO Claude says: In a single-process, non-blocking architecture, the rule is simple:
+Any fd you need to wait on must go through epoll.
+Waiting on it any other way blocks the loop.
+This applies to sockets, pipes, timers (timerfd), signals (signalfd) — anything. CGI pipes are no exception. */
 void	signalHandler(int sig) {
 	std::cout << "Exiting with signal: " << sig << std::endl;
 	// _exit(sig);

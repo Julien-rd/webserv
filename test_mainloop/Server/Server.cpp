@@ -42,6 +42,7 @@ void	Server::updateClientsMap(enum e_map_operation op, const int clientFd) {
 	switch (op) {
 		case ADD:
 			_clientToServerMap[clientFd] = _serverSocket;
+			_clients[clientFd] = Client(_context.epfd); // TODO can we construct an entry in the map in a better way than constructing and then calling copy assignment operator? this basically constructs 2 client instances, can we make it only one?
 			_clients[clientFd].setFd(clientFd);
 			_clientsMap.at(_serverSocket).insert(clientFd);
 			break;

@@ -5,11 +5,12 @@
 void	CGI::setScriptAttributesPython(void) {
 	this->executable = (char *)"/usr/bin/python3";
 	this->argv[0] = (char *)"/usr/bin/python3"; // TODO This is hardcoded!!
-	this->argv[1] = (char *)"../cgi-bin/python.py"; // TODO This is hardcoded!!
+	this->argv[1] = (char *)"cgi-bin/python.py"; // TODO This is hardcoded!!
 	this->argv[2] = NULL;
 }
 
 void	CGI::setGETVariablesPython(void) {
+	// std::cout << "in setGETVariablesPython, this->meta.request_method: (" << this->meta.request_method << "). c_str(): (" << this->meta.request_method.c_str() << ")\n";
 	this->envp[0] = this->meta.request_method.c_str();
 	this->envp[1] = this->meta.query_string.c_str();
 	this->envp[2] = this->meta.script_name.c_str();
@@ -21,7 +22,6 @@ void	CGI::setGETVariablesPython(void) {
 }
 
 void	CGI::setPOSTVariablesPython(void) {
-
 	this->envp[0] = this->meta.request_method.c_str();
 	this->envp[1] = this->meta.content_length.c_str();
 	this->envp[2] = this->meta.content_type.c_str();
@@ -31,7 +31,6 @@ void	CGI::setPOSTVariablesPython(void) {
 	this->envp[6] = this->meta.server_port.c_str();
 	this->envp[7] = this->meta.server_protocol.c_str();
 	this->envp[8] = NULL;
-	
 }
 
 void	CGI::initMetaPython(void) {
@@ -52,9 +51,9 @@ void	CGI::initMetaPython(void) {
 	this->meta.request_method = std::string("REQUEST_METHOD=").append(request._method);
 	this->meta.script_name = std::string("SCRIPT_NAME=").append(this->scriptName);
 	// this->meta.server_name = std::string("SERVER_NAME=").append(request._headers.at("host")); // TODO get this from result of config_parser instead
-	std::cout << "request._headers.at(host) is: " << request._headers.at("host") << std::endl;
-	std::cout << "request._headers.at(host).substr(request._headers).at(host) is: " << request._headers.at("host") << std::endl;
-	std::cout << "request._headers.at(host).substr(request._headers).at(host).find(:) + 1 is: " << request._headers.at("host").find(':') + 1 << std::endl;
+	// std::cout << "request._headers.at(host) is: " << request._headers.at("host") << std::endl;
+	// std::cout << "request._headers.at(host).substr(request._headers).at(host) is: " << request._headers.at("host") << std::endl;
+	// std::cout << "request._headers.at(host).substr(request._headers).at(host).find(:) + 1 is: " << request._headers.at("host").find(':') + 1 << std::endl;
 	this->meta.server_port = std::string("SERVER_PORT=").append(request._headers.at("host").substr(request._headers.at("host").find(':') + 1)); // TODO get this from result of config_parser instead
 	this->meta.server_protocol = std::string("SERVER_PROTOCOL=").append("HTTP/1.1");
 	// this->meta.server_software = "";

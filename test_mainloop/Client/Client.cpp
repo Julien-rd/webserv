@@ -14,10 +14,25 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-Client::Client(): _fd(-1), _request(), _cgi(_request)  {}
-
 #include <sys/socket.h>
 #include <sys/types.h>
+
+Client::Client(): _fd(-1), _epfd(-1), _request(), _cgi(_request, *this, _epfd) {}
+
+Client::Client(int epfd): _fd(-1), _epfd(epfd), _request(), _cgi(_request, *this, _epfd){}
+
+Client::Client(const Client& obj): _fd(obj._fd), _epfd(obj._epfd), _request(obj._request), _cgi(obj._cgi) {}
+
+const Client&	Client::operator=(const Client& obj) {
+	if (&obj == this) {
+		return *this;
+	}
+	_fd = obj._fd;
+	_request = obj._request;
+	_cgi = obj._cgi;
+	_epfd = obj._epfd;
+	return *this;
+}
 
 void Client::setFd(int fd) { _fd = fd; }
 
@@ -43,11 +58,13 @@ void	Client::handleCGI(CGI& cgi) {
 
 	try {
 		cgi.initCGI();
-		std::cout << "here\n";
+		std::cout << "========= initCGI() succeeded\n";
 		cgi.pipeIO();
-		// cgi.redirectIO();
+		std::cout << "========= pipeIO() succeeded\n";
 		cgi.spawnProcess();
+		std::cout << "========= spawnProcess() succeeded\n";
 		cgi.wait();
+		std::cout << "========= wait() succeeded\n";
 		// cgi.redirectIO(); // I don't think I need this ¯\_(ツ)_/¯
 	}
 	catch (std::exception& e) {
@@ -90,9 +107,9 @@ int Client::loop(std::string input) {
     if (_request.parsingDone() == false)
       return 0;
     _bytesRead += _request.getBytesRead();
-	_request.print();
+	// _request.print();
 	if (isCGIRequest(_request)) {
-		CGI	cgi(_request);
+		CGI	cgi(_request, *this, _epfd);
 		handleCGI(cgi);
 		return 0;
 	}

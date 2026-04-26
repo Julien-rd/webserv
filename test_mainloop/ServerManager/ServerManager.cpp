@@ -4,6 +4,8 @@
 #include <exception>
 #include <iostream>
 #include <vector>
+#include <sstream>
+#include <fstream>
 
 #include <cerrno>
 #include <csignal>
@@ -86,15 +88,24 @@ void	ServerManager::epollWait() {
 
 void	ServerManager::loopReadyEvents(void) {
 	int	fd;
+	std::stringstream	ss;
 
 	for (int i = 0; i < _readyEvents; ++i) {
 		fd = _requestBuf[i].data.fd;
+		std::cerr << "fd in loop is: " << fd << std::endl;
 		if (_serversMap.find(fd) != _serversMap.end()) {
 			_serversMap.at(fd).handleServerEvent();
 		}
-		else {
+		else if (_clientToServerMap.find(fd) != _clientToServerMap.end()) {
 			int	serverFd = _clientToServerMap[fd];
 			_serversMap.at(serverFd).handleClientEvent(fd);
+		}
+		else { /* is CGI's pipe fd */
+			std::cerr << "caught CGI in epoll... pipefd is: " << _requestBuf[i].data.fd << std::endl;
+			char buf[100];
+			ssize_t bytes_read = read(_requestBuf[i].data.fd, buf, 99);
+			buf[bytes_read] = 0;
+			std::cerr << "reading pipe: " << buf << std::endl;
 		}
 	}
 }

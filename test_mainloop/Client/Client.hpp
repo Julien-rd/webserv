@@ -9,16 +9,20 @@
 class Client {
 	private:
 		int				_fd;
+		int				_epfd;
 		HttpRequest		_request;
 		HttpResponse	_response;
 		size_t			_bytesRead;
-		CGI				_cgi;
 
 		int		closeConnection(); 
 
 	public:
 		Client();
+		Client(int epfd);
+		Client(const Client& obj);
+		const Client&	operator=(const Client& obj);
 
+		CGI				_cgi;
 		int		loop(std::string input);
 		size_t	getBytesRead();
 		void	handleCGI(CGI& cgi);
