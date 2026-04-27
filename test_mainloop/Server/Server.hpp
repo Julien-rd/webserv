@@ -1,7 +1,7 @@
 #ifndef SERVER_CLASS_HPP
 # define SERVER_CLASS_HPP
 
-# include "../Client/Client.hpp" // FIXME fix file name "client.hpp" > "Client.hpp"
+# include "../Client/Client.hpp" 
 # include "../headers/structs/ErrorType.hpp"
 # include "../headers/structs/ServerStructs.hpp"
 # include "../ParseConfig/Structs.hpp"
