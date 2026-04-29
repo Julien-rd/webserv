@@ -45,7 +45,7 @@ class	CGI {
 		t_metaVariables		meta;
 		int					pid;
 		int					epfd;
-		Client&				client;
+		int					clientFd;
 
 		const char			*executable;
 		char				*argv[3];
@@ -69,7 +69,7 @@ class	CGI {
 		void	execute(void);
 
 	public:
-		CGI(const HttpRequest& request, Client& client, int epfd);
+		CGI(const HttpRequest& request, int clientFd, int epfd);
 		~CGI(void);
 		const CGI&	operator=(const CGI& obj);
 

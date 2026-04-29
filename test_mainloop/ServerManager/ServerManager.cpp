@@ -86,13 +86,18 @@ void	ServerManager::epollWait() {
 	}
 }
 
+static void	PPMemcpy(void *dest, void *src, int size) {
+	for (int i = 0; i < size; i++) {
+		static_cast<unsigned char*>(dest)[i] = static_cast<unsigned char*>(src)[i];
+	}
+}
+
 void	ServerManager::loopReadyEvents(void) {
-	int	fd;
 	std::stringstream	ss;
 
 	for (int i = 0; i < _readyEvents; ++i) {
-		fd = _requestBuf[i].data.fd;
-		std::cerr << "fd in loop is: " << fd << std::endl;
+		int	fd = _requestBuf[i].data.fd;
+		// std::cout << "fd in loop is: " << fd << std::endl;
 		if (_serversMap.find(fd) != _serversMap.end()) {
 			_serversMap.at(fd).handleServerEvent();
 		}
@@ -101,11 +106,13 @@ void	ServerManager::loopReadyEvents(void) {
 			_serversMap.at(serverFd).handleClientEvent(fd);
 		}
 		else { /* is CGI's pipe fd */
-			std::cerr << "caught CGI in epoll... pipefd is: " << _requestBuf[i].data.fd << std::endl;
-			char buf[100];
-			ssize_t bytes_read = read(_requestBuf[i].data.fd, buf, 99);
+			int fds[2]; // fds[0] is the pipefd. fds[1] is the owning client's fd.
+			PPMemcpy(fds, &_requestBuf[i].data.u64, sizeof(uint64_t));
+			std::cout << "caught CGI in epoll... client fd: " << fds[1] << ". pipefd is: " << fds[0] << std::endl;
+			char buf[1024];
+			ssize_t bytes_read = read(fds[0], buf, 1023);
 			buf[bytes_read] = 0;
-			std::cerr << "reading pipe: " << buf << std::endl;
+			std::cout << "reading pipe: " << buf << std::endl;
 		}
 	}
 }

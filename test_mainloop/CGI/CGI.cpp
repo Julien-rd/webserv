@@ -45,7 +45,7 @@ const char *errno_name(int e) {
 // Usage:
 // fprintf(stderr, "error: %s (%s)\n", errno_name(errno), strerror(errno));
 
-CGI::CGI(const HttpRequest& request, Client& client, int epfd): request(request), epfd(epfd), client(client),
+CGI::CGI(const HttpRequest& request, int clientFd, int epfd): request(request), epfd(epfd), clientFd(clientFd),
 pythonScriptName("/python.py"),
 phpScriptName("/php.php") {
 	this->pipefd[0] = -1;
@@ -148,20 +148,27 @@ void	CGI::spawnProcess(void) {
 	}
 	if (this->pid == 0) {
 		this->addPipeToEpoll();
-		std::cout << "========= addPipeToEpoll() succeeded\n";
+		// std::cout << "========= addPipeToEpoll() succeeded\n";
 		this->redirectIO();
-		std::cerr << "========= redirectIO() succeeded\n";
+		// std::cerr << "========= redirectIO() succeeded\n";
 		this->execute();
 	}
 }
 
+static void	pingPongMemcpy(void *dest, void *src, int size) {
+	for (int i = 0; i < size; i++) {
+		static_cast<unsigned char*>(dest)[i] = static_cast<unsigned char*>(src)[i];
+	}
+}
+
 void	CGI::addPipeToEpoll(void) {
-	std::cout << "in addPipeToEpoll(), pipefd[0]: " << pipefd[0] << " == this->epfd: " << this->epfd << std::endl;
-	std::cout << "in addPipeToEpoll(), pipefd[1]: " << pipefd[1] << " == this->epfd: " << this->epfd << std::endl;
+	// std::cout << "in addPipeToEpoll(), pipefd[0]: " << pipefd[0] << " == this->epfd: " << this->epfd << std::endl;
+	// std::cout << "in addPipeToEpoll(), pipefd[1]: " << pipefd[1] << " == this->epfd: " << this->epfd << std::endl;
 	struct epoll_event	ev;
+	int	fds[2] = {this->pipefd[0], this->clientFd};
+	// TODO do we need to set all of this to null if the clients disconnects?
 	ev.events = EPOLLIN;
-	ev.data.ptr = &client;
-	ev.data.fd = this->pipefd[0];
+	pingPongMemcpy(static_cast<void *>(&ev.data.u64), fds, sizeof(uint64_t));
 	if (epoll_ctl(this->epfd, EPOLL_CTL_ADD, this->pipefd[0], &ev) == -1) {
 		// std::cerr << errno_name(errno) << ": " << strerror(errno) << std::endl;
 		throw std::runtime_error("addPipeToEpoll() failed");

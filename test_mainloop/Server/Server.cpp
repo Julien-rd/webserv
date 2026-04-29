@@ -105,6 +105,7 @@ void	Server::setServerSockAddr(void) {
 void	Server::addSocketToEpoll(int socketFd) {
 	struct epoll_event	ev;
 	ev.events = EPOLLIN;
+	// ev.data.ptr = 0;
 	ev.data.fd = socketFd;
 	if (epoll_ctl(_context.epfd, EPOLL_CTL_ADD, socketFd, &ev) == -1) {
 		error_msg(ERR_EPOLL_CTL);
