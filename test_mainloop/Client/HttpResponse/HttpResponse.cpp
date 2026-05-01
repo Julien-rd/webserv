@@ -21,7 +21,7 @@ HttpResponse::HttpResponse() {
   _mimeTypes["ico"] = "image/x-icon";
   _mimeTypes["txt"] = "text/plain";
 
-  std::string	webServDir = "..";
+  std::string webServDir = "..";
   _uri["/ronaldo"] = webServDir + "/mySites/ronaldo.png";
   _uri["/"] = webServDir + "/mySites/index.html";
   _uri["/form"] = webServDir + "/mySites/form.html";
@@ -30,9 +30,7 @@ HttpResponse::HttpResponse() {
   _uri["/favicon.ico"] = webServDir + "/mySites/ronaldo.png";
 }
 
-std::vector<char> HttpResponse::getResponseBody(){
-  return _responseBody;
-}
+std::vector<char> HttpResponse::getResponseBody() { return _responseBody; }
 
 void HttpResponse::reset() {
   _contentLength = 0;
@@ -57,13 +55,12 @@ int HttpResponse::getTimeStamp() {
   _timeStamp = buf;
   return 0;
 }
+#include <algorithm>
 #include <csignal>
 #include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <iostream>
-#include <cstring>
-#include <algorithm>
-
 
 int HttpResponse::extractContentType(std::string path) {
   size_t pos = path.find_last_of('.');
@@ -87,43 +84,41 @@ void HttpResponse::extractContentLength() {
   _response += "Content-Length: " + ss.str() + "\r\n";
 }
 
-
-
 void HttpResponse::addBody(HttpRequest request) {
-  std::string path; 
+  std::string path;
   std::string uri = request.getURI();
   std::cout << uri;
-  if(uri == "/password.html"){
+  if (uri == "/password.html") {
     serveSuccessPage(request);
-    return ;
+    return;
   }
   std::map<std::string, std::string>::iterator it = _uri.find(uri);
-  if(it == _uri.end()){
+  if (it == _uri.end()) {
     _statusCode = 404;
-    return ; // URI not found
+    return; // URI not found
   }
   // check if method is allowed for this uri, if not _statusCode = 405
   path = it->second;
   // end
   std::cout << " == trying to open (" << path.c_str() << ")\n";
   std::fstream htmlPage(path.c_str(), std::ios::in | std::ios::binary);
-  if (!htmlPage.is_open())  { // or empty file
+  if (!htmlPage.is_open()) { // or empty file
     std::cout << "error opening html file: " << strerror(errno);
     return; // error handling
   }
   htmlPage.seekg(0, std::ios::end);
   std::streampos size = htmlPage.tellg();
   htmlPage.seekg(0, std::ios::beg);
-  if(size == 0){
-    _statusCode = 404; //check statusCodes
+  if (size == 0) {
+    _statusCode = 404; // check statusCodes
     std::cout << "empty file\n";
-    return ;
+    return;
   }
   _responseBody.resize(size);
   htmlPage.read(&_responseBody[0], size);
-  if (extractContentType(path) == 1){
-    //mimetype not found
-    return ;
+  if (extractContentType(path) == 1) {
+    // mimetype not found
+    return;
   }
   extractContentLength();
   _response += "\r\n";
@@ -213,8 +208,10 @@ void HttpResponse::serveSuccessPage(HttpRequest request) {
 
   std::vector<char> requestBody = request.getBody();
 
-  std::vector<char>::iterator start = std::find(requestBody.begin(), requestBody.end(), '=');
-  std::vector<char>::iterator end = std::find(requestBody.begin(), requestBody.end(), '&');
+  std::vector<char>::iterator start =
+      std::find(requestBody.begin(), requestBody.end(), '=');
+  std::vector<char>::iterator end =
+      std::find(requestBody.begin(), requestBody.end(), '&');
   std::string username(start + 1, end);
 
   start = std::find(end, requestBody.end(), '=');
@@ -224,7 +221,9 @@ void HttpResponse::serveSuccessPage(HttpRequest request) {
   std::string htmlBody = "<!DOCTYPE html>\r\n"
                          "<html>\r\n"
                          "    <body>\r\n<h1>"
-                         "registration of " + username + " with password: " + password + " successful" // make sure to protect against XSS
+                         "registration of " +
+                         username + " with password: " + password +
+                         " successful" // make sure to protect against XSS
                          "</h1>\r\n"
                          "    </body>\r\n"
                          "</html>\r\n";
@@ -244,7 +243,7 @@ int HttpResponse::build(HttpRequest request) {
   addRules();
   if (_statusCode < 400)
     addBody(request);
-  if(_statusCode >= 400){
+  if (_statusCode >= 400) {
     serveErrorPage();
     return 1;
   }

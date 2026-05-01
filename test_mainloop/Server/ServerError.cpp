@@ -4,14 +4,14 @@
 
 #include <iostream>
 
-#include <cstring>
 #include <cerrno>
+#include <cstring>
 
-static void	custom_perror(const char *spec, char *errnoMsg) {
+static void custom_perror(const char *spec, char *errnoMsg) {
   std::cout << spec << errnoMsg << "\n";
 }
 
-int	Server::error_msg(ErrorType type) {
+int Server::error_msg(ErrorType type) {
   int ret = 1;
   switch (type) {
   case ERR_EPOLL_WAIT:

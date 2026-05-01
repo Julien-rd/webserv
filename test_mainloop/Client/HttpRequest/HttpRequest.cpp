@@ -12,24 +12,24 @@ HttpRequest::HttpRequest()
 
 std::vector<char> HttpRequest::getBody() const { return _body; }
 
-const HttpRequest& HttpRequest::operator=(const HttpRequest& obj) {
-	if (&obj == this) {
-		return *this;
-	}
-    _method = obj._method;
-    _uri = obj._uri;
-    _headers = obj._headers;
-    _currentState = obj._currentState;
-    _contentLength = obj._contentLength;
-    _httpVersion = obj._httpVersion;
-    _fieldName = obj._fieldName;
-    _fieldValue = obj._fieldName;
-    _bytesRead = obj._bytesRead;
-    _statusCode = obj._statusCode;
-    _parsingDone = obj._parsingDone;
-    _body = obj._body;
-    _client_max_body_size = obj._client_max_body_size;
-	return *this;
+const HttpRequest &HttpRequest::operator=(const HttpRequest &obj) {
+  if (&obj == this) {
+    return *this;
+  }
+  _method = obj._method;
+  _uri = obj._uri;
+  _headers = obj._headers;
+  _currentState = obj._currentState;
+  _contentLength = obj._contentLength;
+  _httpVersion = obj._httpVersion;
+  _fieldName = obj._fieldName;
+  _fieldValue = obj._fieldName;
+  _bytesRead = obj._bytesRead;
+  _statusCode = obj._statusCode;
+  _parsingDone = obj._parsingDone;
+  _body = obj._body;
+  _client_max_body_size = obj._client_max_body_size;
+  return *this;
 }
 
 void HttpRequest::print() {
@@ -72,7 +72,7 @@ int HttpRequest::parseRequestLine(std::string &request_content) {
     if (validMethod() == false)
       return 1;
     _currentState = URI;
-	/* fall through */
+    /* fall through */
   case URI:
     findSeperator(request_content, ' ', pos, max_pos);
     if (brokenSyntax(pos, max_pos))
@@ -85,7 +85,7 @@ int HttpRequest::parseRequestLine(std::string &request_content) {
     if (validUri() == false)
       return 1;
     _currentState = HTTP_VERSION;
-	/* fall through */
+    /* fall through */
   case HTTP_VERSION:
     pos = request_content.find("\r", _bytesRead);
     if (pos == std::string::npos) {
@@ -96,7 +96,7 @@ int HttpRequest::parseRequestLine(std::string &request_content) {
     if (validHttpsVersion() == false)
       return 1;
     _currentState = CR;
-	/* fall through */
+    /* fall through */
   case CR:
     pos = request_content.find("\n", _bytesRead);
     if (_bytesRead >= request_content.size())
@@ -148,7 +148,7 @@ int HttpRequest::parseHeaders(std::string &request_content) {
         return 1;
       }
       _currentState = FIELD_VALUE;
-	/* fall through */
+      /* fall through */
     case FIELD_VALUE:
       pos = request_content.find("\r", _bytesRead);
       if (pos == std::string::npos) {
@@ -159,7 +159,7 @@ int HttpRequest::parseHeaders(std::string &request_content) {
       trim();
       addHeader();
       _currentState = CR;
-	/* fall through */
+      /* fall through */
     case CR:
       pos = request_content.find("\n", _bytesRead);
       if (_bytesRead >= request_content.size())
@@ -176,7 +176,7 @@ int HttpRequest::parseHeaders(std::string &request_content) {
         return 1;
       ++_bytesRead;
       _currentState = BODY;
-	/* fall through */
+      /* fall through */
     default:
       return 0;
     }

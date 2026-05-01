@@ -1,67 +1,65 @@
 #ifndef SERVER_CLASS_HPP
-# define SERVER_CLASS_HPP
+#define SERVER_CLASS_HPP
 
-# include "../Client/Client.hpp"
-# include "../headers/structs/ErrorType.hpp"
-# include "../headers/structs/ServerStructs.hpp"
-# include "../ParseConfig/Structs.hpp"
+#include "../Client/Client.hpp"
+#include "../ParseConfig/Structs.hpp"
+#include "../headers/structs/ErrorType.hpp"
+#include "../headers/structs/ServerStructs.hpp"
 
-# include <set>
+#include <set>
 
-# include <netinet/in.h>
-# include <sys/epoll.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/socket.h>
+#include <fcntl.h>
 #include <netdb.h>
+#include <netinet/in.h>
+#include <sys/epoll.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #define BUFFER_SIZE 4096
 
-enum e_map_operation {
-	ADD,
-	REMOVE
-};
+enum e_map_operation { ADD, REMOVE };
 
 class Server {
-	private:
-		typedef std::set<int>			IntSet;
+private:
+  typedef std::set<int> IntSet;
 
-		const t_server&				_config;
-		int                         _sid; //server identifier
-		t_serverContext             _context;
-		int							_serverSocket;
-		addrinfo					*_addrInfo;
-		std::map<int, IntSet>&		_clientsMap;
-		std::map<int, int>&			_clientToServerMap;
-		std::map<int, Client>&		_clients;
+  const t_server &_config;
+  int _sid; // server identifier
+  t_serverContext _context;
+  int _serverSocket;
+  addrinfo *_addrInfo;
+  std::map<int, IntSet> &_clientsMap;
+  std::map<int, int> &_clientToServerMap;
+  std::map<int, Client> &_clients;
 
-		void		initServerSocket(void);
-		void		setServerSockAddr(void);
-		void		addSocketToEpoll(int socketFd);
-		void		bindAndListen(void);
-		void		setToNonBlocking(int socketFd);
+  void initServerSocket(void);
+  void setServerSockAddr(void);
+  void addSocketToEpoll(int socketFd);
+  void bindAndListen(void);
+  void setToNonBlocking(int socketFd);
 
-		void		closeConnection(int clientFd);
-		void		updateClientsMap(enum e_map_operation op, const int clientFd);
+  void closeConnection(int clientFd);
+  void updateClientsMap(enum e_map_operation op, const int clientFd);
 
-	public:
-		Server(const t_server& conf, std::map<int, IntSet>& _clientsMap,
-			std::map<int, Client>& clients, std::map<int, int>& _clientToServerMap, t_serverContext &context, int sid);
-		Server(const Server& obj);
-		~Server(void);
+public:
+  Server(const t_server &conf, std::map<int, IntSet> &_clientsMap,
+         std::map<int, Client> &clients, std::map<int, int> &_clientToServerMap,
+         t_serverContext &context, int sid);
+  Server(const Server &obj);
+  ~Server(void);
 
-		void		checkClientCap(void);
-		void		handleServerEvent(void);
-		void		handleClientEvent(int clientFd);
+  void checkClientCap(void);
+  void handleServerEvent(void);
+  void handleClientEvent(int clientFd);
 
-		int			start(void);
-		void		closeClientFds(void);
+  int start(void);
+  void closeClientFds(void);
 
-		int			getIdentifier(void) const;
+  int getIdentifier(void) const;
 
-		int			error_msg(ErrorType type);
+  int error_msg(ErrorType type);
 };
 
 #endif /* SERVER_CLASS_HPP */

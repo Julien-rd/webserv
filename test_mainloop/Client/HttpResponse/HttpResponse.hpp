@@ -13,7 +13,6 @@ enum responseClass {
   SERVER_ERR = 5
 };
 
-
 class HttpResponse {
 public:
   HttpResponse();
@@ -40,10 +39,11 @@ private:
   void getReasonPhraseClientErr();
   void getReasonPhraseServerErr();
 
-  std::map<std::string, std::string> _mimeTypes; // should be extracted out of conf file
+  std::map<std::string, std::string>
+      _mimeTypes; // should be extracted out of conf file
   std::map<std::string, std::string> _uri;
 
-  //mandatory headers
+  // mandatory headers
   size_t _contentLength; // except status code = 204
   std::string _contentType;
   std::string _timeStamp;
@@ -61,4 +61,3 @@ private:
 };
 
 #endif
-
