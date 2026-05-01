@@ -20,4 +20,4 @@ void parseIndex(const std::vector<std::string> &args, t_location &location);
 /*Globals */
 Node *parseTree(Tokenizer &stream);
 void evalTree(Node *tree, t_config &evalData);
-bool parser(t_config &config, const char *fileName);
+bool parseConfigFile(t_config &config, const char *fileName);

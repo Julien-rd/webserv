@@ -1,4 +1,0 @@
-2. We could maybe replace all the error handling with wrapper functions that throw exception
-	on error, and make a try catch block that wraps all the code, so the code looks cleaner
-
-3. We should set FD_CLOEXEC on all file descriptors

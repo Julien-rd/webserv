@@ -2,7 +2,7 @@
 #define SERVER_CLASS_HPP
 
 #include "../Client/Client.hpp"
-#include "../ParseConfig/Structs.hpp"
+#include "../ConfigParser/Structs.hpp"
 #include "../headers/structs/ErrorType.hpp"
 #include "../headers/structs/ServerStructs.hpp"
 

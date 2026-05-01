@@ -11,7 +11,7 @@ CLASS_SOURCES = ServerManager/ServerManager.cpp ServerManager/ServerManagerError
 				Client/Client.cpp \
 				Client/HttpRequest/HttpRequest.cpp Client/HttpRequest/HttpRequestGetters.cpp Client/HttpRequest/HttpRequestHelpers.cpp \
 				Client/HttpResponse/HttpResponse.cpp Client/HttpResponse/ReasonPhrase.cpp \
-				ParseConfig/DirectiveHandlers.cpp ParseConfig/EvalTree.cpp ParseConfig/Parser.cpp ParseConfig/ParseTree.cpp
+				ConfigParser/DirectiveHandlers.cpp ConfigParser/EvalTree.cpp ConfigParser/Parser.cpp ConfigParser/ParseTree.cpp
 ALL_SOURCES = $(SOURCES) $(CLASS_SOURCES)
 
 HEADERS = ServerManager.hpp HttpRequest.hpp # TODO add the rest
@@ -31,11 +31,11 @@ $(OBJ_DIR)%.o: %.cpp
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
 run: re
-	./$(NAME) ParseConfig/test.txt
+	./$(NAME) ConfigParser/test.txt
 
 runval: CXXFLAGS:= -Wall -Wextra -Werror -std=c++98 -pedantic -g
 runval: re
-	valgrind --leak-check=full --show-leak-kinds=all ./$(NAME) ParseConfig/test.txt
+	valgrind --leak-check=full --show-leak-kinds=all ./$(NAME) ConfigParser/test.txt
 	
 runsan: CXXFLAGS:= -std=c++98 -g -fsanitize=address,leak,undefined,bounds,float-divide-by-zero
 runsan: re

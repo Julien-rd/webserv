@@ -18,7 +18,7 @@ void setDefault(t_config &config) {
   config.maxClients = 1024;
 }
 
-bool parser(t_config &config, const char *fileName) {
+bool parseConfigFile(t_config &config, const char *fileName) {
   Node *tree = NULL;
   setDefault(config);
   try {
