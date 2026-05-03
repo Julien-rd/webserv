@@ -156,11 +156,11 @@ void Server::checkClientCap(void) {
 }
 
 void Server::handleServerEvent(void) {
-  int clientSocket;
+  int clientFd;
 
   while (true) {
-    clientSocket = accept(_serverSocket, NULL, NULL);
-    if (clientSocket == -1) {
+    clientFd = accept(_serverSocket, NULL, NULL);
+    if (clientFd == -1) {
       if (errno == EAGAIN || errno == EWOULDBLOCK) {
         return;
       } else {
@@ -174,10 +174,10 @@ void Server::handleServerEvent(void) {
       std::cout << e.what() << std::endl;
       return;
     }
-    updateClientsMap(ADD, clientSocket);
-    setToNonBlocking(clientSocket);
-    addSocketToEpoll(clientSocket);
-    std::cout << "Server __" << _sid << "__ accepted Client: " << clientSocket
+    updateClientsMap(ADD, clientFd);
+    setToNonBlocking(clientFd);
+    addSocketToEpoll(clientFd);
+    std::cout << "Server __" << _sid << "__ accepted Client: " << clientFd
               << std::endl;
   }
 }

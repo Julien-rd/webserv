@@ -32,7 +32,7 @@ $(OBJ_DIR)%.o: %.cpp
 	@mkdir -p $(dir $@)
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
-run: re
+run: all
 	./$(NAME) ConfigParser/test.txt
 
 runval: CXXFLAGS:= -Wall -Wextra -Werror -std=c++98 -pedantic -g

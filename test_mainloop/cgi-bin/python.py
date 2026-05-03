@@ -3,7 +3,7 @@
 # import os
 # import sys
 
-print("Content-Type: text/html\r\nX-Custom-Header: value\r\n\r\n<html>...actual body content...</html>")
+print("Content-Type: text/html\r\nCustom-Header: custom value\r\n\r\n<html>...actual body content...</html>")
 
 # print("\nArguments:")
 # for i, arg in enumerate(sys.argv):

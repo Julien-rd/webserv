@@ -17,7 +17,7 @@
 const std::string CGI::pythonScriptName = "/python.py";
 const std::string CGI::phpScriptName = "/php.php";
 
-CGI::CGI(const HttpRequest &request, int clientFd, int epfd)
+CGI::CGI(const HttpRequest& request, int clientFd, int epfd)
     : request(request), epfd(epfd), clientFd(clientFd) {
   this->pipefd[0] = -1;
   this->pipefd[1] = -1;
@@ -33,7 +33,7 @@ CGI::~CGI(void) {
   // }
 }
 
-const CGI &CGI::operator=(const CGI &obj) {
+const CGI& CGI::operator=(const CGI& obj) {
   if (&obj == this) {
     return *this;
   }
@@ -111,7 +111,7 @@ void CGI::pipeIO(void) {
 void CGI::spawnProcess(void) {
   this->pid = fork();
   if (this->pid == -1) {
-    throw std::runtime_error("CGI fork failed");
+    throw std::runtime_error("fork() failed in CGI");
   }
   if (this->pid == 0) {
     this->addPipeToEpoll();
@@ -130,14 +130,14 @@ void CGI::addPipeToEpoll(void) {
   struct epoll_event ev;
   ev.events = EPOLLIN;
   uint64_t u64;
-  reinterpret_cast<int *>(&u64)[0] = this->pipefd[0];
-  reinterpret_cast<int *>(&u64)[1] =
+  reinterpret_cast<int*>(&u64)[0] = this->pipefd[0];
+  reinterpret_cast<int*>(&u64)[1] =
       this->clientFd; // TODO do we need to set all of this to null if the
                       // clients disconnects?
   ev.data.u64 = u64;
   if (epoll_ctl(this->epfd, EPOLL_CTL_ADD, this->pipefd[0], &ev) == -1) {
     // std::cerr << errno_name(errno) << ": " << strerror(errno) << std::endl;
-    throw std::runtime_error("addPipeToEpoll() failed");
+    throw std::runtime_error("addPipeToEpoll() failed in CGI");
   }
 }
 
@@ -146,7 +146,7 @@ void CGI::redirectIO(void) {
   // std::cout << "redirectIO(): this->pipefd[1]: " << this->pipefd[1] << " ==
   // this->pipefd[0]: " << this->pipefd[0] << std::endl;
   if (dup2(this->pipefd[1], STDOUT_FILENO) == -1) {
-    throw CGI::StandardException();
+    throw std::runtime_error("dup2() failed in CGI");
   }
   // if (dup2(this->pipefd[0], STDIN_FILENO) == -1) {
   // 	throw CGI::StandardException();
@@ -171,7 +171,7 @@ void CGI::execute(void) {
   // parameters, path:\n" << this->executable << " ================\n" <<
   // this->argv[0] << "------" << this->argv[1] << "================\n" <<
   // this->envp[0] << std::endl;
-  if (execve(this->executable, this->argv, const_cast<char **>(this->envp)) ==
+  if (execve(this->executable, this->argv, const_cast<char**>(this->envp)) ==
       -1) {
     std::cerr << "execve() failed. shouldn't reach here, maybe invalid "
                  "arguments (path or argv))"
@@ -180,7 +180,7 @@ void CGI::execute(void) {
   }
 }
 
-bool CGI::isCGIRequest(const HttpRequest &request) {
+bool CGI::isCGIRequest(const HttpRequest& request) {
   // std::cout << "calling isCGIRequest(): request._uri is: (" << request._uri
   // << ")" << " pythonScriptName is: (" << pythonScriptName << ") " <<
   // std::endl;

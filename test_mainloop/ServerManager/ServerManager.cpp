@@ -79,7 +79,7 @@ void ServerManager::loopReadyEvents(void) {
                            // will have Server or Client fd in fd. if its a
                            // CGI event, data union will save two ints
                            // (pipefd & clientFd) in u64 (or ptr)
-    std::cout << "fd in loop is: " << fd << std::endl;
+    // std::cout << "fd in loop is: " << fd << std::endl;
     if (_servers.find(fd) != _servers.end()) {
       _servers.at(fd).handleServerEvent();
     } else if (_clientToServerMap.find(fd) != _clientToServerMap.end()) {
@@ -89,8 +89,8 @@ void ServerManager::loopReadyEvents(void) {
       int fds[2]; // fds[0] is the pipefd. fds[1]
                   // is the owning client's fd.
       pp_memcpy(fds, &_triggeredEvents[i].data.u64, sizeof(uint64_t));
-      std::cout << "caught CGI in epoll... client fd: " << fds[1]
-                << ". pipefd is: " << fds[0] << std::endl;
+      // std::cout << "caught CGI in epoll... client fd: " << fds[1]
+      //           << ". pipefd is: " << fds[0] << std::endl;
       _clients[fds[1]].handleCGIOutput(fds[0]);
     }
   }

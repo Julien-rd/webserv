@@ -11,6 +11,7 @@
 #include <netinet/in.h>
 #include <poll.h>
 #include <sstream>
+#include <stdexcept>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -22,10 +23,10 @@ Client::Client() : _fd(-1), _epfd(-1), _request() {}
 
 Client::Client(int epfd) : _fd(-1), _epfd(epfd), _request() {}
 
-Client::Client(const Client &obj)
+Client::Client(const Client& obj)
     : _fd(obj._fd), _epfd(obj._epfd), _request(obj._request) {}
 
-const Client &Client::operator=(const Client &obj) {
+const Client& Client::operator=(const Client& obj) {
   if (&obj == this) {
     return *this;
   }
@@ -47,14 +48,14 @@ void Client::reset() {
 
 int Client::closeConnection() {
   _response.build(_request);
-  const char *response = _response.getResponse();
+  const char* response = _response.getResponse();
   if (send(_fd, response, strlen(response), 0) ==
       -1) // should we even protect? connection gets closed anyways
     abort();
   return 1;
 }
 
-void Client::handleCGI(CGI &cgi) {
+void Client::handleCGI(CGI& cgi) {
   // bool err = false;
 
   try {
@@ -67,7 +68,7 @@ void Client::handleCGI(CGI &cgi) {
     // cgi.wait(); // TODO do we need wait for CGI to finish executing and
     // writing to the pipe? std::cout << "========= wait() succeeded\n";
     // cgi.redirectIO(); // I don't think I need this ¯\_(ツ)_/¯
-  } catch (std::exception &e) {
+  } catch (std::exception& e) {
     std::cerr << "exception caught in handleCGI(): " << e.what() << std::endl;
   }
   // if (_response.build(_request) == 1)
@@ -87,16 +88,22 @@ void Client::handleCGI(CGI &cgi) {
 }
 
 void Client::handleCGIOutput(int pipeReadFd) {
-  std::stringstream ss;
-  char buf[1024];
+  char    buf[6];
   ssize_t bytesRead;
 
-  // TODO should check for epoll readiness first
-  bytesRead = read(pipeReadFd, buf, 1023);
-  buf[bytesRead] = '\0';
-  ss << buf;
-  std::cout << "\nadded output of CGI to stringstream:\n"
-            << ss.str() << std::endl;
+  bytesRead = read(pipeReadFd, buf, 5);
+  if (bytesRead == -1) {
+    throw std::runtime_error("read() failed in Client::handleCGIOutput");
+  }
+  if (bytesRead == 0) {
+    std::cout << "building CGI response from: " << _CGIResponseStream.str()
+              << std::endl;
+    // build CGI response and send it
+  } else {
+    buf[bytesRead] = '\0';
+    _CGIResponseStream << buf;
+    std::cout << "added " << " to stringstream" << std::endl;
+  }
 }
 
 int Client::loop(std::string input) {
@@ -116,8 +123,7 @@ int Client::loop(std::string input) {
     }
     if (_response.build(_request) == 1)
       err = true;
-    const char *response = _response.getResponse();
-    // TODO should check for epoll readiness first
+    const char* response = _response.getResponse();
     if (send(_fd, response, strlen(response), 0) ==
         -1) // how should we protect here? cut client/close server?
       abort();
