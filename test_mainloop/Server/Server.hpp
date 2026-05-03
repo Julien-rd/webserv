@@ -5,8 +5,7 @@
 #include "../ConfigParser/Structs.hpp"
 #include "../Error/Error.hpp"
 #include "../headers/structs/ServerStructs.hpp"
-
-#include <set>
+#include "../headers/typedefs.hpp"
 
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -19,20 +18,24 @@
 
 #define BUFFER_SIZE 4096
 
-enum e_map_operation { ADD, REMOVE };
+typedef enum e_mapOperation { ADD, REMOVE } e_mapOperation;
 
 class Server : public Error {
 private:
-  typedef std::set<int> IntSet;
+  const t_config& _config;
 
-  int                    _serverSocket;
-  addrinfo*              _addrInfo;
-  int                    _sid; // server identifier
-  const t_config&        _config;
-  int                    _epfd;
-  std::map<int, IntSet>& _clientsMap;
+  /* Attributes shared from Poller */
+  int _epfd;
+
+  /* Attributes shared from ServerManager  */
+  int                    _sid;
+  std::map<int, IntSet>& _serverToClientsMap;
   std::map<int, int>&    _clientToServerMap;
   std::map<int, Client>& _clients;
+
+  /* Server's own attributes */
+  int       _serverSocket;
+  addrinfo* _addrInfo;
 
   void initServerSocket(void);
   void setServerSockAddr(void);
@@ -41,7 +44,7 @@ private:
   void setToNonBlocking(int socketFd);
 
   void closeConnection(int clientFd);
-  void updateClientsMap(enum e_map_operation op, const int clientFd);
+  void updateClientsMap(e_mapOperation op, const int clientFd);
 
 public:
   Server(t_serverContext context);

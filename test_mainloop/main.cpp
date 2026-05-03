@@ -1,5 +1,6 @@
 #include "ConfigParser/Parser.hpp"
 #include "ConfigParser/Structs.hpp"
+#include "Poller/Poller.hpp"
 #include "ServerManager/ServerManager.hpp"
 #include "headers/structs/ServerManagerContext.hpp"
 

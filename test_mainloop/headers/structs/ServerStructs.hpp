@@ -6,11 +6,11 @@
 
 #include <map>
 
-typedef struct s_serverContext {
+typedef struct {
   int                    epfd;
   const t_config&        config;
   size_t                 sid;
-  std::map<int, IntSet>& clientsMap;
+  std::map<int, IntSet>& serverToClientsMap;
   std::map<int, Client>& clients;
   std::map<int, int>&    clientToServerMap;
   // unsigned int maxClients;

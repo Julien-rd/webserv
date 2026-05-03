@@ -17,16 +17,16 @@
 #include <unistd.h>
 
 Server::Server(t_serverContext context)
-    : _serverSocket(-1), _addrInfo(NULL), _sid(context.sid),
-      _config(context.config), _epfd(context.epfd),
-      _clientsMap(context.clientsMap),
-      _clientToServerMap(context.clientToServerMap), _clients(context.clients) {
-}
+    : _config(context.config), _epfd(context.epfd), _sid(context.sid),
+      _serverToClientsMap(context.serverToClientsMap),
+      _clientToServerMap(context.clientToServerMap), _clients(context.clients),
+      _serverSocket(-1), _addrInfo(NULL) {}
 
 Server::Server(const Server& obj)
-    : _serverSocket(obj._serverSocket), _addrInfo(NULL), _sid(obj._sid),
-      _config(obj._config), _epfd(obj._epfd), _clientsMap(obj._clientsMap),
-      _clientToServerMap(obj._clientToServerMap), _clients(obj._clients) {}
+    : _config(obj._config), _epfd(obj._epfd), _sid(obj._sid),
+      _serverToClientsMap(obj._serverToClientsMap),
+      _clientToServerMap(obj._clientToServerMap), _clients(obj._clients),
+      _serverSocket(obj._serverSocket), _addrInfo(NULL) {}
 
 Server::~Server(void) {
   if (_addrInfo) {
@@ -45,7 +45,7 @@ void Server::closeClientFds(void) {
   }
 }
 
-void Server::updateClientsMap(enum e_map_operation op, const int clientFd) {
+void Server::updateClientsMap(e_mapOperation op, const int clientFd) {
   switch (op) {
   case ADD:
     _clientToServerMap[clientFd] = _serverSocket;
@@ -55,13 +55,13 @@ void Server::updateClientsMap(enum e_map_operation op, const int clientFd) {
                        // assignment operator? this basically constructs 2
                        // client instances, can we make it only one?
     _clients[clientFd].setFd(clientFd);
-    _clientsMap.at(_serverSocket).insert(clientFd);
+    _serverToClientsMap.at(_serverSocket).insert(clientFd);
     break;
   case REMOVE:
     _clientToServerMap.erase(clientFd);
     _clients[clientFd].reset();
     _clients.erase(clientFd);
-    _clientsMap.at(_serverSocket).erase(clientFd);
+    _serverToClientsMap.at(_serverSocket).erase(clientFd);
   }
 }
 

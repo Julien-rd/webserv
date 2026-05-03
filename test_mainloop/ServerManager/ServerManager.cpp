@@ -3,7 +3,6 @@
 
 #include <exception>
 #include <iostream>
-#include <sstream>
 #include <vector>
 
 #include <cerrno>
@@ -24,25 +23,25 @@ ServerManager::ServerManager(const t_serverManagerContext& context)
       _triggeredEvents(context.triggeredEvents) {}
 
 ServerManager::~ServerManager(void) {
-  for (std::map<int, Server>::iterator it = _serversMap.begin();
-       it != _serversMap.end(); it++) {
+  for (std::map<int, Server>::iterator it = _servers.begin();
+       it != _servers.end(); it++) {
     it->second.closeClientFds();
     close(it->first);
   }
 }
 
 void ServerManager::addServerToMaps(int serverSocket, Server& server) {
-  _serversMap.insert(std::pair<int, Server>(serverSocket, server));
-  _clientsMap.insert(std::pair<int, IntSet>(serverSocket, IntSet()));
+  _servers.insert(std::pair<int, Server>(serverSocket, server));
+  _serverToClientsMap.insert(std::pair<int, IntSet>(serverSocket, IntSet()));
 }
 
 void ServerManager::startServers(void) {
   int serverSocket;
 
   for (size_t i = 0; i < _config.servers.size(); ++i) {
-    t_serverContext context = {_epfd,       _config,  i,
-                               _clientsMap, _clients, _clientToServerMap};
-    Server          server(context);
+    t_serverContext context = {
+        _epfd, _config, i, _serverToClientsMap, _clients, _clientToServerMap};
+    Server server(context);
     try {
       serverSocket = server.start();
     } catch (std::exception& e) {
@@ -52,15 +51,14 @@ void ServerManager::startServers(void) {
     }
     addServerToMaps(serverSocket, server);
     std::cout << "Started Server __"
-              << _serversMap.at(serverSocket).getIdentifier()
-              << "__ with socket " << serverSocket << " successfully"
-              << std::endl;
+              << _servers.at(serverSocket).getIdentifier() << "__ with socket "
+              << serverSocket << " successfully" << std::endl;
   }
 }
 
 bool ServerManager::init(void) {
   startServers();
-  if (_serversMap.size() == 0) {
+  if (_servers.size() == 0) {
     std::cout << "WARNING: no servers were started" << std::endl;
     return 1;
   }
@@ -76,11 +74,11 @@ void ServerManager::loopReadyEvents(void) {
                            // CGI event, data union will save two ints
                            // (pipefd & clientFd) in u64 (or ptr)
     std::cout << "fd in loop is: " << fd << std::endl;
-    if (_serversMap.find(fd) != _serversMap.end()) {
-      _serversMap.at(fd).handleServerEvent();
+    if (_servers.find(fd) != _servers.end()) {
+      _servers.at(fd).handleServerEvent();
     } else if (_clientToServerMap.find(fd) != _clientToServerMap.end()) {
       int serverFd = _clientToServerMap[fd];
-      _serversMap.at(serverFd).handleClientEvent(fd);
+      _servers.at(serverFd).handleClientEvent(fd);
     } else { /* is CGI's pipe fd */
       int* fds = reinterpret_cast<int*>(
           &_triggeredEvents[i].data.u64); // fds[0] is the pipefd. fds[1] is

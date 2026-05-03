@@ -1,9 +1,10 @@
 #pragma once
 
 #include "../../ConfigParser/Structs.hpp"
-#include "../../Poller/Poller.hpp"
 
-typedef struct s_serverManagerContext {
+#include <sys/epoll.h>
+
+typedef struct {
   const t_config&           config;
   int                       epfd;
   const int&                readyEventsCount;

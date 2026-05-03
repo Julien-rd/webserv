@@ -15,17 +15,21 @@
 
 class ServerManager : Error {
 private:
-  const t_config&           _config;
+  const t_config& _config;
+
+  /* Attributes shared from Poller */
   int                       _epfd;
   const int&                _readyEventsCount;
   std::vector<epoll_event>& _triggeredEvents;
+
+  /* ServerManager's own attributes */
   // Key: the fd of the server. Value: the server
-  std::map<int, Server> _serversMap;
+  std::map<int, Server> _servers;
   // Key: the fd of the server. Value: all of its current clients
-  std::map<int, IntSet> _clientsMap;
+  std::map<int, IntSet> _serverToClientsMap;
   // Key: the fd of the client. Value: its owning server
   std::map<int, int> _clientToServerMap;
-
+  // Key: the fd of the client. Value: the client
   std::map<int, Client> _clients;
 
   void addServerToMaps(int serverSocket, Server& server);
