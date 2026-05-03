@@ -1,6 +1,8 @@
 #include "ConfigParser/Parser.hpp"
 #include "ConfigParser/Structs.hpp"
 #include "ServerManager/ServerManager.hpp"
+#include "headers/structs/ServerManagerContext.hpp"
+
 #include <csetjmp>
 #include <cstdlib>
 #include <exception>
@@ -19,29 +21,35 @@ void signalHandler(int sig) {
                           // routes, except that ctrl+c is not normal??? idk
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   signal(SIGINT, signalHandler);
   t_config config;
   if (argc != 2) {
-    std::cerr << "ERROR: provide exactly one argument ./webserv [filename]"
+    std::cerr << "ERROR: provide exactly one argument ./webserv [filename] "
               << std::endl;
     return 1;
   }
   if (parseConfigFile(config, argv[1])) {
-    std::cerr << "ERROR: parsing configuration file faield" << std::endl;
+    std::cerr << "ERROR: parsing configuration file failed. " << std::endl;
     return 1;
   }
-  ServerManager serverManager(config);
+  Poller poller;
+  if (poller.createEpoll() != 0) {
+    return 1;
+  }
+  t_serverManagerContext context = {config, poller.getEpfd(),
+                                    poller.getReadyEventsCountRef(),
+                                    poller.getTriggeredEventsRef()};
+  ServerManager          serverManager(context);
   // TODO make fieldnames case INSENSITIVE
   if (serverManager.init()) {
-    std::cerr << "Couldn't start." << std::endl;
     return 1;
   }
   while (1) {
     try {
-      serverManager.epollWait();
+      poller.epollWait();
       serverManager.loopReadyEvents();
-    } catch (std::exception &e) {
+    } catch (std::exception& e) {
       // std::cerr << e.what() << std::endl;
       return 1;
     }

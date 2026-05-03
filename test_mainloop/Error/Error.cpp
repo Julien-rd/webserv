@@ -1,18 +1,15 @@
-#include "Server.hpp"
-
-#include "../headers/structs/ErrorType.hpp"
+#include "Error.hpp"
 
 #include <iostream>
 
 #include <cerrno>
 #include <cstring>
 
-static void custom_perror(const char *spec, char *errnoMsg) {
+static void custom_perror(const char* spec, char* errnoMsg) {
   std::cout << spec << errnoMsg << "\n";
 }
 
-int Server::error_msg(ErrorType type) {
-  int ret = 1;
+void Error::error_msg(ErrorType type) {
   switch (type) {
   case ERR_EPOLL_WAIT:
     custom_perror("epoll_wait: ", strerror(errno));
@@ -48,5 +45,4 @@ int Server::error_msg(ErrorType type) {
     custom_perror("close: ", strerror(errno));
     break;
   }
-  return ret;
 }

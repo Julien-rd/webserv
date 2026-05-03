@@ -2,48 +2,42 @@
 #define SERVER_MANAGER_CLASS_HPP
 
 #include "../Server/Server.hpp"
-#include "../headers/structs/ErrorType.hpp"
+#include "../headers/structs/ServerManagerContext.hpp"
+#include "../headers/typedefs.hpp"
 
 #include <map>
-#include <set>
 #include <vector>
 
 #include <netinet/in.h>
 #include <sys/epoll.h>
 
 #define CLIENT_LIMIT 1024
-#define MAX_EVENTS 1024
 
-class ServerManager {
+class ServerManager : Error {
 private:
-  typedef std::set<int> IntSet;
+  const t_config&           _config;
+  int                       _epfd;
+  const int&                _readyEventsCount;
+  std::vector<epoll_event>& _triggeredEvents;
+  // Key: the fd of the server. Value: the server
+  std::map<int, Server> _serversMap;
+  // Key: the fd of the server. Value: all of its current clients
+  std::map<int, IntSet> _clientsMap;
+  // Key: the fd of the client. Value: its owning server
+  std::map<int, int> _clientToServerMap;
 
-  const t_config &_config;
-  int _epfd;
-  std::map<int, Server>
-      _serversMap; // Key: the fd of the server. Value: the server
-  std::map<int, IntSet> _clientsMap; // Key: the fd of the server. Value: all of
-                                     // its current clients
-  std::map<int, int>
-      _clientToServerMap; // Key: the fd of the client. Value: its owning server
   std::map<int, Client> _clients;
-  std::vector<epoll_event> _requestBuf;
-  int _readyEvents;
 
-  void createEpoll(void);
-  void addServerToMaps(int serverSocket, Server &server);
+  void addServerToMaps(int serverSocket, Server& server);
   void startServers(void);
 
-  int error_msg(ErrorType type);
-
 public:
-  ServerManager(const t_config &config);
+  ServerManager(const t_serverManagerContext& context);
   ~ServerManager(void);
 
   bool init(void);
-  void epollWait(void);
   void loopReadyEvents(void);
-  int matchClientToServer(int fd);
+  int  matchClientToServer(int fd);
 };
 
 #endif /* SERVER_MANAGER_CLASS_HPP */

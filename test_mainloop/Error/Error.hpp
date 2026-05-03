@@ -1,5 +1,5 @@
-#ifndef ERROR_TYPE_ENUM_HPP
-#define ERROR_TYPE_ENUM_HPP
+#ifndef ERROR_CLASS_HPP
+#define ERROR_CLASS_HPP
 
 enum ErrorType {
   ERR_EPOLL_WAIT,
@@ -15,4 +15,9 @@ enum ErrorType {
   ERR_CLOSE
 };
 
-#endif /* ERROR_TYPE_ENUM_HPP */
+class Error {
+public:
+  void error_msg(ErrorType type);
+};
+
+#endif /* ERROR_CLASS_HPP */

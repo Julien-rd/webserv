@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include "../Error/Error.hpp"
 
 #include <iostream>
 
@@ -15,20 +16,23 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-Server::Server(const t_server &config, std::map<int, IntSet> &clientsMap,
-               std::map<int, Client> &clients,
-               std::map<int, int> &clientToServerMap, t_serverContext &context,
-               int sid)
-    : _config(config), _sid(sid), _context(context), _clientsMap(clientsMap),
-      _clientToServerMap(clientToServerMap), _clients(clients) {}
+Server::Server(t_serverContext context)
+    : _serverSocket(-1), _addrInfo(NULL), _sid(context.sid),
+      _config(context.config), _epfd(context.epfd),
+      _clientsMap(context.clientsMap),
+      _clientToServerMap(context.clientToServerMap), _clients(context.clients) {
+}
 
-Server::Server(const Server &obj)
-    : _config(obj._config), _sid(obj._sid), _context(obj._context),
-      _serverSocket(obj._serverSocket), _addrInfo(obj._addrInfo),
-      _clientsMap(obj._clientsMap), _clientToServerMap(obj._clientToServerMap),
-      _clients(obj._clients) {}
+Server::Server(const Server& obj)
+    : _serverSocket(obj._serverSocket), _addrInfo(NULL), _sid(obj._sid),
+      _config(obj._config), _epfd(obj._epfd), _clientsMap(obj._clientsMap),
+      _clientToServerMap(obj._clientToServerMap), _clients(obj._clients) {}
 
-Server::~Server(void) {}
+Server::~Server(void) {
+  if (_addrInfo) {
+    freeaddrinfo(_addrInfo);
+  }
+}
 
 void Server::closeClientFds(void) {
   int fd;
@@ -45,11 +49,11 @@ void Server::updateClientsMap(enum e_map_operation op, const int clientFd) {
   switch (op) {
   case ADD:
     _clientToServerMap[clientFd] = _serverSocket;
-    _clients[clientFd] = Client(
-        _context.epfd); // TODO can we construct an entry in the map in a better
-                        // way than constructing and then calling copy
-                        // assignment operator? this basically constructs 2
-                        // client instances, can we make it only one?
+    _clients[clientFd] =
+        Client(_epfd); // TODO can we construct an entry in the map in a better
+                       // way than constructing and then calling copy
+                       // assignment operator? this basically constructs 2
+                       // client instances, can we make it only one?
     _clients[clientFd].setFd(clientFd);
     _clientsMap.at(_serverSocket).insert(clientFd);
     break;
@@ -65,7 +69,7 @@ void Server::closeConnection(int clientFd) {
   updateClientsMap(REMOVE, clientFd);
   std::cout << "Server __" << _sid << "__ closed connection with Client "
             << clientFd << std::endl;
-  if (epoll_ctl(_context.epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
+  if (epoll_ctl(_epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
     error_msg(ERR_EPOLL_CTL);
     throw std::runtime_error("couldn't close connection");
   }
@@ -100,14 +104,14 @@ void Server::initServerSocket(void) {
 
 void Server::setServerSockAddr(void) {
   addrinfo hints = {0, 0, 0, 0, 0, 0, 0, 0};
-  int res;
+  int      res;
 
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_family = AF_UNSPEC;
   hints.ai_flags = AI_NUMERICHOST;
-  std::cout << "ip: " << _config.ip.c_str() << " == ";
-  res =
-      getaddrinfo(_config.ip.c_str(), _config.port.c_str(), &hints, &_addrInfo);
+  std::cout << "ip: " << _config.servers[_sid].ip.c_str() << " == ";
+  res = getaddrinfo(_config.servers[_sid].ip.c_str(),
+                    _config.servers[_sid].port.c_str(), &hints, &_addrInfo);
   if (res) {
     throw std::runtime_error(std::string("gettaddrinfo() failed: ") +
                              gai_strerror(res));
@@ -119,7 +123,7 @@ void Server::addSocketToEpoll(int socketFd) {
   ev.events = EPOLLIN;
   // ev.data.ptr = 0;
   ev.data.fd = socketFd;
-  if (epoll_ctl(_context.epfd, EPOLL_CTL_ADD, socketFd, &ev) == -1) {
+  if (epoll_ctl(_epfd, EPOLL_CTL_ADD, socketFd, &ev) == -1) {
     error_msg(ERR_EPOLL_CTL);
     throw std::runtime_error("couldn't add socket to epoll");
   }
@@ -127,11 +131,9 @@ void Server::addSocketToEpoll(int socketFd) {
 
 void Server::bindAndListen(void) {
   if (bind(_serverSocket, _addrInfo->ai_addr, _addrInfo->ai_addrlen) == -1) {
-    freeaddrinfo(_addrInfo);
     error_msg(ERR_BIND);
     throw std::runtime_error("couldn't bind server");
   }
-  freeaddrinfo(_addrInfo);
   if (listen(_serverSocket, 20) == -1) { // TODO hardocded 20?
     error_msg(ERR_LISTEN);
     throw std::runtime_error("couldn't listen from server");
@@ -147,7 +149,7 @@ int Server::start(void) {
 }
 
 void Server::checkClientCap(void) {
-  if (_clients.size() == _context.maxClients) { // FIX
+  if (_clients.size() == _config.maxClients) { // TODO FIX
     throw std::runtime_error(
         "WARNING: client capacity reached. can't accept more connections");
   }
@@ -168,7 +170,7 @@ void Server::handleServerEvent(void) {
     }
     try {
       checkClientCap();
-    } catch (std::exception &e) {
+    } catch (std::exception& e) {
       std::cout << e.what() << std::endl;
       return;
     }
@@ -181,7 +183,7 @@ void Server::handleServerEvent(void) {
 }
 
 void Server::handleClientEvent(const int clientFd) {
-  char buffer[BUFFER_SIZE + 1];
+  char    buffer[BUFFER_SIZE + 1];
   ssize_t bytesRead = 0;
 
   bytesRead = recv(clientFd, buffer, BUFFER_SIZE, 0);

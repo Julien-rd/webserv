@@ -18,12 +18,12 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-ServerManager::ServerManager(const t_config &config) : _config(config) {
-  _requestBuf.reserve(MAX_EVENTS);
-}
+ServerManager::ServerManager(const t_serverManagerContext& context)
+    : _config(context.config), _epfd(context.epfd),
+      _readyEventsCount(context.readyEventsCount),
+      _triggeredEvents(context.triggeredEvents) {}
 
 ServerManager::~ServerManager(void) {
-  close(_epfd);
   for (std::map<int, Server>::iterator it = _serversMap.begin();
        it != _serversMap.end(); it++) {
     it->second.closeClientFds();
@@ -31,31 +31,21 @@ ServerManager::~ServerManager(void) {
   }
 }
 
-void ServerManager::addServerToMaps(int serverSocket, Server &server) {
+void ServerManager::addServerToMaps(int serverSocket, Server& server) {
   _serversMap.insert(std::pair<int, Server>(serverSocket, server));
   _clientsMap.insert(std::pair<int, IntSet>(serverSocket, IntSet()));
-}
-
-void ServerManager::createEpoll(void) {
-  _epfd = epoll_create1(0);
-  if (_epfd == -1) {
-    error_msg(ERR_EPOLL_CREATE1);
-    throw std::exception();
-  }
 }
 
 void ServerManager::startServers(void) {
   int serverSocket;
 
-  t_serverContext context = {_epfd, _config.maxClients,
-                             _config.clientsPerServer};
   for (size_t i = 0; i < _config.servers.size(); ++i) {
-    Server server(_config.servers[i], _clientsMap, _clients, _clientToServerMap,
-                  context, i); // INFO: server struct is now t_server if the
-                               // name is not occupied already
+    t_serverContext context = {_epfd,       _config,  i,
+                               _clientsMap, _clients, _clientToServerMap};
+    Server          server(context);
     try {
       serverSocket = server.start();
-    } catch (std::exception &e) {
+    } catch (std::exception& e) {
       std::cerr << "WARNING: couldn't start server _" << server.getIdentifier()
                 << "_: " << e.what() << std::endl;
       continue;
@@ -69,35 +59,22 @@ void ServerManager::startServers(void) {
 }
 
 bool ServerManager::init(void) {
-  try {
-    createEpoll();
-    startServers();
-  } catch (std::exception &e) {
-    std::cerr << e.what() << std::endl;
-    return true;
+  startServers();
+  if (_serversMap.size() == 0) {
+    std::cout << "WARNING: no servers were started" << std::endl;
+    return 1;
   }
   std::cout << std::endl;
-  return false;
-}
-
-void ServerManager::epollWait() {
-  _readyEvents = epoll_wait(_epfd, _requestBuf.data(), MAX_EVENTS, -1);
-  if (_readyEvents == -1) {
-    error_msg(ERR_EPOLL_WAIT);
-    // perror(strerror(errno));
-    throw std::exception();
-  }
+  return 0;
 }
 
 void ServerManager::loopReadyEvents(void) {
-  std::stringstream ss;
-
-  for (int i = 0; i < _readyEvents; ++i) {
-    int fd =
-        _requestBuf[i].data.fd; // if it's Server or Client event, data union
-                                // will have Server or Client fd in fd. if its a
-                                // CGI event, data union will save two ints
-                                // (pipefd & clientFd) in u64 (or ptr)
+  for (int i = 0; i < _readyEventsCount; ++i) {
+    int fd = _triggeredEvents[i]
+                 .data.fd; // if it's Server or Client event, data union
+                           // will have Server or Client fd in fd. if its a
+                           // CGI event, data union will save two ints
+                           // (pipefd & clientFd) in u64 (or ptr)
     std::cout << "fd in loop is: " << fd << std::endl;
     if (_serversMap.find(fd) != _serversMap.end()) {
       _serversMap.at(fd).handleServerEvent();
@@ -105,9 +82,9 @@ void ServerManager::loopReadyEvents(void) {
       int serverFd = _clientToServerMap[fd];
       _serversMap.at(serverFd).handleClientEvent(fd);
     } else { /* is CGI's pipe fd */
-      int *fds = reinterpret_cast<int *>(
-          &_requestBuf[i].data.u64); // fds[0] is the pipefd. fds[1] is the
-                                     // owning client's fd.
+      int* fds = reinterpret_cast<int*>(
+          &_triggeredEvents[i].data.u64); // fds[0] is the pipefd. fds[1] is
+                                          // the owning client's fd.
       std::cout << "caught CGI in epoll... client fd: " << fds[1]
                 << ". pipefd is: " << fds[0] << std::endl;
       _clients[fds[1]].handleCGIOutput(fds[0]);
