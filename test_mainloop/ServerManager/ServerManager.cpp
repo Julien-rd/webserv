@@ -66,6 +66,12 @@ bool ServerManager::init(void) {
   return 0;
 }
 
+void pp_memcpy(void* dst, void* src, size_t len) {
+  for (size_t i = 0; i < len; i++) {
+    static_cast<unsigned char*>(dst)[i] = static_cast<unsigned char*>(src)[i];
+  }
+}
+
 void ServerManager::loopReadyEvents(void) {
   for (int i = 0; i < _readyEventsCount; ++i) {
     int fd = _triggeredEvents[i]
@@ -79,10 +85,10 @@ void ServerManager::loopReadyEvents(void) {
     } else if (_clientToServerMap.find(fd) != _clientToServerMap.end()) {
       int serverFd = _clientToServerMap[fd];
       _servers.at(serverFd).handleClientEvent(fd);
-    } else { /* is CGI's pipe fd */
-      int* fds = reinterpret_cast<int*>(
-          &_triggeredEvents[i].data.u64); // fds[0] is the pipefd. fds[1] is
-                                          // the owning client's fd.
+    } else {      /* is CGI's pipe fd */
+      int fds[2]; // fds[0] is the pipefd. fds[1]
+                  // is the owning client's fd.
+      pp_memcpy(fds, &_triggeredEvents[i].data.u64, sizeof(uint64_t));
       std::cout << "caught CGI in epoll... client fd: " << fds[1]
                 << ". pipefd is: " << fds[0] << std::endl;
       _clients[fds[1]].handleCGIOutput(fds[0]);
