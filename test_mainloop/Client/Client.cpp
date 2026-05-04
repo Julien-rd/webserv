@@ -2,29 +2,36 @@
 #include "../CGI/CGI.hpp"
 #include "HttpRequest/HttpRequest.hpp"
 #include "HttpResponse/HttpResponse.hpp"
+
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <stdexcept>
+
 #include <cerrno>
 #include <csignal>
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
-#include <iostream>
 #include <netinet/in.h>
 #include <poll.h>
-#include <sstream>
-#include <stdexcept>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
-#include <sys/socket.h>
-#include <sys/types.h>
+#define BUFFER_SIZE 1024
 
-Client::Client() : _fd(-1), _epfd(-1), _request() {}
+Client::Client()
+    : _fd(-1), _epfd(-1), _request(), _CGIResponseLen(0), _CGIPid(-1) {}
 
-Client::Client(int epfd) : _fd(-1), _epfd(epfd), _request() {}
+Client::Client(int epfd)
+    : _fd(-1), _epfd(epfd), _request(), _CGIResponseLen(0), _CGIPid(-1) {}
 
 Client::Client(const Client& obj)
-    : _fd(obj._fd), _epfd(obj._epfd), _request(obj._request) {}
+    : _fd(obj._fd), _epfd(obj._epfd), _request(obj._request),
+      _CGIResponseLen(obj._CGIResponseLen), _CGIPid(obj._CGIPid) {}
 
 const Client& Client::operator=(const Client& obj) {
   if (&obj == this) {
@@ -64,10 +71,9 @@ void Client::handleCGI(CGI& cgi) {
     cgi.pipeIO();
     // std::cout << "========= pipeIO() succeeded\n";
     cgi.spawnProcess();
+    _CGIPid = cgi.getPid();
     // std::cout << "========= spawnProcess() succeeded\n";
-    // cgi.wait(); // TODO do we need wait for CGI to finish executing and
     // writing to the pipe? std::cout << "========= wait() succeeded\n";
-    // cgi.redirectIO(); // I don't think I need this ¯\_(ツ)_/¯
   } catch (std::exception& e) {
     std::cerr << "exception caught in handleCGI(): " << e.what() << std::endl;
   }
@@ -88,21 +94,35 @@ void Client::handleCGI(CGI& cgi) {
 }
 
 void Client::handleCGIOutput(int pipeReadFd) {
-  char    buf[6];
+  char    buf[BUFFER_SIZE];
   ssize_t bytesRead;
 
-  bytesRead = read(pipeReadFd, buf, 5);
+  bytesRead = read(pipeReadFd, buf, BUFFER_SIZE - 1);
+  std::cout << "bytes read: " << bytesRead << std::endl;
   if (bytesRead == -1) {
+    _CGIResponseLen = 0;
+    _CGIResponseStream.clear();
     throw std::runtime_error("read() failed in Client::handleCGIOutput");
   }
   if (bytesRead == 0) {
-    std::cout << "building CGI response from: " << _CGIResponseStream.str()
-              << std::endl;
-    // build CGI response and send it
+    int res = waitpid(_CGIPid, NULL, WNOHANG);
+    if (res == -1) {
+      throw std::runtime_error("waitpid() failed in handlingCGIOutput()");
+    }
+    if (res == 0) {
+      kill(_CGIPid, SIGKILL);
+      waitpid(_CGIPid, NULL, 0);
+    }
+    if (epoll_ctl(_epfd, EPOLL_CTL_DEL, pipeReadFd, NULL) == -1) {
+      throw std::runtime_error("couldn't remove CGI pipe from epoll");
+    }
+    close(pipeReadFd);
+    std::cout << "building CGI response from:\n" << _CGIResponseStream.str();
+    // TODO build CGI response and send it
   } else {
-    buf[bytesRead] = '\0';
-    _CGIResponseStream << buf;
-    std::cout << "added " << " to stringstream" << std::endl;
+    _CGIResponseLen += bytesRead;
+    _CGIResponseStream.write(buf, bytesRead);
+    // std::cout << "added " << " to stringstream" << std::endl;
   }
 }
 

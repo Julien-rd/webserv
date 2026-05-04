@@ -5,10 +5,12 @@
 #include <exception>
 #include <string>
 
+#include <sys/types.h>
+
 #define FT_DEFINE_EXCEPTION(exception_name, message)                           \
   class exception_name : public std::exception {                               \
   public:                                                                      \
-    const char *what(void) const throw() { return message; }                   \
+    const char* what(void) const throw() { return message; }                   \
   }
 
 // # define FT_THROW(class_name, exception_name)
@@ -39,16 +41,16 @@ typedef struct s_metaVariables {
 
 class CGI {
 private:
-  const HttpRequest &request;
-  std::string scriptName;
-  t_metaVariables meta;
-  int pid;
-  int epfd;
-  int clientFd;
+  const HttpRequest& request;
+  std::string        scriptName;
+  t_metaVariables    meta;
+  pid_t              pid;
+  int                epfd;
+  int                clientFd;
 
-  const char *executable;
-  char *argv[3];
-  const char *envp[20];
+  const char* executable;
+  char*       argv[3];
+  const char* envp[20];
 
   static const std::string pythonScriptName;
   static const std::string phpScriptName;
@@ -68,14 +70,14 @@ private:
   void execute(void);
 
 public:
-  CGI(const HttpRequest &request, int clientFd, int epfd);
+  CGI(const HttpRequest& request, int clientFd, int epfd);
   ~CGI(void);
-  const CGI &operator=(const CGI &obj);
+  const CGI& operator=(const CGI& obj);
 
   // pid_t	getPid(void) const;
   // void	setPid(pid_t pid);
 
-  int pipefd[2];
+  int  pipefd[2];
   bool validateRequest(void) const;
   void initCGI(void);
   void pipeIO(void);
@@ -84,15 +86,17 @@ public:
   void addPipeToEpoll(void);
   void wait(void) const;
 
-  static bool isCGIRequest(const HttpRequest &request);
+  pid_t getPid(void) const;
+
+  static bool isCGIRequest(const HttpRequest& request);
 
   FT_DEFINE_EXCEPTION(StandardException, "ERROR: Standard Exception");
   FT_DEFINE_EXCEPTION(WaitException, "EXCEPTION CAUGHT IN PARENT: waiting");
 };
 
-std::string parsePathInfo(const std::string &_uri,
-                          const std::string &scriptName);
-std::string parseQueryString(const std::string &_uri);
+std::string parsePathInfo(const std::string& _uri,
+                          const std::string& scriptName);
+std::string parseQueryString(const std::string& _uri);
 // std::string	getScriptName(const std::string& _uri, const std::string& name1,
 // const std::string& name2);
 

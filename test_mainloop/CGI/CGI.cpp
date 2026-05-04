@@ -94,6 +94,8 @@ void CGI::pipeIO(void) {
   if (pipe(this->pipefd) == -1) {
     throw std::runtime_error("CGI pipe failed");
   }
+  std::cout << "piped rfd: " << this->pipefd[0]
+            << " and wfd: " << this->pipefd[1] << std::endl;
   if (fcntl(this->pipefd[0], F_SETFD, FD_CLOEXEC) == -1) {
     throw std::runtime_error("CGI fcntl");
   }
@@ -114,11 +116,16 @@ void CGI::spawnProcess(void) {
     throw std::runtime_error("fork() failed in CGI");
   }
   if (this->pid == 0) {
-    this->addPipeToEpoll();
-    // std::cout << "========= addPipeToEpoll() succeeded\n";
+    close(this->pipefd[0]);
+    close(this->epfd);
+    close(this->clientFd);
     this->redirectIO();
     // std::cerr << "========= redirectIO() succeeded\n";
     this->execute();
+  } else {
+    close(this->pipefd[1]);
+    this->addPipeToEpoll();
+    // std::cout << "========= addPipeToEpoll() succeeded\n";
   }
 }
 
@@ -136,7 +143,9 @@ void CGI::addPipeToEpoll(void) {
                       // clients disconnects?
   ev.data.u64 = u64;
   if (epoll_ctl(this->epfd, EPOLL_CTL_ADD, this->pipefd[0], &ev) == -1) {
-    // std::cerr << errno_name(errno) << ": " << strerror(errno) << std::endl;
+    // std::cerr << "rfd: " << this->pipefd[0] << ", wfd: " << this->pipefd[1]
+    //           << ", epfd: " << this->epfd << ": " << strerror(errno)
+    //           << std::endl;
     throw std::runtime_error("addPipeToEpoll() failed in CGI");
   }
 }
@@ -148,6 +157,7 @@ void CGI::redirectIO(void) {
   if (dup2(this->pipefd[1], STDOUT_FILENO) == -1) {
     throw std::runtime_error("dup2() failed in CGI");
   }
+  close(this->pipefd[1]);
   // if (dup2(this->pipefd[0], STDIN_FILENO) == -1) {
   // 	throw CGI::StandardException();
   // }
@@ -196,6 +206,8 @@ bool CGI::isCGIRequest(const HttpRequest& request) {
   std::cout << "URI doesn't contain a known script" << std::endl;
   return false;
 }
+
+pid_t CGI::getPid(void) const { return this->pid; }
 
 // int	main(const int argc, const char **argv, const char **envp) {
 // 	(void)argc, void(argv), (void)envp;

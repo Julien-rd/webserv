@@ -1,11 +1,17 @@
 #include "Poller.hpp"
 #include "../Error/Error.hpp"
 
+#include <unistd.h>
+
 #define MAX_EVENTS 2048
 
 Poller::Poller(void) : _epfd(-1) { _triggeredEvents.reserve(MAX_EVENTS); }
 
-Poller::~Poller(void) {}
+Poller::~Poller(void) {
+  if (_epfd != -1) {
+    close(_epfd);
+  }
+}
 
 bool Poller::createEpoll(void) {
   _epfd = epoll_create1(0);

@@ -2,12 +2,13 @@
 #define CLIENT_HPP
 
 #include "../CGI/CGI.hpp"
+#include "../Error/Error.hpp"
 #include "HttpRequest/HttpRequest.hpp"
 #include "HttpResponse/HttpResponse.hpp"
 #include <sstream>
 #include <string>
 
-class Client {
+class Client : public Error {
 private:
   int               _fd;
   int               _epfd;
@@ -15,6 +16,8 @@ private:
   HttpResponse      _response;
   size_t            _bytesRead;
   std::stringstream _CGIResponseStream;
+  ssize_t           _CGIResponseLen;
+  pid_t             _CGIPid;
 
   int closeConnection();
 
