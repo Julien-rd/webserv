@@ -1,10 +1,16 @@
 #include "HttpResponse.hpp"
-#include <ctime>
+
+#include <algorithm>
 #include <fstream>
-#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+#include <csignal>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+
 #include <sys/sendfile.h>
 
 const std::string HttpResponse::_httpVersion = "HTTP/1.1";
@@ -44,23 +50,17 @@ void HttpResponse::reset() {
 }
 
 int HttpResponse::getTimeStamp() {
-  char buf[1024];
+  char   buf[1024];
   time_t now = time(0);
   if (now == (time_t)-1)
     return 1;
-  struct tm *timeinfo = gmtime(&now);
+  struct tm* timeinfo = gmtime(&now);
   if (timeinfo == NULL)
     return 1;
   strftime(buf, sizeof buf, "%a, %d %b %Y %H:%M:%S %Z", timeinfo);
   _timeStamp = buf;
   return 0;
 }
-#include <algorithm>
-#include <csignal>
-#include <cstdlib>
-#include <cstring>
-#include <fstream>
-#include <iostream>
 
 int HttpResponse::extractContentType(std::string path) {
   size_t pos = path.find_last_of('.');
@@ -183,7 +183,7 @@ void HttpResponse::buildStatusLine() {
 
 void HttpResponse::serveErrorPage() {
   std::ostringstream ss;
-  std::stringstream st;
+  std::stringstream  st;
   st << _statusCode;
   st >> _statusCodeStr;
   _responseClass = _statusCode / 100;
@@ -250,4 +250,4 @@ int HttpResponse::build(HttpRequest request) {
   return 0;
 }
 
-const char *HttpResponse::getResponse() { return _response.c_str(); }
+const char* HttpResponse::getResponse() { return _response.c_str(); }

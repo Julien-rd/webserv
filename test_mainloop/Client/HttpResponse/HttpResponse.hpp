@@ -16,22 +16,22 @@ enum responseClass {
 class HttpResponse {
 public:
   HttpResponse();
-  int build(HttpRequest request);
-  void getReasonPhrase();
-  const char *getResponse();
+  int               build(HttpRequest request);
+  void              getReasonPhrase();
+  const char*       getResponse();
   std::vector<char> getResponseBody();
-  void reset();
-  int getTimeStamp();
+  void              reset();
+  int               getTimeStamp();
 
-private:
-  void buildStatusLine();
-  int extractContentType(std::string path);
-  void extractContentLength();
-  void serveErrorPage();
-  void addRules();
-  void addMandatoryHeaders();
-  void serveSuccessPage(HttpRequest request);
-  void addBody(HttpRequest request);
+protected:
+  void         buildStatusLine();
+  int          extractContentType(std::string path);
+  void         extractContentLength();
+  void         serveErrorPage();
+  virtual void addRules();
+  void         addMandatoryHeaders();
+  void         serveSuccessPage(HttpRequest request);
+  virtual void addBody(HttpRequest request);
 
   void getReasonPhraseInfo();
   void getReasonPhraseSuccess();
@@ -44,19 +44,19 @@ private:
   std::map<std::string, std::string> _uri;
 
   // mandatory headers
-  size_t _contentLength; // except status code = 204
+  size_t      _contentLength; // except status code = 204
   std::string _contentType;
   std::string _timeStamp;
 
-  size_t _responseClass;
-  std::string _reasonPhrase;
-  static const std::string _httpVersion;
+  size_t                             _responseClass;
+  std::string                        _reasonPhrase;
+  static const std::string           _httpVersion;
   std::map<std::string, std::string> _header;
 
-  std::string _response;
+  std::string       _response;
   std::vector<char> _responseBody;
 
-  size_t _statusCode;
+  size_t      _statusCode;
   std::string _statusCodeStr;
 };
 

@@ -9,7 +9,7 @@ CLASS_SOURCES = Error/Error.cpp \
 				Poller/Poller.cpp \
 				ServerManager/ServerManager.cpp \
 				Server/Server.cpp \
-				CGI/CGI.cpp CGI/CGI_helpers.cpp CGI/CGI_php.cpp CGI/CGI_python.cpp \
+				CGI/CGI.cpp CGI/CGI_helpers.cpp CGI/CGI_php.cpp CGI/CGI_python.cpp CGI/CGIResponse.cpp \
 				Client/Client.cpp \
 				Client/HttpRequest/HttpRequest.cpp Client/HttpRequest/HttpRequestGetters.cpp Client/HttpRequest/HttpRequestHelpers.cpp \
 				Client/HttpResponse/HttpResponse.cpp Client/HttpResponse/ReasonPhrase.cpp \

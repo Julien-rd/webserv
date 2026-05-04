@@ -1,5 +1,6 @@
 #include "Client.hpp"
 #include "../CGI/CGI.hpp"
+#include "../CGI/CGIResponse.hpp"
 #include "HttpRequest/HttpRequest.hpp"
 #include "HttpResponse/HttpResponse.hpp"
 
@@ -118,6 +119,19 @@ void Client::handleCGIOutput(int pipeReadFd) {
     }
     close(pipeReadFd);
     std::cout << "building CGI response from:\n" << _CGIResponseStream.str();
+    CGIResponse cgiResponse(_CGIResponseStream, _CGIResponseLen);
+    if (cgiResponse.build(_request) == 1)
+      ; // TODO handle error
+    const char* response = cgiResponse.getResponse();
+    std::cout << "CGI Response: " << response << std::endl;
+    if (send(_fd, response, strlen(response), 0) ==
+        -1) // how should we protect here? cut client/close server?
+      abort();
+    std::vector<char> responseBody = cgiResponse.getResponseBody();
+    if (send(_fd, &responseBody[0], responseBody.size(), 0) == -1)
+      abort();
+    _request.reset();
+    cgiResponse.reset();
     // TODO build CGI response and send it
   } else {
     _CGIResponseLen += bytesRead;
@@ -144,6 +158,7 @@ int Client::loop(std::string input) {
     if (_response.build(_request) == 1)
       err = true;
     const char* response = _response.getResponse();
+    // std::cout << "response:\n" << response << std::endl;
     if (send(_fd, response, strlen(response), 0) ==
         -1) // how should we protect here? cut client/close server?
       abort();
