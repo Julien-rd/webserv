@@ -8,14 +8,16 @@ CGIResponse::CGIResponse(std::stringstream& CGIResponseStream,
 
 void CGIResponse::addBody(HttpRequest request) {
   (void)request;
-  std::string str = _CGIResponseStream.str();
-  size_t      bodyPos = str.find("\r\n\r\n");
-  str.erase(0, bodyPos + 4);
-  _response += str;
+  // std::string str = _CGIResponseStream.str();
+  // size_t      bodyPos = str.find("\r\n\r\n");
+  // str.erase(0, bodyPos + 4);
+  _responseBody.resize(_CGIResponseLen);
+  _CGIResponseStream.read(&_responseBody[0], _CGIResponseLen);
 
   std::ostringstream ss;
   ss << _CGIResponseLen;
   _response += "Content-Length: " + ss.str() + "\r\n";
+  _response += "\r\n";
 }
 
 void CGIResponse::addRules() {

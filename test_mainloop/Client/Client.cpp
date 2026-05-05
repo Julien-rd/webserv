@@ -118,12 +118,13 @@ void Client::handleCGIOutput(int pipeReadFd) {
       throw std::runtime_error("couldn't remove CGI pipe from epoll");
     }
     close(pipeReadFd);
-    std::cout << "building CGI response from:\n" << _CGIResponseStream.str();
+    std::cout << "\nbuilding HttpResponse response from CGI Response:\n"
+              << _CGIResponseStream.str();
     CGIResponse cgiResponse(_CGIResponseStream, _CGIResponseLen);
     if (cgiResponse.build(_request) == 1)
       ; // TODO handle error
     const char* response = cgiResponse.getResponse();
-    std::cout << "CGI Response: " << response << std::endl;
+    // std::cout << "\nHttpResponse Response:\n" << response << std::endl;
     if (send(_fd, response, strlen(response), 0) ==
         -1) // how should we protect here? cut client/close server?
       abort();
@@ -132,7 +133,6 @@ void Client::handleCGIOutput(int pipeReadFd) {
       abort();
     _request.reset();
     cgiResponse.reset();
-    // TODO build CGI response and send it
   } else {
     _CGIResponseLen += bytesRead;
     _CGIResponseStream.write(buf, bytesRead);
