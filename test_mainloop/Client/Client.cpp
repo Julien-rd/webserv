@@ -121,8 +121,9 @@ void Client::handleCGIOutput(int pipeReadFd) {
     std::cout << "\nbuilding HttpResponse response from CGI Response:\n"
               << _CGIResponseStream.str();
     CGIResponse cgiResponse(_CGIResponseStream, _CGIResponseLen);
-    if (cgiResponse.build(_request) == 1)
+    if (cgiResponse.build(_request) == 1) {
       ; // TODO handle error
+    }
     const char* response = cgiResponse.getResponse();
     // std::cout << "\nHttpResponse Response:\n" << response << std::endl;
     if (send(_fd, response, strlen(response), 0) ==
