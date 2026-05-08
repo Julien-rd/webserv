@@ -1,4 +1,5 @@
 #include "Parser.hpp"
+#include "Structs.hpp"
 
 static std::vector<std::pair<std::string, int> > d;
 static std::vector<std::pair<std::string, int> > c;
@@ -90,7 +91,8 @@ Node* context(Tokenizer& stream, std::vector<std::string>& args) {
 }
 
 void initDefaults(void) {
-  d.push_back(std::pair<std::string, int>("server_name", SERVER_NAME));
+    d.push_back(std::pair<std::string, int>("return", RETURN));
+    d.push_back(std::pair<std::string, int>("alias", ALIAS));
   d.push_back(std::pair<std::string, int>("index", INDEX));
   d.push_back(std::pair<std::string, int>("client_max_body_size",
                                           CLIENT_MAX_BODY_SIZE));

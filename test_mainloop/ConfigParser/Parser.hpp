@@ -7,6 +7,8 @@
 #define DELETE 2
 
 /* DirectiveHandlers.cpp */
+void parseReturn(const std::vector<std::string> &args, t_location &location);
+void parseAlias(const std::vector<std::string> &args, t_location &location);
 void parseAutoindex(const std::vector<std::string> &args, t_location &location);
 void parseLocalhost(const std::vector<std::string> &args, t_server &server);
 void parseNumberGlobal(const std::vector<std::string> &args,

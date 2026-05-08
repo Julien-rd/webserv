@@ -12,12 +12,13 @@ struct Node {
 enum types { CONTEXT, DIRECTIVE, BASE };
 
 enum d_tags {
-  SERVER_NAME,
   INDEX,
   CLIENT_MAX_BODY_SIZE,
   ROOT,
+  ALIAS,
   LISTEN,
   AUTOINDEX,
+  RETURN, 
   ALLOWMETHODS,
   MAX_CLIENTS,
   CLIENTS_PER_SERVER,
@@ -31,7 +32,8 @@ typedef struct s_location {
   bool autoindex;
   std::string root;
   std::string index;
-
+  std::string alias;
+  std::pair<int, std::string> redirect;
   int allowMethods;
 } t_location;
 
