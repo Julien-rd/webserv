@@ -38,9 +38,10 @@ void ServerManager::addServerToMaps(int serverSocket, Server& server) {
 void ServerManager::startServers(void) {
   int serverSocket;
 
+  t_serverContext context = {
+      _epfd, _config, 0, _serverToClientsMap, _clients, _clientToServerMap};
   for (size_t i = 0; i < _config.servers.size(); ++i) {
-    t_serverContext context = {
-        _epfd, _config, i, _serverToClientsMap, _clients, _clientToServerMap};
+    context.sid = i;
     Server server(context);
     try {
       serverSocket = server.start();

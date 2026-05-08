@@ -3,12 +3,12 @@
 static std::vector<std::pair<std::string, int> > d;
 static std::vector<std::pair<std::string, int> > c;
 
-Node *context(Tokenizer &stream, std::vector<std::string> &args);
-Node *directive(std::vector<std::string> &args);
+Node* context(Tokenizer& stream, std::vector<std::string>& args);
+Node* directive(std::vector<std::string>& args);
 
 template <typename T>
 
-int validateName(const std::string &specifier, const T &table) {
+int validateName(const std::string& specifier, const T& table) {
   size_t iter = 0;
   while (iter < table.size() &&
          specifier.compare(
@@ -20,8 +20,8 @@ int validateName(const std::string &specifier, const T &table) {
 }
 
 template <typename T>
-int validate(const std::vector<std::string> &args, const T &table,
-             const char *errormsg) {
+int validate(const std::vector<std::string>& args, const T& table,
+             const char* errormsg) {
   if (args.empty())
     throw std::runtime_error(errormsg);
   int spec;
@@ -31,7 +31,7 @@ int validate(const std::vector<std::string> &args, const T &table,
   return spec;
 }
 
-void fillDirective(Node *node, const std::vector<std::string> &args,
+void fillDirective(Node* node, const std::vector<std::string>& args,
                    const int spec) {
   node->tag = d.at(spec).second;
   node->type = DIRECTIVE;
@@ -39,7 +39,7 @@ void fillDirective(Node *node, const std::vector<std::string> &args,
     node->args.push_back(args.at(i));
 }
 
-void fillContext(Node *node, const std::vector<std::string> &args,
+void fillContext(Node* node, const std::vector<std::string>& args,
                  const int spec) {
   node->tag = c.at(spec).second;
   node->type = CONTEXT;
@@ -47,8 +47,8 @@ void fillContext(Node *node, const std::vector<std::string> &args,
     node->args.push_back(args.at(i));
 }
 
-void fillContent(Node *node, Tokenizer &stream, int type) {
-  std::string token = stream.next();
+void fillContent(Node* node, Tokenizer& stream, int type) {
+  std::string              token = stream.next();
   std::vector<std::string> specifier;
   while ((token.at(0) != '}' && type == CONTEXT) ||
          (token.at(0) != EOF && type == BASE)) {
@@ -74,16 +74,16 @@ void fillContent(Node *node, Tokenizer &stream, int type) {
     throw std::runtime_error("something unfinished in context");
 }
 
-Node *directive(std::vector<std::string> &args) {
-  int spec = validate(args, d, "empty directive");
-  Node *directiveNode = new Node();
+Node* directive(std::vector<std::string>& args) {
+  int   spec = validate(args, d, "empty directive");
+  Node* directiveNode = new Node();
   fillDirective(directiveNode, args, spec);
   return directiveNode;
 }
 
-Node *context(Tokenizer &stream, std::vector<std::string> &args) {
-  int spec = validate(args, c, "brackets opened without context");
-  Node *contextNode = new Node();
+Node* context(Tokenizer& stream, std::vector<std::string>& args) {
+  int   spec = validate(args, c, "brackets opened without context");
+  Node* contextNode = new Node();
   fillContext(contextNode, args, spec);
   fillContent(contextNode, stream, CONTEXT);
   return contextNode;
@@ -106,9 +106,9 @@ void initDefaults(void) {
   c.push_back(std::pair<std::string, int>("location", LOCATION));
 }
 
-Node *parseTree(Tokenizer &stream) {
+Node* parseTree(Tokenizer& stream) {
   initDefaults();
-  Node *base = new Node();
+  Node* base = new Node();
   base->tag = MAIN;
   base->type = CONTEXT;
   fillContent(base, stream, BASE);
