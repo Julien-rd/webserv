@@ -118,8 +118,8 @@ void Client::handleCGIOutput(int pipeReadFd) {
       throw std::runtime_error("couldn't remove CGI pipe from epoll");
     }
     close(pipeReadFd);
-    std::cout << "\nbuilding HttpResponse response from CGI Response:\n"
-              << _CGIResponseStream.str();
+    std::cout << "\nbuilding HttpResponse from CGI Response:\n{\n"
+              << _CGIResponseStream.str() << "\n}\n";
     CGIResponse cgiResponse(_CGIResponseStream, _CGIResponseLen);
     if (cgiResponse.build(_request) == 1) {
       ; // TODO handle error

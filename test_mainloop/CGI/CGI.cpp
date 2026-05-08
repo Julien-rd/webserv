@@ -191,9 +191,9 @@ void CGI::execute(void) {
 }
 
 bool CGI::isCGIRequest(const HttpRequest& request) {
-  // std::cout << "calling isCGIRequest(): request._uri is: (" << request._uri
-  // << ")" << " pythonScriptName is: (" << pythonScriptName << ") " <<
-  // std::endl;
+  std::cout << "calling isCGIRequest(): request._uri is: (" << request._uri
+            << ")" << " pythonScriptName is: (" << CGI::pythonScriptName << ") "
+            << std::endl;
   if (request._uri.compare(0, CGI::pythonScriptName.size(),
                            CGI::pythonScriptName) == 0 ||
       request._uri.compare(0, CGI::phpScriptName.size(), CGI::phpScriptName) ==
@@ -203,7 +203,7 @@ bool CGI::isCGIRequest(const HttpRequest& request) {
                // for the rest of the execution oF CGI
     return true;
   }
-  std::cout << "URI doesn't contain a known script" << std::endl;
+  // std::cout << "URI doesn't contain a known script" << std::endl;
   return false;
 }
 

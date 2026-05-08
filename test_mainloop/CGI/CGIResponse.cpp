@@ -11,11 +11,14 @@ void CGIResponse::addBody(HttpRequest request) {
   // std::string str = _CGIResponseStream.str();
   // size_t      bodyPos = str.find("\r\n\r\n");
   // str.erase(0, bodyPos + 4);
-  _responseBody.resize(_CGIResponseLen);
-  _CGIResponseStream.read(&_responseBody[0], _CGIResponseLen);
+  size_t separatorPos = _CGIResponseStream.str().find("\r\n\r\n");
+  _responseBody.resize(_CGIResponseLen - 4 - separatorPos);
+  _CGIResponseStream.seekg(separatorPos + 4);
+  _CGIResponseStream.read(&_responseBody[0],
+                          _CGIResponseLen - 4 - separatorPos);
 
   std::ostringstream ss;
-  ss << _CGIResponseLen;
+  ss << _CGIResponseLen - 4 - separatorPos;
   _response += "Content-Length: " + ss.str() + "\r\n";
   _response += "\r\n";
 }
