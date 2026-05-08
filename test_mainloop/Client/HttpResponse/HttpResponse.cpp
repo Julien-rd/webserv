@@ -107,7 +107,7 @@ void HttpResponse::addBody(HttpRequest request) {
     return; // error handling
   }
   htmlPage.seekg(0, std::ios::end);
-  std::streampos size = htmlPage.tellg();
+  std::streampos size = htmlPage.tellg(); // TODO change this. we can't use seek
   htmlPage.seekg(0, std::ios::beg);
   if (size == 0) {
     _statusCode = 404; // check statusCodes
