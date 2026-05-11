@@ -7,7 +7,7 @@ void parseAutoindex(const std::vector<std::string>& args,
     throw std::runtime_error("autoindex directive invalid");
   if (args[0] == "on")
     location.autoindex = true;
-  if (args[0] == "off")
+  else if (args[0] == "off")
     location.autoindex = false;
   else
     throw std::runtime_error("autoindex directive invalid");
@@ -81,6 +81,13 @@ void parseRoot(const std::vector<std::string>& args, t_location& location) {
   if (args.size() != 1)
     throw std::runtime_error("root has wrong argument count");
   location.root = args.at(0);
+}
+
+void parseTryFiles(const std::vector<std::string>& args, t_location& location) {
+    if (args.size() > 4)
+        throw std::runtime_error("try_files has too many arguments");
+    for (unsigned int i = 0; i < args.size(); ++i)
+        location.tryFiles.push_back(args.at(i));
 }
 
 void parseIndex(const std::vector<std::string>& args, t_location& location) {

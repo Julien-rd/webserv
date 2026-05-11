@@ -8,6 +8,7 @@
 
 /* DirectiveHandlers.cpp */
 void parseReturn(const std::vector<std::string> &args, t_location &location);
+void parseTryFiles(const std::vector<std::string>& args, t_location& location);
 void parseAlias(const std::vector<std::string> &args, t_location &location);
 void parseAutoindex(const std::vector<std::string> &args, t_location &location);
 void parseLocalhost(const std::vector<std::string> &args, t_server &server);

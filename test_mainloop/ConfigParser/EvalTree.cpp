@@ -21,6 +21,9 @@ void evalDirective(Node *tree, t_config &evalData) {
     else
         currLocation = evalData.servers.back().locations.back();
     switch (tree->tag) {
+        case TRYFILES:
+        parseTryFiles(tree->args, currLocation);
+        return;
         case ROOT:
         parseRoot(tree->args, currLocation);
         return;
@@ -61,7 +64,6 @@ void evalDirective(Node *tree, t_config &evalData) {
 }
 
 void setServer(t_server &server) {
-    memset(&server, 0, sizeof(t_server));
     server.client_max_body = 4;
     server.ip = "0.0.0.0";
     server.port = "8080";
@@ -69,7 +71,6 @@ void setServer(t_server &server) {
 }
 
 void setLocation(t_location &location) {
-    memset(&location, 0, sizeof(t_location));
     location.allowMethods |= 1 << GET | 1 << POST | 1 << DELETE;
     location.autoindex = false;
 }
