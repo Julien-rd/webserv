@@ -2,6 +2,7 @@
 #define CLIENT_HPP
 
 #include "../CGI/CGI.hpp"
+#include "../CGI/CGIResponse.hpp"
 #include "../Error/Error.hpp"
 #include "HttpRequest/HttpRequest.hpp"
 #include "HttpResponse/HttpResponse.hpp"
@@ -18,6 +19,7 @@ private:
   std::stringstream _CGIResponseStream;
   ssize_t           _CGIResponseLen;
   pid_t             _CGIPid;
+  CGIResponse       _CGIResponse;
 
   int closeConnection();
 
@@ -29,8 +31,8 @@ public:
 
   int    loop(std::string input);
   size_t getBytesRead();
-  void   handleCGI(CGI& cgi);
-  void   handleCGIOutput(int pipeReadFd);
+  void   startCGI(CGI& cgi);
+  void   handleCGIResponse(int pipeReadFd);
   void   reset();
   void   setFd(int fd);
   int    getFd() const;

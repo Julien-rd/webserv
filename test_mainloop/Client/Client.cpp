@@ -4,7 +4,6 @@
 #include "HttpRequest/HttpRequest.hpp"
 #include "HttpResponse/HttpResponse.hpp"
 
-#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -22,25 +21,30 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 4096
 
 Client::Client()
-    : _fd(-1), _epfd(-1), _request(), _CGIResponseLen(0), _CGIPid(-1) {}
+    : _fd(-1), _epfd(-1), _request(), _CGIResponseLen(0), _CGIPid(-1),
+      _CGIResponse(_CGIResponseStream, _CGIResponseLen) {}
 
 Client::Client(int epfd)
-    : _fd(-1), _epfd(epfd), _request(), _CGIResponseLen(0), _CGIPid(-1) {}
+    : _fd(-1), _epfd(epfd), _request(), _CGIResponseLen(0), _CGIPid(-1),
+      _CGIResponse(_CGIResponseStream, _CGIResponseLen) {}
 
 Client::Client(const Client& obj)
     : _fd(obj._fd), _epfd(obj._epfd), _request(obj._request),
-      _CGIResponseLen(obj._CGIResponseLen), _CGIPid(obj._CGIPid) {}
+      _CGIResponseLen(obj._CGIResponseLen), _CGIPid(obj._CGIPid),
+      _CGIResponse(obj._CGIResponse) {}
 
 const Client& Client::operator=(const Client& obj) {
   if (&obj == this) {
     return *this;
   }
   _fd = obj._fd;
-  _request = obj._request;
   _epfd = obj._epfd;
+  _request = obj._request;
+  _CGIResponseLen = obj._CGIResponseLen;
+  _CGIPid = obj._CGIPid;
   return *this;
 }
 
@@ -52,6 +56,7 @@ void Client::reset() {
   setFd(-1);
   _request.reset();
   _response.reset();
+  _CGIResponse.reset();
 }
 
 int Client::closeConnection() {
@@ -63,7 +68,7 @@ int Client::closeConnection() {
   return 1;
 }
 
-void Client::handleCGI(CGI& cgi) {
+void Client::startCGI(CGI& cgi) {
   // bool err = false;
 
   try {
@@ -76,7 +81,7 @@ void Client::handleCGI(CGI& cgi) {
     // std::cout << "========= spawnProcess() succeeded\n";
     // writing to the pipe? std::cout << "========= wait() succeeded\n";
   } catch (std::exception& e) {
-    std::cerr << "exception caught in handleCGI(): " << e.what() << std::endl;
+    std::cerr << "exception caught in startCGI(): " << e.what() << std::endl;
   }
   // if (_response.build(_request) == 1)
   //   err = true;
@@ -94,23 +99,23 @@ void Client::handleCGI(CGI& cgi) {
   // std::cout << "SUCCESS\n";
 }
 
-void Client::handleCGIOutput(int pipeReadFd) {
+void Client::handleCGIResponse(int pipeReadFd) {
   char    buf[BUFFER_SIZE];
   ssize_t bytesRead;
 
   bytesRead = read(pipeReadFd, buf, BUFFER_SIZE - 1);
-  std::cout << "bytes read: " << bytesRead << std::endl;
+  std::cout << "bytes read from CGI pipe: " << bytesRead << std::endl;
   if (bytesRead == -1) {
     _CGIResponseLen = 0;
     _CGIResponseStream.clear();
-    throw std::runtime_error("read() failed in Client::handleCGIOutput");
+    throw std::runtime_error("read() failed in Client::handleCGIResponse");
   }
   if (bytesRead == 0) {
     int res = waitpid(_CGIPid, NULL, WNOHANG);
     if (res == -1) {
-      throw std::runtime_error("waitpid() failed in handlingCGIOutput()");
+      throw std::runtime_error("waitpid() failed in handleCGIResponse()");
     }
-    if (res == 0) {
+    if (res == 0) { // TODO this branch is untested
       kill(_CGIPid, SIGKILL);
       waitpid(_CGIPid, NULL, 0);
     }
@@ -120,23 +125,24 @@ void Client::handleCGIOutput(int pipeReadFd) {
     close(pipeReadFd);
     std::cout << "\nbuilding HttpResponse from CGI Response:\n{\n"
               << _CGIResponseStream.str() << "\n}\n";
-    CGIResponse cgiResponse(_CGIResponseStream, _CGIResponseLen);
-    if (cgiResponse.build(_request) == 1) {
-      ; // TODO handle error
+    if (_CGIResponse.build(_request) == 1) {
+      throw std::runtime_error("couldn't build HttpResponse from CGI Response");
+      // TODO handle error
     }
-    const char* response = cgiResponse.getResponse();
+    const char* response = _CGIResponse.getResponse();
     // std::cout << "\nHttpResponse Response:\n" << response << std::endl;
     if (send(_fd, response, strlen(response), 0) ==
         -1) // how should we protect here? cut client/close server?
       abort();
-    std::vector<char> responseBody = cgiResponse.getResponseBody();
+    std::vector<char> responseBody = _CGIResponse.getResponseBody();
     if (send(_fd, &responseBody[0], responseBody.size(), 0) == -1)
       abort();
     _request.reset();
-    cgiResponse.reset();
+    _CGIResponse.reset();
   } else {
+    buf[bytesRead] = '\0';
     _CGIResponseLen += bytesRead;
-    _CGIResponseStream.write(buf, bytesRead);
+    _CGIResponseStream.write(buf, bytesRead + 1);
     // std::cout << "added " << " to stringstream" << std::endl;
   }
 }
@@ -153,7 +159,7 @@ int Client::loop(std::string input) {
     // _request.print();
     if (CGI::isCGIRequest(_request)) {
       CGI cgi(_request, _fd, _epfd);
-      handleCGI(cgi);
+      startCGI(cgi);
       return 0;
     }
     if (_response.build(_request) == 1)

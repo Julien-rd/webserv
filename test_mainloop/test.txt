@@ -1,0 +1,18 @@
+server {
+    client_max_body_size        1;
+        
+    
+    
+    
+    allow_methods GET
+
+    root /;
+
+    
+    location /etc/dev {
+        root /;
+        index /biiiitch;
+    }
+    
+    listen 192.168.122.1;
+}

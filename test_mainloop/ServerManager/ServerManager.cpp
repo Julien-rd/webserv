@@ -84,15 +84,14 @@ void ServerManager::loopReadyEvents(void) {
     if (_servers.find(fd) != _servers.end()) {
       _servers.at(fd).handleServerEvent();
     } else if (_clientToServerMap.find(fd) != _clientToServerMap.end()) {
-      int serverFd = _clientToServerMap[fd];
-      _servers.at(serverFd).handleClientEvent(fd);
+      _servers.at(_clientToServerMap[fd]).handleClientEvent(fd);
     } else {      /* is CGI's pipe fd */
       int fds[2]; // fds[0] is the pipefd. fds[1]
                   // is the owning client's fd.
       pp_memcpy(fds, &_triggeredEvents[i].data.u64, sizeof(uint64_t));
       // std::cout << "caught CGI in epoll... client fd: " << fds[1]
       //           << ". pipefd is: " << fds[0] << std::endl;
-      _clients[fds[1]].handleCGIOutput(fds[0]);
+      _clients[fds[1]].handleCGIResponse(fds[0]);
     }
   }
 }

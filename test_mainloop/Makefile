@@ -33,11 +33,11 @@ $(OBJ_DIR)%.o: %.cpp
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
 run: all
-	./$(NAME) ConfigParser/test.txt
+	./$(NAME) test.txt
 
 runval: CXXFLAGS:= -Wall -Wextra -Werror -std=c++98 -pedantic -g
 runval: re
-	valgrind --leak-check=full --show-leak-kinds=all --track-fds=all ./$(NAME) ConfigParser/test.txt
+	valgrind --leak-check=full --show-leak-kinds=all --track-fds=all ./$(NAME) test.txt
 	
 runsan: CXXFLAGS:= -std=c++98 -g -fsanitize=address,leak,undefined,bounds,float-divide-by-zero
 runsan: re
