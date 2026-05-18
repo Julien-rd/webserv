@@ -5,9 +5,9 @@ void parseAutoindex(const std::vector<std::string>& args,
                     t_location&                     location) {
   if (args.size() != 1)
     throw std::runtime_error("autoindex directive invalid");
-  if (args[0] == "on")
+  if (args.at(0) == "on")
     location.autoindex = true;
-  if (args[0] == "off")
+  else if (args.at(0) == "off")
     location.autoindex = false;
   else
     throw std::runtime_error("autoindex directive invalid");
@@ -38,21 +38,26 @@ void parseMaxBody(const std::vector<std::string>& args, t_server& server) {
 }
 
 void parseListen(const std::vector<std::string>& args, t_server& server) {
+  if (args.size() != 1) {
+    throw std::runtime_error("listen directive invalid");
+  }
   size_t      colon = args.at(0).find(':');
   const char* convert;
-  if (false) {
+  if (colon != std::string::npos) { // "ip:port" form
     server.ip = args.at(0).substr(0, colon);
     convert = args.at(0).c_str() + colon + 1;
-  } else if (true) {
-    server.ip = args.at(0);
-    return;
-  } else {
+  } else if (args.at(0).find_first_not_of("0123456789") ==
+             std::string::npos) { // "port" form
     server.ip = "0.0.0.0";
     convert = args.at(0).c_str();
+    return;
+  } else { // "ip" form
+    server.ip = args.at(0);
+    return;
   }
   char* end;
   long  val = strtol(convert, &end, 10);
-  if (*end != 0 || end == convert || val < 0 || val > 65535 || args.size() != 1)
+  if (*end != 0 || end == convert || val < 0 || val > 65535)
     throw std::runtime_error("listen directive invalid");
   server.port = std::string(convert);
 }
@@ -81,6 +86,13 @@ void parseRoot(const std::vector<std::string>& args, t_location& location) {
   if (args.size() != 1)
     throw std::runtime_error("root has wrong argument count");
   location.root = args.at(0);
+}
+
+void parseTryFiles(const std::vector<std::string>& args, t_location& location) {
+    if (args.size() > 4)
+        throw std::runtime_error("try_files has too many arguments");
+    for (unsigned int i = 0; i < args.size(); ++i)
+        location.tryFiles.push_back(args.at(i));
 }
 
 void parseIndex(const std::vector<std::string>& args, t_location& location) {
