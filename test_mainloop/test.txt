@@ -4,7 +4,7 @@ server {
     
     
     
-    allow_methods GET
+    allow_methods GET;
 
     root /;
 
