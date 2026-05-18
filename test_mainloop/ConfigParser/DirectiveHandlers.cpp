@@ -88,6 +88,13 @@ void parseRoot(const std::vector<std::string>& args, t_location& location) {
   location.root = args.at(0);
 }
 
+void parseTryFiles(const std::vector<std::string>& args, t_location& location) {
+    if (args.size() > 4)
+        throw std::runtime_error("try_files has too many arguments");
+    for (unsigned int i = 0; i < args.size(); ++i)
+        location.tryFiles.push_back(args.at(i));
+}
+
 void parseIndex(const std::vector<std::string>& args, t_location& location) {
   if (args.size() != 1)
     throw std::runtime_error("index has wrong argument count");

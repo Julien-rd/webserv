@@ -92,6 +92,7 @@ Node* context(Tokenizer& stream, std::vector<std::string>& args) {
 
 void initDefaults(void) {
     d.push_back(std::pair<std::string, int>("return", RETURN));
+    d.push_back(std::pair<std::string, int>("try_files", TRYFILES));
     d.push_back(std::pair<std::string, int>("alias", ALIAS));
   d.push_back(std::pair<std::string, int>("index", INDEX));
   d.push_back(std::pair<std::string, int>("client_max_body_size",

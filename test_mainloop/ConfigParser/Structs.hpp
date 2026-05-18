@@ -13,6 +13,7 @@ enum types { CONTEXT, DIRECTIVE, BASE };
 
 enum d_tags {
   INDEX,
+  TRYFILES,
   CLIENT_MAX_BODY_SIZE,
   ROOT,
   ALIAS,
@@ -33,6 +34,7 @@ typedef struct s_location {
   std::string root;
   std::string index;
   std::string alias;
+  std::vector<std::string> tryFiles;
   std::pair<int, std::string> redirect;
   int allowMethods;
 } t_location;
