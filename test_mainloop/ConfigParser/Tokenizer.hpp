@@ -4,7 +4,7 @@
 
 class Tokenizer {
 public:
-  Tokenizer(const char *fileName) {
+  Tokenizer(const char* fileName) {
     file.open(fileName);
     if (!file.is_open())
       throw std::runtime_error("file couldn't be opened");
@@ -15,7 +15,7 @@ public:
   }
   const std::string next() {
     skipWhitespaces();
-    char peek = file.peek();
+    char        peek = file.peek();
     std::string token;
     if (peek == EOF || peek == '{' || peek == '}' || peek == ';')
       return token += file.get();
@@ -29,7 +29,7 @@ public:
 
 private:
   std::ifstream file;
-  void skipWhitespaces() {
+  void          skipWhitespaces() {
     std::string whitespace = " \t\n\r";
     while (whitespace.find(file.peek()) != std::string::npos &&
            file.peek() != EOF)

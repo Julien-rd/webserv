@@ -4,8 +4,8 @@
 #include <vector>
 
 struct Node {
-  int tag, type;
-  std::vector<Node *> content;
+  int                      tag, type;
+  std::vector<Node*>       content;
   std::vector<std::string> args;
 };
 
@@ -19,7 +19,7 @@ enum d_tags {
   ALIAS,
   LISTEN,
   AUTOINDEX,
-  RETURN, 
+  RETURN,
   ALLOWMETHODS,
   MAX_CLIENTS,
   CLIENTS_PER_SERVER,
@@ -29,27 +29,27 @@ enum d_tags {
 enum c_tags { SERVER, LOCATION, MAIN };
 
 typedef struct s_location {
-  std::string name;
-  bool autoindex;
-  std::string root;
-  std::string index;
-  std::string alias;
-  std::vector<std::string> tryFiles;
+  std::string                 name;
+  bool                        autoindex;
+  std::string                 root;
+  std::string                 index;
+  std::string                 alias;
+  std::vector<std::string>    tryFiles;
   std::pair<int, std::string> redirect;
-  int allowMethods;
+  int                         allowMethods;
 } t_location;
 
 typedef struct s_server {
   bool localhost;
   // std::string server_name;
-  std::string ip;
-  std::string port;
-  int client_max_body;
+  std::string             ip;
+  std::string             port;
+  int                     client_max_body;
   std::vector<t_location> locations;
 } t_server;
 
 typedef struct s_config {
-  bool serverFlag, locationFlag;
+  bool         serverFlag, locationFlag;
   unsigned int maxClients;
   // int errorLog;
   // int errorlvl;

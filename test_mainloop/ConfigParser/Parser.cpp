@@ -5,21 +5,21 @@
 #include <iostream>
 #include <vector>
 
-void freeTree(Node *node) {
+void freeTree(Node* node) {
   for (unsigned int i = 0; i < node->content.size(); ++i)
     freeTree(node->content[i]);
   delete node;
 }
 
-void setDefault(t_config &config) {
+void setDefault(t_config& config) {
   config.serverFlag = false;
   config.locationFlag = false;
   config.clientsPerServer = 1024;
   config.maxClients = 1024;
 }
 
-bool parseConfigFile(t_config &config, const char *fileName) {
-  Node *tree = NULL;
+bool parseConfigFile(t_config& config, const char* fileName) {
+  Node* tree = NULL;
   setDefault(config);
   try {
     Tokenizer stream(fileName);
@@ -27,7 +27,7 @@ bool parseConfigFile(t_config &config, const char *fileName) {
     evalTree(tree, config);
     if (tree)
       freeTree(tree);
-  } catch (std::exception &e) {
+  } catch (std::exception& e) {
     if (tree)
       freeTree(tree);
     std::cout << "Error\n" << e.what() << "\n";
