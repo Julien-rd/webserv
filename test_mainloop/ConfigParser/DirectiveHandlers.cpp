@@ -1,4 +1,5 @@
 #include "Parser.hpp"
+#include "Structs.hpp"
 #include <algorithm>
 
 void parseAutoindex(const std::vector<std::string>& args,

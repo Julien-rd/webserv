@@ -30,7 +30,7 @@ bool parseConfigFile(t_config& config, const char* fileName) {
   } catch (std::exception& e) {
     if (tree)
       freeTree(tree);
-    std::cout << "Error\n" << e.what() << "\n";
+    std::cout << "Error: " << e.what() << "\n";
     return true;
   }
   return false;

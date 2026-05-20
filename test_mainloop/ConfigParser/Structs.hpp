@@ -23,10 +23,17 @@ enum d_tags {
   ALLOWMETHODS,
   MAX_CLIENTS,
   CLIENTS_PER_SERVER,
-  LOCALHOST
+  LOCALHOST,
+  CGI_CONFIG
 };
 
 enum c_tags { SERVER, LOCATION, MAIN };
+
+typedef struct c_cgi_config {
+  std::string extension;
+  std::string executablePath;
+  int         allowedMethods;
+} t_cgi_config;
 
 typedef struct s_location {
   std::string                 name;
@@ -37,15 +44,17 @@ typedef struct s_location {
   std::vector<std::string>    tryFiles;
   std::pair<int, std::string> redirect;
   int                         allowMethods;
+  std::vector<t_cgi_config>   cgiConfigs;
 } t_location;
 
 typedef struct s_server {
   bool localhost;
   // std::string server_name;
-  std::string             ip;
-  std::string             port;
-  int                     client_max_body;
-  std::vector<t_location> locations;
+  std::string               ip;
+  std::string               port;
+  int                       client_max_body;
+  std::vector<t_location>   locations;
+  std::vector<t_cgi_config> cgiConfigs;
 } t_server;
 
 typedef struct s_config {
