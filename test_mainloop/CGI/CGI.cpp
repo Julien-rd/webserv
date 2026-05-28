@@ -14,8 +14,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-const std::string CGI::pythonScriptName = "/python.py";
-const std::string CGI::phpScriptName = "/php.php";
+const char* CGI::_knownExtensions[2] = {".py", ".php"};
 
 CGI::CGI(const HttpRequest& request, int clientFd, int epfd)
     : request(request), epfd(epfd), clientFd(clientFd) {
@@ -79,11 +78,9 @@ const CGI& CGI::operator=(const CGI& obj) {
 void CGI::initCGI(void) {
   // this->scriptName = getScriptName(request._uri, this->pythonScriptName,
   // this->phpScriptName);
-  if (this->request._uri.compare(0, this->pythonScriptName.size(),
-                                 this->pythonScriptName) == 0) {
+  if (this->request._uri.find(".py")) {
     initPythonScript();
-  } else if (this->request._uri.compare(0, this->pythonScriptName.size(),
-                                        this->pythonScriptName) == 0) {
+  } else if (this->request._uri.find(".php")) {
     initPhpScript();
   } else {
     std::cerr << "shouldn't reach here" << std::endl;
@@ -192,21 +189,25 @@ void CGI::execute(void) {
 
 bool CGI::isCGIRequest(const HttpRequest& request) {
   std::cout << "calling isCGIRequest(): request._uri is: (" << request._uri
-            << ")" << " pythonScriptName is: (" << CGI::pythonScriptName << ") "
-            << std::endl;
-  if (request._uri.compare(0, CGI::pythonScriptName.size(),
-                           CGI::pythonScriptName) == 0 ||
-      request._uri.compare(0, CGI::phpScriptName.size(), CGI::phpScriptName) ==
-          0) { // TODO Or could replace this with a dynamic array of known
-               // scripts and check if URI matches one of them, then set a
-               // variable indicating that we will work with this specifi script
-               // for the rest of the execution oF CGI
-    return true;
+            << ")" << std::endl;
+  size_t delimiterPos = request._uri.find('/', 1);
+  if (delimiterPos == 1) {
+    std::cerr << "unexpected URI format in isCGIRequest()" << std::endl;
   }
-  // std::cout << "URI doesn't contain a known script" << std::endl;
+  if (delimiterPos == std::string::npos) {
+    delimiterPos = request._uri.size() - 1;
+  } else {
+    delimiterPos -= 1;
+  }
+  for (size_t i = 0; i < KNOWN_EXTENSIONS_COUNT; i++) {
+    if (request._uri.find(_knownExtensions[i], 1, delimiterPos) !=
+        std::string::npos) {
+      return true;
+    }
+    // std::cout << "URI doesn't contain a known script" << std::endl;
+  }
   return false;
 }
-
 pid_t CGI::getPid(void) const { return this->pid; }
 
 // int	main(const int argc, const char **argv, const char **envp) {

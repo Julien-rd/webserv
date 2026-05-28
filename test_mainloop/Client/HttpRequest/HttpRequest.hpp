@@ -18,6 +18,13 @@ enum state {
   BODY_CHUNKED
 };
 
+typedef struct s_uri {
+  std::string path;      //  "/python.py"
+  std::string pathInfo;  //  "/extra/info"
+  std::string query;     //  "key=value"
+  std::string extension; //  ".py"
+} t_uri;
+
 // enum method{
 //     GET,
 //     HEAD, apparently: The methods GET and HEAD MUST be supported by all
@@ -27,30 +34,32 @@ enum state {
 class HttpRequest {
 
 public:
-  int parseHttpRequest(std::string request_content, size_t bytes_read);
+  int  parseHttpRequest(std::string request_content, size_t bytes_read);
+  int  parseURI(void);
   void print();
   HttpRequest(size_t client_max_body_size);
   HttpRequest();
-  const HttpRequest &operator=(const HttpRequest &obj);
-  int getStatusCode() const;
-  bool parsingDone();
-  void reset();
-  size_t getBytesRead() const;
-  std::vector<char> getBody() const;
+  const HttpRequest& operator=(const HttpRequest& obj);
+  int                getStatusCode() const;
+  bool               parsingDone();
+  void               reset();
+  size_t             getBytesRead() const;
+  std::vector<char>  getBody() const;
 
   // these have to be private, please implement getters in script functions
-  std::string _method;
-  std::string _uri;
+  std::string                        _method;
+  std::string                        _uri;
   std::map<std::string, std::string> _headers;
-  state _currentState;
-  size_t _contentLength;
+  state                              _currentState;
+  size_t                             _contentLength;
+  t_uri                              _uriData;
 
   // getters
   std::string getURI() const;
 
 private:
   bool validMethod();
-  bool validUri();
+  bool validUri(int stage);
   bool validHttpsVersion();
   bool hasHostHeader();
   bool hasContentLength();
@@ -58,24 +67,24 @@ private:
   bool validNewLine(std::string request_content);
   bool containsWhiteSpaces();
 
-  int parseHeaders(std::string &request_content);
-  int parseRequestLine(std::string &request_content);
-  int parse_body(std::string request_content);
+  int  parseHeaders(std::string& request_content);
+  int  parseRequestLine(std::string& request_content);
+  int  parse_body(std::string request_content);
   bool validateMandatoryHeaders();
 
   void trim();
-  void findSeperator(std::string &request_content, char seperator, size_t &pos,
-                     size_t &max_pos);
-  void exctractContent(std::string &request_content, size_t pos);
+  void findSeperator(std::string& request_content, char seperator, size_t& pos,
+                     size_t& max_pos);
+  void exctractContent(std::string& request_content, size_t pos);
   bool brokenSyntax(size_t pos, size_t max_pos);
   void addHeader();
 
   std::string _httpVersion;
   std::string _fieldName;
   std::string _fieldValue;
-  size_t _bytesRead;
-  int _statusCode;
-  bool _parsingDone;
+  size_t      _bytesRead;
+  int         _statusCode;
+  bool        _parsingDone;
   // size_t _bytes_read implent bytes_read!!! erase is to inefficient;
 
   // containers

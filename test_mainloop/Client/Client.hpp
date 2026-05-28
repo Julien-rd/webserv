@@ -30,6 +30,7 @@ public:
   const Client& operator=(const Client& obj);
 
   int    loop(std::string input);
+  bool   doCGI(void);
   size_t getBytesRead();
   void   startCGI(CGI& cgi);
   void   handleCGIResponse(int pipeReadFd);

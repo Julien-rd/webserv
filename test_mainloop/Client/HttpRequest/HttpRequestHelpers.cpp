@@ -27,7 +27,7 @@ void HttpRequest::trim() {
     _fieldValue.erase(pos + 1);
 }
 
-void HttpRequest::exctractContent(std::string &request_content, size_t pos) {
+void HttpRequest::exctractContent(std::string& request_content, size_t pos) {
   size_t skip = 1;
   switch (_currentState) {
   case METHOD:
@@ -62,8 +62,8 @@ bool HttpRequest::brokenSyntax(size_t pos, size_t max_pos) {
   return 0;
 }
 
-void HttpRequest::findSeperator(std::string &request_content, char seperator,
-                                size_t &pos, size_t &max_pos) {
+void HttpRequest::findSeperator(std::string& request_content, char seperator,
+                                size_t& pos, size_t& max_pos) {
   max_pos = request_content.find("\r", _bytesRead);
   pos = request_content.find(seperator, _bytesRead);
 }
@@ -77,31 +77,37 @@ bool HttpRequest::validMethod() {
   return true;
 }
 
-bool HttpRequest::validUri() {
-  if (_uri.size() > 4096) {
-    _statusCode = 414;
-    std::cout << "invalid URI\n";
-    return false;
-  }
-  if (*(_uri.begin()) != '/') {
-    _statusCode = 400;
-    std::cout << "invalid URI\n";
-    return false;
-  }
-  for (std::string::iterator it = _uri.begin(); it != _uri.end(); ++it) {
-    if (*it < 33 || *it > 126) {
+bool HttpRequest::validUri(int stage) {
+  if (stage == 0) {
+    if (_uri.size() > 4096) {
+      _statusCode = 414;
+      std::cout << "invalid URI\n";
+      return false;
+    }
+    if (*(_uri.begin()) != '/') {
       _statusCode = 400;
       std::cout << "invalid URI\n";
       return false;
     }
+    for (std::string::iterator it = _uri.begin(); it != _uri.end(); ++it) {
+      if (*it < 33 || *it > 126) {
+        _statusCode = 400;
+        std::cout << "invalid URI\n";
+        return false;
+      }
+    }
+    // TODO more checks and maybe encoding
+    return (true);
   }
-  return (true);
+  return false;
 }
 
 #include <csignal>
 #include <cstdlib>
 bool HttpRequest::validHttpsVersion() {
-  if (_httpVersion != "HTTP/1.1") {
+  if (_httpVersion !=
+      "HTTP/1.1") { // TODO does HTTP/1.1 need to be backward compatible? in
+                    // that case maybe we can't make this check
     _statusCode = 400;
     std::cout << "HTTP version\n";
     return false;

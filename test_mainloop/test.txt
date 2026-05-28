@@ -13,6 +13,7 @@ server {
 
     
     location /etc/dev {
+        cgi_config .bla /home/jel-ghna/github/webserv/test_mainloop/ POST
         root /;
         index /biiiitch;
     }

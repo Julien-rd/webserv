@@ -147,6 +147,15 @@ void Client::handleCGIResponse(int pipeReadFd) {
   }
 }
 
+bool Client::doCGI(void) {
+  if (!CGI::isCGIRequest(_request)) {
+    return 1;
+  }
+  CGI cgi(_request, _fd, _epfd);
+  startCGI(cgi);
+  return 0;
+}
+
 int Client::loop(std::string input) {
   _bytesRead = 0;
   bool err = false;
@@ -157,9 +166,8 @@ int Client::loop(std::string input) {
       return 0;
     _bytesRead += _request.getBytesRead();
     // _request.print();
-    if (CGI::isCGIRequest(_request)) {
-      CGI cgi(_request, _fd, _epfd);
-      startCGI(cgi);
+    _request.parseURI();
+    if (doCGI() == false) {
       return 0;
     }
     if (_response.build(_request) == 1)
