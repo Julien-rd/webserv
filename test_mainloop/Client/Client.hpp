@@ -12,6 +12,7 @@
 class Client : public Error {
 private:
   int               _fd;
+  int               _sid;
   int               _epfd;
   HttpRequest       _request;
   HttpResponse      _response;
@@ -20,12 +21,13 @@ private:
   ssize_t           _CGIResponseLen;
   pid_t             _CGIPid;
   CGIResponse       _CGIResponse;
+  const t_config&   _config;     
 
   int closeConnection();
 
 public:
-  Client();
-  Client(int epfd);
+  Client(const t_config& config, const int _sid);
+  Client(int epfd, const t_config& config, const int _sid);
   Client(const Client& obj);
   const Client& operator=(const Client& obj);
 

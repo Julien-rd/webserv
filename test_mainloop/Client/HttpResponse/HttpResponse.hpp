@@ -2,6 +2,7 @@
 #define HTTPRESPONSEHPP
 
 #include "../HttpRequest/HttpRequest.hpp"
+#include "../../ConfigParser/Structs.hpp"
 #include <map>
 #include <string>
 
@@ -13,9 +14,11 @@ enum responseClass {
   SERVER_ERR = 5
 };
 
+void    processURI(const std::string& uri, int &httpCode, std::fstream& content, const std::vector<t_location>& locations);
+
 class HttpResponse {
 public:
-  HttpResponse();
+  HttpResponse(const t_config& config, const int sid);
   int               build(HttpRequest request);
   void              getReasonPhrase();
   const char*       getResponse();
@@ -41,7 +44,6 @@ protected:
 
   std::map<std::string, std::string>
       _mimeTypes; // should be extracted out of conf file
-  std::map<std::string, std::string> _uri;
 
   // mandatory headers
   size_t      _contentLength; // except status code = 204
@@ -52,6 +54,9 @@ protected:
   std::string                        _reasonPhrase;
   static const std::string           _httpVersion;
   std::map<std::string, std::string> _header;
+
+  const t_config& _config;
+  const int _sid;
 
   std::string       _response;
   std::vector<char> _responseBody;

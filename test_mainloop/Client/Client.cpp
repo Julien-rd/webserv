@@ -23,18 +23,18 @@
 
 #define BUFFER_SIZE 4096
 
-Client::Client()
+Client::Client(const t_config& config, const int sid)
     : _fd(-1), _epfd(-1), _request(), _CGIResponseLen(0), _CGIPid(-1),
-      _CGIResponse(_CGIResponseStream, _CGIResponseLen) {}
+      _CGIResponse(_CGIResponseStream, _CGIResponseLen), _config(config), _response(config, sid) {}
 
-Client::Client(int epfd)
+Client::Client(int epfd, const t_config& config, const int sid)
     : _fd(-1), _epfd(epfd), _request(), _CGIResponseLen(0), _CGIPid(-1),
-      _CGIResponse(_CGIResponseStream, _CGIResponseLen) {}
+      _CGIResponse(_CGIResponseStream, _CGIResponseLen), _config(config), _response(config, sid){}
 
 Client::Client(const Client& obj)
     : _fd(obj._fd), _epfd(obj._epfd), _request(obj._request),
       _CGIResponseLen(obj._CGIResponseLen), _CGIPid(obj._CGIPid),
-      _CGIResponse(obj._CGIResponse) {}
+      _CGIResponse(obj._CGIResponse), _config(obj._config), _response(obj._response), _sid(obj._sid) {}
 
 const Client& Client::operator=(const Client& obj) {
   if (&obj == this) {

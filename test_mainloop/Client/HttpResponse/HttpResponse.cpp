@@ -1,8 +1,10 @@
 #include "HttpResponse.hpp"
 
 #include <algorithm>
+#include <cstddef>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <sstream>
 #include <string>
 
@@ -15,7 +17,7 @@
 
 const std::string HttpResponse::_httpVersion = "HTTP/1.1";
 
-HttpResponse::HttpResponse() {
+HttpResponse::HttpResponse(const t_config& config, const int sid) : _config(config), _sid(sid) {
   // _responseBody.resize(1); // safeguard?
   _mimeTypes["html"] = "text/html";
   _mimeTypes["htm"] = "text/html";
@@ -26,14 +28,6 @@ HttpResponse::HttpResponse() {
   _mimeTypes["jpeg"] = "image/jpeg";
   _mimeTypes["ico"] = "image/x-icon";
   _mimeTypes["txt"] = "text/plain";
-
-  std::string webServDir = "..";
-  _uri["/ronaldo"] = webServDir + "/mySites/ronaldo.png";
-  _uri["/"] = webServDir + "/mySites/index.html";
-  _uri["/form"] = webServDir + "/mySites/form.html";
-  _uri["/upload"] = webServDir + "/mySites/upload.html";
-  _uri["/styles.css"] = webServDir + "/mySites/styles.css";
-  _uri["/favicon.ico"] = webServDir + "/mySites/ronaldo.png";
 }
 
 std::vector<char> HttpResponse::getResponseBody() { return _responseBody; }
@@ -86,23 +80,19 @@ void HttpResponse::extractContentLength() {
 
 void HttpResponse::addBody(HttpRequest request) {
   std::string path;
-  std::string uri = request.getURI();
+std::string uri = request.getURI();
   std::cout << uri;
-  if (uri == "/password.html") {
-    serveSuccessPage(request);
-    return;
-  }
-  std::map<std::string, std::string>::iterator it = _uri.find(uri);
-  if (it == _uri.end()) {
-    _statusCode = 404;
-    return; // URI not found
+  std::fstream htmlPage;
+  int httpCode;
+  processURI(uri, httpCode, htmlPage, _config.servers.at(_sid).locations);
+  if (httpCode == -1) {
+      _statusCode = 404;
+      return ;
   }
   // check if method is allowed for this uri, if not _statusCode = 405
-  path = it->second;
+  // path = it->second;
   // end
-  std::cout << " == trying to open (" << path.c_str() << ")\n";
-  std::fstream htmlPage(path.c_str(), std::ios::in | std::ios::binary);
-  if (!htmlPage.is_open()) { // or empty file
+  if (httpCode == -1) {
     std::cout << "error opening html file: " << strerror(errno);
     return; // error handling
   }

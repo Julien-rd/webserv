@@ -91,7 +91,7 @@ void ServerManager::loopReadyEvents(void) {
       pp_memcpy(fds, &_triggeredEvents[i].data.u64, sizeof(uint64_t));
       // std::cout << "caught CGI in epoll... client fd: " << fds[1]
       //           << ". pipefd is: " << fds[0] << std::endl;
-      _clients[fds[1]].handleCGIResponse(fds[0]);
+      _clients.at(fds[1]).handleCGIResponse(fds[0]);
     }
   }
 }
