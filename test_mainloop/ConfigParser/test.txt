@@ -12,22 +12,5 @@ server {
         index /biiiitch;
     }
     
-    listen 192.168.122.1;
-}
-
-server {
-    client_max_body_size        1;
-        
-    
-    
-    
-    root /;
-    
-    
-    location /etc/dev {
-        root /;
-        index /biiiitch;
-    }
-    
-    listen 127.0.0.2;
+    listen 8080;
 }

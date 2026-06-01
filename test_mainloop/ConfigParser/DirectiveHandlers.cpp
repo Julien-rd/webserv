@@ -1,6 +1,7 @@
 #include "Parser.hpp"
 #include "Structs.hpp"
 #include <algorithm>
+#include <iostream>
 
 void parseAutoindex(const std::vector<std::string>& args,
                     t_location&                     location) {
@@ -51,10 +52,8 @@ void parseListen(const std::vector<std::string>& args, t_server& server) {
              std::string::npos) { // "port" form
     server.ip = "0.0.0.0";
     convert = args.at(0).c_str();
-    return;
   } else { // "ip" form
     server.ip = args.at(0);
-    return;
   }
   char* end;
   long  val = strtol(convert, &end, 10);
