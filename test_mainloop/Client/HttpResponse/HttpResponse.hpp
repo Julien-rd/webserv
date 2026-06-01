@@ -16,7 +16,7 @@ enum responseClass {
 class HttpResponse {
 public:
   HttpResponse();
-  int               build(HttpRequest request);
+  virtual int       build(HttpRequest request);
   void              getReasonPhrase();
   const char*       getResponse();
   std::vector<char> getResponseBody();

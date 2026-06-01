@@ -68,43 +68,12 @@ int Client::closeConnection() {
   return 1;
 }
 
-void Client::startCGI(CGI& cgi) {
-  // bool err = false;
-
-  try {
-    cgi.initCGI();
-    // std::cout << "========= initCGI() succeeded\n";
-    cgi.pipeIO();
-    // std::cout << "========= pipeIO() succeeded\n";
-    cgi.spawnProcess();
-    _CGIPid = cgi.getPid();
-    // std::cout << "========= spawnProcess() succeeded\n";
-    // writing to the pipe? std::cout << "========= wait() succeeded\n";
-  } catch (std::exception& e) {
-    std::cerr << "exception caught in startCGI(): " << e.what() << std::endl;
-  }
-  // if (_response.build(_request) == 1)
-  //   err = true;
-  // const char *response = _response.getResponse();
-  // if (send(_fd, response, strlen(response), 0) ==
-  //     -1) // how should we protect here? cut client/close server?
-  //   abort();
-  // std::vector<char> responseBody = _response.getResponseBody();
-  // if (send(_fd, &responseBody[0], responseBody.size(), 0) == -1)
-  //   abort();
-  // _request.reset();
-  // _response.reset();
-  // if (err == true)
-  //   return 1;
-  // std::cout << "SUCCESS\n";
-}
-
-void Client::handleCGIResponse(int pipeReadFd) {
+void Client::readCGIPipe(int pipeReadFd) {
   char    buf[BUFFER_SIZE];
   ssize_t bytesRead;
 
   bytesRead = read(pipeReadFd, buf, BUFFER_SIZE - 1);
-  std::cout << "bytes read from CGI pipe: " << bytesRead << std::endl;
+  // std::cout << "bytes read from CGI pipe: " << bytesRead << std::endl;
   if (bytesRead == -1) {
     _CGIResponseLen = 0;
     _CGIResponseStream.clear();
@@ -125,6 +94,8 @@ void Client::handleCGIResponse(int pipeReadFd) {
     close(pipeReadFd);
     std::cout << "\nbuilding HttpResponse from CGI Response:\n{\n"
               << _CGIResponseStream.str() << "\n}\n";
+    _CGIResponse.setCGIResponseStr(_CGIResponseStream.str());
+    _CGIResponse.setCGIResponseLen(_CGIResponseLen);
     if (_CGIResponse.build(_request) == 1) {
       throw std::runtime_error("couldn't build HttpResponse from CGI Response");
       // TODO handle error
@@ -141,18 +112,29 @@ void Client::handleCGIResponse(int pipeReadFd) {
     _CGIResponse.reset();
   } else {
     buf[bytesRead] = '\0';
+    // std::cout << "adding (( " << buf << " )) to _CGIResponseStream\n";
     _CGIResponseLen += bytesRead;
     _CGIResponseStream.write(buf, bytesRead + 1);
-    // std::cout << "added " << " to stringstream" << std::endl;
+    // std::cout << "_CGIResponseStream becamse: ((" << _CGIResponseStream.str()
+    //           << " ))" << std::endl;
   }
 }
 
 bool Client::doCGI(void) {
-  if (!CGI::isCGIRequest(_request)) {
+  CGI cgi(_request, _fd, _epfd);
+  try {
+    cgi.initCGI();
+    // std::cout << "========= initCGI() succeeded\n";
+    cgi.pipeIO();
+    // std::cout << "========= pipeIO() succeeded\n";
+    cgi.spawnProcess();
+    _CGIPid = cgi.getPid();
+    // std::cout << "========= spawnProcess() succeeded\n";
+    // writing to the pipe? std::cout << "========= wait() succeeded\n";
+  } catch (std::exception& e) {
+    std::cerr << "exception caught in startCGI(): " << e.what() << std::endl;
     return 1;
   }
-  CGI cgi(_request, _fd, _epfd);
-  startCGI(cgi);
   return 0;
 }
 
@@ -166,16 +148,18 @@ int Client::loop(std::string input) {
       return 0;
     _bytesRead += _request.getBytesRead();
     // _request.print();
-    _request.parseURI();
-    if (doCGI() == false) {
-      return 0;
+    if (_request.parseURIContent() == 1) {
+      return closeConnection();
+    }
+    if (CGI::isCGIRequest(_request)) {
+      return doCGI();
     }
     if (_response.build(_request) == 1)
       err = true;
     const char* response = _response.getResponse();
     // std::cout << "response:\n" << response << std::endl;
     if (send(_fd, response, strlen(response), 0) ==
-        -1) // how should we protect here? cut client/close server?
+        -1) // TODO how should we protect here? cut client/close server?
       abort();
     std::vector<char> responseBody = _response.getResponseBody();
     if (send(_fd, &responseBody[0], responseBody.size(), 0) == -1)

@@ -77,29 +77,50 @@ bool HttpRequest::validMethod() {
   return true;
 }
 
-bool HttpRequest::validUri(int stage) {
-  if (stage == 0) {
-    if (_uri.size() > 4096) {
-      _statusCode = 414;
-      std::cout << "invalid URI\n";
-      return false;
-    }
-    if (*(_uri.begin()) != '/') {
+bool HttpRequest::validUri() {
+  if (_uri.size() > 4096) {
+    _statusCode = 414;
+    std::cout << "invalid URI\n";
+    return false;
+  }
+  if (_uri.find("#") != std::string::npos) {
+    _statusCode = 400;
+    std::cout << "invalid URI\n";
+    return false;
+  }
+  if (_uri.find("//") != std::string::npos) {
+    _statusCode = 400;
+    std::cout << "invalid URI\n";
+    return false;
+  }
+  if (_uri.find('\0') != std::string::npos) {
+    _statusCode = 400;
+    std::cout << "invalid URI\n";
+    return false;
+  }
+  return (true);
+}
+
+bool HttpRequest::validateURIPath(std::string& path) {
+  if (*(path.begin()) != '/') {
+    _statusCode = 400;
+    std::cout << "ERROR: path doesn't begin with '/'\n";
+    return false;
+  }
+  for (std::string::iterator it = path.begin(); it != path.end(); ++it) {
+    if (*it < 33 || *it > 126) {
       _statusCode = 400;
       std::cout << "invalid URI\n";
       return false;
     }
-    for (std::string::iterator it = _uri.begin(); it != _uri.end(); ++it) {
-      if (*it < 33 || *it > 126) {
-        _statusCode = 400;
-        std::cout << "invalid URI\n";
-        return false;
-      }
-    }
-    // TODO more checks and maybe encoding
-    return (true);
   }
-  return false;
+  if (path.find("/../") != std::string::npos ||
+      path.rfind("/..") == path.size() - 3) {
+    _statusCode = 400;
+    std::cout << "ERROR: escape root sequence found in URI path\n";
+    return false;
+  }
+  return true;
 }
 
 #include <csignal>

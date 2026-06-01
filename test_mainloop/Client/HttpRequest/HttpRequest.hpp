@@ -35,7 +35,7 @@ class HttpRequest {
 
 public:
   int  parseHttpRequest(std::string request_content, size_t bytes_read);
-  int  parseURI(void);
+  int  parseURIContent(void);
   void print();
   HttpRequest(size_t client_max_body_size);
   HttpRequest();
@@ -58,8 +58,10 @@ public:
   std::string getURI() const;
 
 private:
+  bool validateURIPath(std::string& path);
+
   bool validMethod();
-  bool validUri(int stage);
+  bool validUri();
   bool validHttpsVersion();
   bool hasHostHeader();
   bool hasContentLength();

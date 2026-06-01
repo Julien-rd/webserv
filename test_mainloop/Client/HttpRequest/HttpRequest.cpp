@@ -84,7 +84,7 @@ int HttpRequest::parseRequestLine(std::string& request_content) {
       break;
     }
     exctractContent(request_content, pos);
-    if (validUri(0) == false)
+    if (validUri() == false)
       return 1;
     _currentState = HTTP_VERSION;
     /* fall through */
@@ -261,17 +261,16 @@ std::string percentDecode(const std::string& encoded, bool isQuery) {
   return result;
 }
 
-int HttpRequest::parseURI(void) {
-  // split query string first
+int HttpRequest::parseURIContent(void) {
   size_t      qmark = _uri.find('?');
   std::string path = _uri.substr(0, qmark);
   path = percentDecode(path, false);
-  if (validUri(1) == false) {
-    throw std::runtime_error("invalid URI after decoding");
+  if (validateURIPath(path) == false) {
+    std::cerr << "invalid path in URI" << std::endl;
+    return 1;
   }
   _uriData.query = (qmark != std::string::npos) ? _uri.substr(qmark + 1) : "";
 
-  // find extension
   size_t dot = path.rfind('.');
   size_t lastSlash = path.rfind('/');
   if (dot != std::string::npos && dot > lastSlash) {

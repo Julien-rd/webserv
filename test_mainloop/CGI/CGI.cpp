@@ -78,9 +78,9 @@ const CGI& CGI::operator=(const CGI& obj) {
 void CGI::initCGI(void) {
   // this->scriptName = getScriptName(request._uri, this->pythonScriptName,
   // this->phpScriptName);
-  if (this->request._uri.find(".py")) {
+  if (this->request._uriData.extension == ".py") {
     initPythonScript();
-  } else if (this->request._uri.find(".php")) {
+  } else if (this->request._uriData.extension == ".php") {
     initPhpScript();
   } else {
     std::cerr << "shouldn't reach here" << std::endl;
@@ -91,8 +91,6 @@ void CGI::pipeIO(void) {
   if (pipe(this->pipefd) == -1) {
     throw std::runtime_error("CGI pipe failed");
   }
-  std::cout << "piped rfd: " << this->pipefd[0]
-            << " and wfd: " << this->pipefd[1] << std::endl;
   if (fcntl(this->pipefd[0], F_SETFD, FD_CLOEXEC) == -1) {
     throw std::runtime_error("CGI fcntl");
   }
@@ -188,26 +186,32 @@ void CGI::execute(void) {
 }
 
 bool CGI::isCGIRequest(const HttpRequest& request) {
-  std::cout << "calling isCGIRequest(): request._uri is: (" << request._uri
-            << ")" << std::endl;
-  size_t delimiterPos = request._uri.find('/', 1);
-  if (delimiterPos == 1) {
-    std::cerr << "unexpected URI format in isCGIRequest()" << std::endl;
+  const std::string& uri = request._uri;
+
+  // Strip query string for extension detection
+  size_t queryPos = uri.find('?');
+  size_t pathLen = (queryPos == std::string::npos) ? uri.size() : queryPos;
+
+  // Find the last '.' in the path portion
+  size_t dotPos = uri.rfind('.', pathLen - 1);
+  if (dotPos == std::string::npos) {
+    return false;
   }
-  if (delimiterPos == std::string::npos) {
-    delimiterPos = request._uri.size() - 1;
-  } else {
-    delimiterPos -= 1;
-  }
+
+  // Extract the extension including the dot (e.g. ".py", ".pl")
+  std::string ext = uri.substr(dotPos, pathLen - dotPos);
+
   for (size_t i = 0; i < KNOWN_EXTENSIONS_COUNT; i++) {
-    if (request._uri.find(_knownExtensions[i], 1, delimiterPos) !=
-        std::string::npos) {
+    if (ext == _knownExtensions[i]) {
       return true;
     }
-    // std::cout << "URI doesn't contain a known script" << std::endl;
   }
+
+  // std::cout << "URI doesn't contain a known CGI extension: " << uri
+  //           << std::endl;
   return false;
 }
+
 pid_t CGI::getPid(void) const { return this->pid; }
 
 // int	main(const int argc, const char **argv, const char **envp) {
