@@ -110,6 +110,7 @@ void Server::setServerSockAddr(void) {
   hints.ai_family = AF_UNSPEC;
   hints.ai_flags = AI_NUMERICHOST;
   std::cout << "ip: " << _config.servers[_sid].ip.c_str() << " == ";
+  std::cout << "port: " << _config.servers[_sid].port.c_str() << " == ";
   res = getaddrinfo(_config.servers[_sid].ip.c_str(),
                     _config.servers[_sid].port.c_str(), &hints, &_addrInfo);
   if (res) {
