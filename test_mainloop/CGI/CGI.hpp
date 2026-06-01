@@ -13,6 +13,8 @@
     const char* what(void) const throw() { return message; }                   \
   }
 
+#define KNOWN_EXTENSIONS_COUNT 2
+
 // # define FT_THROW(class_name, exception_name)
 // 	throw class_name##_##exception_name()
 
@@ -52,8 +54,8 @@ private:
   char*       argv[3];
   const char* envp[20];
 
-  static const std::string pythonScriptName;
-  static const std::string phpScriptName;
+  // static const std::string _knownExtensions[2];
+  static const char* _knownExtensions[2];
 
   void initPythonScript(void);
   void initMetaPython(void);

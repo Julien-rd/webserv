@@ -5,20 +5,30 @@
 #include <cstring>
 
 CGIResponse::CGIResponse(std::stringstream& CGIResponseStream,
-                         size_t             CGIResponseLen)
-    : _CGIResponseStream(CGIResponseStream), _CGIResponseLen(CGIResponseLen) {}
+                         size_t CGIResponseLen, const t_config& config,
+                         const int sid)
+    : HttpResponse(config, sid), _CGIResponseLen(CGIResponseLen) {
+  (void)CGIResponseLen;
+  (void)CGIResponseStream;
+  // std::cout << "CGIResponse Constructor called, CGIResponseStream: (("
+  //           << CGIResponseStream.str() << "))\n_CGIResponseStream: (("
+  //           << _CGIResponseStr << "))\n";
+}
 
 void CGIResponse::addBody(HttpRequest request) {
   (void)request;
   // std::string str = _CGIResponseStream.str();
   // size_t      bodyPos = str.find("\r\n\r\n");
   // str.erase(0, bodyPos + 4);
-  std::cout << "bodyyyyyy: " << _CGIResponseStream.str() << std::endl;
-  size_t separatorPos = _CGIResponseStream.str().find("\r\n\r\n");
+  // std::cout << "in addBody(), bodyyyyyy:\n{{{\n"
+  //           << _CGIResponseStr << "}}}" << std::endl;
+  size_t separatorPos = _CGIResponseStr.find("\r\n\r\n");
+  // std::cout << "_CGIResponseLen: " << _CGIResponseLen
+  //           << " ====== sepeartorPos: " << separatorPos << std::endl;
   _responseBody.resize(_CGIResponseLen - 4 - separatorPos);
-  _CGIResponseStream.seekg(separatorPos + 4);
-  _CGIResponseStream.read(&_responseBody[0],
-                          _CGIResponseLen - 4 - separatorPos);
+  std::stringstream responseStream(_CGIResponseStr);
+  responseStream.seekg(separatorPos + 4);
+  responseStream.read(&_responseBody[0], _CGIResponseLen - 4 - separatorPos);
 
   std::ostringstream ss;
   ss << _CGIResponseLen - 4 - separatorPos;
@@ -66,3 +76,25 @@ void CGIResponse::addRules() {
                              // escaping in HTML BODY!!!!! as extra security
                              // layer
 }
+
+int CGIResponse::build(HttpRequest request) {
+  _statusCode = request.getStatusCode();
+  buildStatusLine(); // only mandatory part
+  if (getTimeStamp() == 1)
+    return 1;
+  addMandatoryHeaders();
+  addRules();
+  if (_statusCode < 400)
+    addBody(request);
+  if (_statusCode >= 400) {
+    serveErrorPage();
+    return 1;
+  }
+  return 0;
+}
+
+void CGIResponse::setCGIResponseStr(const std::string& CGIResponseStr) {
+  _CGIResponseStr = CGIResponseStr;
+}
+
+void CGIResponse::setCGIResponseLen(size_t len) { _CGIResponseLen = len; }

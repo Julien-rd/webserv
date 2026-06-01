@@ -17,7 +17,8 @@
 
 const std::string HttpResponse::_httpVersion = "HTTP/1.1";
 
-HttpResponse::HttpResponse(const t_config& config, const int sid) : _config(config), _sid(sid) {
+HttpResponse::HttpResponse(const t_config& config, const int sid)
+    : _config(config), _sid(sid) {
   // _responseBody.resize(1); // safeguard?
   _mimeTypes["html"] = "text/html";
   _mimeTypes["htm"] = "text/html";
@@ -80,14 +81,15 @@ void HttpResponse::extractContentLength() {
 
 void HttpResponse::addBody(HttpRequest request) {
   std::string path;
-std::string uri = request.getURI();
-  std::cout << uri;
+  std::string uri = request.getURI();
+  std::cout << uri << std::endl;
   std::fstream htmlPage;
-  int httpCode;
+  int          httpCode;
   processURI(uri, httpCode, htmlPage, _config.servers.at(_sid).locations);
   if (httpCode == -1) {
-      _statusCode = 404;
-      return ;
+    std::cout << "httpCode is 404 after processURI()\n";
+    _statusCode = 404;
+    return;
   }
   // check if method is allowed for this uri, if not _statusCode = 405
   // path = it->second;

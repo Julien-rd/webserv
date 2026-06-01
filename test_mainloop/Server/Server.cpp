@@ -48,12 +48,13 @@ void Server::closeClientFds(void) {
 void Server::updateClientsMap(e_mapOperation op, const int clientFd) {
   switch (op) {
   case ADD:
-    _clientToServerMap.at(clientFd) = _serverSocket;
-    _clients.at(clientFd) =
-        Client(_epfd, _config, _sid); // TODO can we construct an entry in the map in a better
-                       // way than constructing and then calling copy
-                       // assignment operator? this basically constructs 2
-                       // client instances, can we make it only one?
+    _clientToServerMap.insert(std::pair<int, int>(clientFd, _serverSocket));
+    _clients.insert(
+        std::pair<int, Client>(clientFd, Client(_epfd, _config, _sid)));
+    // TODO can we construct an entry in the map in a better
+    // way than constructing and then calling copy
+    // assignment operator? this basically constructs 2
+    // client instances, can we make it only one?
     _clients.at(clientFd).setFd(clientFd);
     _serverToClientsMap.at(_serverSocket).insert(clientFd);
     break;

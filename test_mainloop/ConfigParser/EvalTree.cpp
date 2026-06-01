@@ -13,9 +13,9 @@ void evalDirective(Node* tree, t_config& evalData) {
       return;
     case CGI_CONFIG:
       if (evalData.locationFlag)
-        parseCGIConfig(tree->args, evalData.servers.back().locations.back());
+        parseCGIConfigs(tree->args, evalData.servers.back().locations.back());
       else
-        parseCGIConfig(tree->args, evalData.servers.back());
+        parseCGIConfigs(tree->args, evalData.servers.back());
       return;
     default:
       throw std::runtime_error("wrong directive outside of server block");
@@ -47,7 +47,9 @@ void evalDirective(Node* tree, t_config& evalData) {
     currLocation.allowMethods = allowMethods(tree->args);
     return;
   case CGI_CONFIG:
-    parseCGIConfig(tree->args, currLocation);
+    parseCGIConfigs(
+        tree->args,
+        currLocation); // TODO is this repeated? we have it up in (!.serverFlag)
     return;
   default:;
   }

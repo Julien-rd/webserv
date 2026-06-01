@@ -7,15 +7,20 @@
 
 class CGIResponse : public HttpResponse {
 private:
-  std::stringstream& _CGIResponseStream;
-  size_t             _CGIResponseLen;
-  void               addRules();
-  void               addBody(HttpRequest request);
+  // std::stringstream& _CGIResponseStream;
+  std::string _CGIResponseStr;
+  size_t      _CGIResponseLen;
+  void        addRules();
+  void        addBody(HttpRequest request);
 
 public:
+  int  build(HttpRequest request);
+  void setCGIResponseStr(const std::string& CGIResponseStr);
+  void setCGIResponseLen(size_t len);
   // CGIResponse();
   // ~CGIResponse();
-  CGIResponse(std::stringstream& CGIResponseStream, size_t CGIResponseLen);
+  CGIResponse(std::stringstream& CGIResponseStream, size_t CGIResponseLen,
+              const t_config& config, const int sid);
 };
 
 #endif /* CGI_RESPONSE_CLASS_HPP */

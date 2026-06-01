@@ -11,17 +11,19 @@
 
 class Client : public Error {
 private:
-  int               _fd;
-  int               _sid;
-  int               _epfd;
-  HttpRequest       _request;
-  HttpResponse      _response;
-  size_t            _bytesRead;
+  int          _fd;
+  int          _sid;
+  int          _epfd;
+  HttpRequest  _request;
+  HttpResponse _response;
+  size_t       _bytesRead;
+
   std::stringstream _CGIResponseStream;
   ssize_t           _CGIResponseLen;
   pid_t             _CGIPid;
   CGIResponse       _CGIResponse;
-  const t_config&   _config;     
+
+  const t_config& _config;
 
   int closeConnection();
 
@@ -32,9 +34,9 @@ public:
   const Client& operator=(const Client& obj);
 
   int    loop(std::string input);
+  bool   doCGI(void);
   size_t getBytesRead();
-  void   startCGI(CGI& cgi);
-  void   handleCGIResponse(int pipeReadFd);
+  void   readCGIPipe(int pipeReadFd);
   void   reset();
   void   setFd(int fd);
   int    getFd() const;

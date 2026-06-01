@@ -14,8 +14,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-const std::string CGI::pythonScriptName = "/python.py";
-const std::string CGI::phpScriptName = "/php.php";
+const char* CGI::_knownExtensions[2] = {".py", ".php"};
 
 CGI::CGI(const HttpRequest& request, int clientFd, int epfd)
     : request(request), epfd(epfd), clientFd(clientFd) {
@@ -79,11 +78,9 @@ const CGI& CGI::operator=(const CGI& obj) {
 void CGI::initCGI(void) {
   // this->scriptName = getScriptName(request._uri, this->pythonScriptName,
   // this->phpScriptName);
-  if (this->request._uri.compare(0, this->pythonScriptName.size(),
-                                 this->pythonScriptName) == 0) {
+  if (this->request._uriData.extension == ".py") {
     initPythonScript();
-  } else if (this->request._uri.compare(0, this->pythonScriptName.size(),
-                                        this->pythonScriptName) == 0) {
+  } else if (this->request._uriData.extension == ".php") {
     initPhpScript();
   } else {
     std::cerr << "shouldn't reach here" << std::endl;
@@ -94,8 +91,6 @@ void CGI::pipeIO(void) {
   if (pipe(this->pipefd) == -1) {
     throw std::runtime_error("CGI pipe failed");
   }
-  std::cout << "piped rfd: " << this->pipefd[0]
-            << " and wfd: " << this->pipefd[1] << std::endl;
   if (fcntl(this->pipefd[0], F_SETFD, FD_CLOEXEC) == -1) {
     throw std::runtime_error("CGI fcntl");
   }
@@ -191,19 +186,29 @@ void CGI::execute(void) {
 }
 
 bool CGI::isCGIRequest(const HttpRequest& request) {
-  std::cout << "calling isCGIRequest(): request._uri is: (" << request._uri
-            << ")" << " pythonScriptName is: (" << CGI::pythonScriptName << ") "
-            << std::endl;
-  if (request._uri.compare(0, CGI::pythonScriptName.size(),
-                           CGI::pythonScriptName) == 0 ||
-      request._uri.compare(0, CGI::phpScriptName.size(), CGI::phpScriptName) ==
-          0) { // TODO Or could replace this with a dynamic array of known
-               // scripts and check if URI matches one of them, then set a
-               // variable indicating that we will work with this specifi script
-               // for the rest of the execution oF CGI
-    return true;
+  const std::string& uri = request._uri;
+
+  // Strip query string for extension detection
+  size_t queryPos = uri.find('?');
+  size_t pathLen = (queryPos == std::string::npos) ? uri.size() : queryPos;
+
+  // Find the last '.' in the path portion
+  size_t dotPos = uri.rfind('.', pathLen - 1);
+  if (dotPos == std::string::npos) {
+    return false;
   }
-  // std::cout << "URI doesn't contain a known script" << std::endl;
+
+  // Extract the extension including the dot (e.g. ".py", ".pl")
+  std::string ext = uri.substr(dotPos, pathLen - dotPos);
+
+  for (size_t i = 0; i < KNOWN_EXTENSIONS_COUNT; i++) {
+    if (ext == _knownExtensions[i]) {
+      return true;
+    }
+  }
+
+  // std::cout << "URI doesn't contain a known CGI extension: " << uri
+  //           << std::endl;
   return false;
 }
 

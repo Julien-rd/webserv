@@ -1,5 +1,6 @@
 #include "HttpRequest.hpp"
 #include <iostream>
+#include <sstream>
 #include <string>
 
 HttpRequest::HttpRequest(size_t client_max_body_size)
@@ -12,7 +13,7 @@ HttpRequest::HttpRequest()
 
 std::vector<char> HttpRequest::getBody() const { return _body; }
 
-const HttpRequest &HttpRequest::operator=(const HttpRequest &obj) {
+const HttpRequest& HttpRequest::operator=(const HttpRequest& obj) {
   if (&obj == this) {
     return *this;
   }
@@ -56,7 +57,7 @@ bool HttpRequest::validNewLine(std::string request_content) {
 }
 
 #include <cstdlib>
-int HttpRequest::parseRequestLine(std::string &request_content) {
+int HttpRequest::parseRequestLine(std::string& request_content) {
   size_t pos;
   size_t max_pos;
   switch (_currentState) {
@@ -125,7 +126,7 @@ bool HttpRequest::containsWhiteSpaces() {
   return false;
 }
 
-int HttpRequest::parseHeaders(std::string &request_content) {
+int HttpRequest::parseHeaders(std::string& request_content) {
   size_t pos;
   size_t max_pos;
   while (_bytesRead < request_content.length()) {
@@ -186,7 +187,7 @@ int HttpRequest::parseHeaders(std::string &request_content) {
 
 int HttpRequest::parse_body(std::string request_content) {
   if (_currentState == BODY) {
-    size_t bytes_needed = _contentLength - _body.size();
+    size_t                bytes_needed = _contentLength - _body.size();
     std::string::iterator start = request_content.begin() + _bytesRead;
     std::string::iterator end = request_content.end();
     if (start + bytes_needed > end) {
@@ -205,13 +206,13 @@ int HttpRequest::parse_body(std::string request_content) {
     std::cout << "bogySize: " << _body.size() << "\n";
   }
   if (_currentState == BODY_CHUNKED) {
-    // implement code for chunked
+    // implement code for chunked_uri
   }
   return 0;
 }
 
 int HttpRequest::parseHttpRequest(std::string request_content,
-                                  size_t bytes_read) {
+                                  size_t      bytes_read) {
   _bytesRead = bytes_read;
   _parsingDone = false;
   if (parseRequestLine(request_content) == 1) {
@@ -237,6 +238,50 @@ int HttpRequest::parseHttpRequest(std::string request_content,
       return 1;
     }
   }
+  return 0;
+}
+
+std::string percentDecode(const std::string& encoded, bool isQuery) {
+  std::string result;
+  for (size_t i = 0; i < encoded.size(); ++i) {
+    if (encoded[i] == '%' && i + 2 < encoded.size()) {
+      int                val;
+      std::istringstream hex(encoded.substr(i + 1, 2));
+      hex >> std::hex >> val;
+      result += static_cast<char>(val);
+      i += 2;
+    } else if (isQuery && encoded[i] == '+') {
+      result += ' '; // only in query strings, not paths
+    } else {
+
+      result += encoded[i];
+    }
+  }
+  return result;
+}
+
+int HttpRequest::parseURIContent(void) {
+  size_t      qmark = _uri.find('?');
+  std::string path = _uri.substr(0, qmark);
+  path = percentDecode(path, false);
+  if (validateURIPath(path) == false) {
+    std::cerr << "invalid path in URI" << std::endl;
+    return 1;
+  }
+  _uriData.query = (qmark != std::string::npos) ? _uri.substr(qmark + 1) : "";
+
+  size_t dot = path.rfind('.');
+  size_t lastSlash = path.rfind('/');
+  if (dot != std::string::npos && dot > lastSlash) {
+    size_t extEnd = path.find('/', dot);
+    _uriData.extension = path.substr(dot, extEnd - dot);
+    _uriData.path = path.substr(0, extEnd);
+    _uriData.pathInfo =
+        (extEnd != std::string::npos) ? path.substr(extEnd) : "";
+  } else {
+    _uriData.path = path;
+  }
+  _uriData.query = percentDecode(_uriData.query, true);
   return 0;
 }
 

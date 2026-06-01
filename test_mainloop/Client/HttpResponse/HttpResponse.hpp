@@ -1,8 +1,8 @@
 #ifndef HTTPRESPONSEHPP
 #define HTTPRESPONSEHPP
 
-#include "../HttpRequest/HttpRequest.hpp"
 #include "../../ConfigParser/Structs.hpp"
+#include "../HttpRequest/HttpRequest.hpp"
 #include <map>
 #include <string>
 
@@ -14,12 +14,10 @@ enum responseClass {
   SERVER_ERR = 5
 };
 
-void    processURI(const std::string& uri, int &httpCode, std::fstream& content, const std::vector<t_location>& locations);
-
 class HttpResponse {
 public:
   HttpResponse(const t_config& config, const int sid);
-  int               build(HttpRequest request);
+  virtual int       build(HttpRequest request);
   void              getReasonPhrase();
   const char*       getResponse();
   std::vector<char> getResponseBody();
@@ -56,7 +54,7 @@ protected:
   std::map<std::string, std::string> _header;
 
   const t_config& _config;
-  const int _sid;
+  const int       _sid;
 
   std::string       _response;
   std::vector<char> _responseBody;
@@ -64,5 +62,8 @@ protected:
   size_t      _statusCode;
   std::string _statusCodeStr;
 };
+
+void processURI(const std::string& uri, int& httpCode, std::fstream& content,
+                const std::vector<t_location>& locations);
 
 #endif
