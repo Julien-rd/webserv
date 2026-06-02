@@ -25,13 +25,14 @@ unsigned int getDestination(const std::string&             match,
 int getLocation(std::string& path, const std::string& match,
                 const std::vector<t_location>& locations) {
   unsigned int index = getDestination(match, locations);
-  if (!locations.at(index).alias.empty())
+  if (!locations.at(index).alias.empty()) {
     path = locations.at(index).alias +
-           match.substr(locations.at(index).name.length());
+           match.substr(locations.at(index).name.length()); 
+  }
   else if (!locations.at(index).root.empty())
     path = locations.at(index).root + match;
   else
-    path = match;
+    path = locations.at(index).name;
   return index;
 }
 
@@ -59,13 +60,13 @@ void printLocations(const std::vector<t_location>& locations) {
   std::cout << "=======================================================\n";
 }
 
-void processURI(const std::string& uri, int& httpCode, std::fstream& content,
+std::string processURI(const std::string& uri, int& httpCode, std::fstream& content,
                 const std::vector<t_location>& locations) {
   printLocations(locations);
   std::string path;
   httpCode = 0;
   int index = getLocation(path, uri, locations);
-  // path.insert(0, "../../mySites");
+  path.insert(0, "../mySites");
   if (!locations.at(index)
            .redirect.second
            .empty()) { // fix: there are several redirects which dont need a
@@ -80,14 +81,17 @@ void processURI(const std::string& uri, int& httpCode, std::fstream& content,
       std::string tmp(path);
       std::cout << "tmp: {{" << tmp << "}} ====== append tryFiles: {{"
                 << locations.at(index).tryFiles.at(i) << "}}\n";
+            
       content.open(tmp.append(locations.at(index).tryFiles.at(i)).c_str(),
                    std::ios::in | std::ios::binary);
       if (content.is_open())
-        return;
+        return tmp;
     }
   } else if (!locations.at(index).index.empty()) {
+      std::string tmp2(path);
     std::cout << "path: {{" << path << "}} ====== append index: {{"
               << locations.at(index).index << "}}\n";
+    std::cout << std::endl << tmp2.append(locations.at(index).index) << "\n";
     content.open(path.append(locations.at(index).index).c_str(),
                  std::ios::in | std::ios::binary);
   } else {
@@ -99,6 +103,7 @@ void processURI(const std::string& uri, int& httpCode, std::fstream& content,
   if (!content.is_open()) {
     httpCode = -1;
   }
+  return path;
 }
-// introduce try_files, error_pages and return etc don't forget its actually
+//   error_pages and return etc don't forget its actually
 // first the return then try_files then index in precedence

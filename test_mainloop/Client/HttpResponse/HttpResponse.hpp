@@ -63,7 +63,7 @@ protected:
   std::string _statusCodeStr;
 };
 
-void processURI(const std::string& uri, int& httpCode, std::fstream& content,
+std::string processURI(const std::string& uri, int& httpCode, std::fstream& content,
                 const std::vector<t_location>& locations);
 
 #endif

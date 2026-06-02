@@ -65,8 +65,9 @@ int HttpResponse::extractContentType(std::string path) {
   std::string contentType = path.substr(pos + 1);
   std::map<std::string, std::string>::iterator it =
       _mimeTypes.find(contentType);
-  if (it == _mimeTypes.end())
-    return 1;
+  if (it == _mimeTypes.end()) { //FIX: infinitely loads on fail
+    return 1; 
+  }
   _response += "Content-Type: ";
   _response += it->second;
   _response += "\r\n";
@@ -85,7 +86,7 @@ void HttpResponse::addBody(HttpRequest request) {
   std::cout << uri << std::endl;
   std::fstream htmlPage;
   int          httpCode;
-  processURI(uri, httpCode, htmlPage, _config.servers.at(_sid).locations);
+  path = processURI(uri, httpCode, htmlPage, _config.servers.at(_sid).locations);
   if (httpCode == -1) {
     std::cout << "_statusCode is 404 after processURI()\n";
     _statusCode = 404;
@@ -109,7 +110,6 @@ void HttpResponse::addBody(HttpRequest request) {
   _responseBody.resize(size);
   htmlPage.read(&_responseBody[0], size);
   if (extractContentType(path) == 1) {
-    // mimetype not found
     return;
   }
   extractContentLength();

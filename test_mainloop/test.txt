@@ -8,11 +8,11 @@ server {
     cgi_config .py /home/jel-ghna/github/webserv/test_mainloop/cgi-bin/;
     cgi_config .php /home/jel-ghna/github/webserv/test_mainloop/cgi-bin/;
     cgi_config .bla /home/jel-ghna/github/webserv/test_mainloop/ POST;
+	try_files ronaldo.png index.html;
 
-    root /home/jel-ghna/github/webserv/mySites;
     index index.html;
-    location /etc/dev {
-        root /home/jel-ghna/github/webserv/mySites;
+    location /fruits/ {
+	try_files sdkjfnskdfj ronaldo.png index.html;
     }
     
     listen 127.0.0.4:7070;
