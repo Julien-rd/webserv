@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <fstream>
 #include <iostream>
-#include <memory>
 #include <string>
 
 unsigned int getDestination(const std::string&             match,
@@ -36,32 +35,64 @@ int getLocation(std::string& path, const std::string& match,
   return index;
 }
 
+void printLocations(const std::vector<t_location>& locations) {
+  std::cout << "\n\ncalling printLocations() in processURI()\n";
+  for (size_t i = 0; i < locations.size(); i++) {
+    std::cout << "location: " << i << "\n";
+    std::cout << "alias: " << locations.at(i).alias << "\n";
+    // std::cout << "allowMethods: " << locations.at(i).allowMethods << "\n";
+    std::cout << "autoindex: " << locations.at(i).autoindex << "\n";
+    // std::cout << "cgiConfigs execPath: "
+    //           << locations.at(i).cgiConfigs.at(i).executablePath << "\n";
+    std::cout << "index: " << locations.at(i).index << "\n";
+    std::cout << "name: " << locations.at(i).name << "\n";
+    std::cout << "redirect: " << locations.at(i).redirect.first
+              << " ==== second: " << locations.at(i).redirect.second << "\n";
+    std::cout << "root: " << locations.at(i).root << "\n";
+    std::cout << "tryFiles: ";
+    for (size_t j = 0; j < locations.at(i).tryFiles.size(); j++) {
+      std::cout << locations.at(i).tryFiles.at(j) << " == ";
+    }
+    std::cout << "\n";
+    std::cout << "-------------------------------------------------------\n";
+  }
+  std::cout << "=======================================================\n";
+}
+
 void processURI(const std::string& uri, int& httpCode, std::fstream& content,
                 const std::vector<t_location>& locations) {
+  printLocations(locations);
   std::string path;
   httpCode = 0;
   int index = getLocation(path, uri, locations);
-  path.insert(0, "../../mySites");
+  // path.insert(0, "../../mySites");
   if (!locations.at(index)
            .redirect.second
            .empty()) { // fix: there are several redirects which dont need a
                        // file to be opened so check for the specific codes
+    std::cout << "path: {{" << path << "}} ====== append redirect: {{"
+              << locations.at(index).redirect.second << "}}\n";
     content.open(path.append(locations.at(index).redirect.second).c_str(),
                  std::ios::in | std::ios::binary);
     httpCode = locations.at(index).redirect.first;
   } else if (!locations.at(index).tryFiles.empty()) {
     for (size_t i = 0; i < locations.at(index).tryFiles.size(); ++i) {
       std::string tmp(path);
+      std::cout << "tmp: {{" << tmp << "}} ====== append tryFiles: {{"
+                << locations.at(index).tryFiles.at(i) << "}}\n";
       content.open(tmp.append(locations.at(index).tryFiles.at(i)).c_str(),
                    std::ios::in | std::ios::binary);
       if (content.is_open())
         return;
     }
   } else if (!locations.at(index).index.empty()) {
+    std::cout << "path: {{" << path << "}} ====== append index: {{"
+              << locations.at(index).index << "}}\n";
     content.open(path.append(locations.at(index).index).c_str(),
                  std::ios::in | std::ios::binary);
   } else {
-    std::cout << "opening {" << path << "/index.html" << "}\n";
+    std::cout << "path: {{" << path << "}} ====== append default: {{"
+              << locations.at(index).index << "}}\n";
     content.open(path.append("/index.html").c_str(),
                  std::ios::in | std::ios::binary);
   }

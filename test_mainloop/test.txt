@@ -5,17 +5,14 @@ server {
     
     
     allow_methods GET;
-    cgi_config .py /home/jel-ghna/github/webserv/test_mainloop/cgi-bin/
-    cgi_config .php /home/jel-ghna/github/webserv/test_mainloop/cgi-bin/
-    cgi_config .bla /home/jel-ghna/github/webserv/test_mainloop/ POST
+    cgi_config .py /home/jel-ghna/github/webserv/test_mainloop/cgi-bin/;
+    cgi_config .php /home/jel-ghna/github/webserv/test_mainloop/cgi-bin/;
+    cgi_config .bla /home/jel-ghna/github/webserv/test_mainloop/ POST;
 
-    root /;
+    root /home/jel-ghna/github/webserv/mySites;
     index index.html;
-    
     location /etc/dev {
-        cgi_config .bla /home/jel-ghna/github/webserv/test_mainloop/ POST
-        root /;
-        index /biiiitch;
+        root /home/jel-ghna/github/webserv/mySites;
     }
     
     listen 127.0.0.4:7070;

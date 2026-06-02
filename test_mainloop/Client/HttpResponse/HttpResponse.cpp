@@ -61,7 +61,7 @@ int HttpResponse::extractContentType(std::string path) {
   size_t pos = path.find_last_of('.');
   if (pos == std::string::npos || pos == 0 || path[pos - 1] == '/')
     return 1;
-  // lookup mimetype in map or something like that
+  // TODO lookup mimetype in map or something like that
   std::string contentType = path.substr(pos + 1);
   std::map<std::string, std::string>::iterator it =
       _mimeTypes.find(contentType);
@@ -87,7 +87,7 @@ void HttpResponse::addBody(HttpRequest request) {
   int          httpCode;
   processURI(uri, httpCode, htmlPage, _config.servers.at(_sid).locations);
   if (httpCode == -1) {
-    std::cout << "httpCode is 404 after processURI()\n";
+    std::cout << "_statusCode is 404 after processURI()\n";
     _statusCode = 404;
     return;
   }
