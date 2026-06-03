@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <fstream>
 #include <iostream>
-#include <iterator>
 #include <sstream>
 #include <string>
 
@@ -81,24 +80,30 @@ void HttpResponse::extractContentLength() {
 }
 
 void HttpResponse::addBody(HttpRequest request) {
-  std::string path;
-  std::string uri = request.getURI();
+    UriResult result;
+    std::fstream htmlPage;
+    std::string uri = request.getURI();
   std::cout << uri << std::endl;
-  std::fstream htmlPage;
-  int          httpCode;
-  path = processURI(uri, httpCode, htmlPage, _config.servers.at(_sid).locations);
-  if (httpCode == -1) {
-    std::cout << "_statusCode is 404 after processURI()\n";
+  result = processURI(uri, _config.servers.at(_sid));
+  if (result.httpCode < 400 && result.httpCode > 299) {
+      _statusCode = 301;
+      std::cout << "redirect\n";
+      return; //TODO: implement a redirect meaning sending result.path back with code 301
+  }
+  else if (result.autoindex == true)
+      ;//TODO: implement autoindexing with dynamic html from result.path as curr directory
+  else if (result.httpCode == 404) { //OPTIONAL: find a way to join the errors without opening the file unnecessarily
+          std::cout << "_statusCode is 404 after processURI()\n";
+          _statusCode = 404;
+          return;
+   }
+  htmlPage.open(result.path.c_str());
+  if (!htmlPage.is_open()) {
+    std::cout << "error opening html file: " << strerror(errno);
     _statusCode = 404;
     return;
   }
   // check if method is allowed for this uri, if not _statusCode = 405
-  // path = it->second;
-  // end
-  if (httpCode == -1) {
-    std::cout << "error opening html file: " << strerror(errno);
-    return; // error handling
-  }
   htmlPage.seekg(0, std::ios::end);
   std::streampos size = htmlPage.tellg(); // TODO change this. we can't use seek
   htmlPage.seekg(0, std::ios::beg);
@@ -109,7 +114,7 @@ void HttpResponse::addBody(HttpRequest request) {
   }
   _responseBody.resize(size);
   htmlPage.read(&_responseBody[0], size);
-  if (extractContentType(path) == 1) {
+  if (extractContentType(result.path) == 1) {
     return;
   }
   extractContentLength();
