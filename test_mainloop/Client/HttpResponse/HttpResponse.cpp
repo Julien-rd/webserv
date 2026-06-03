@@ -65,8 +65,8 @@ int HttpResponse::extractContentType(std::string path) {
   std::string contentType = path.substr(pos + 1);
   std::map<std::string, std::string>::iterator it =
       _mimeTypes.find(contentType);
-  if (it == _mimeTypes.end()) { //FIX: infinitely loads on fail
-    return 1; 
+  if (it == _mimeTypes.end()) { // TODO: fix, infinitely loads on fail
+    return 1;
   }
   _response += "Content-Type: ";
   _response += it->second;
@@ -83,12 +83,13 @@ void HttpResponse::extractContentLength() {
 void HttpResponse::addBody(HttpRequest request) {
   std::string path;
   std::string uri = request.getURI();
-  std::cout << uri << std::endl;
+  // std::cout << uri << std::endl;
   std::fstream htmlPage;
   int          httpCode;
-  path = processURI(uri, httpCode, htmlPage, _config.servers.at(_sid).locations);
+  path =
+      processURI(uri, httpCode, htmlPage, _config.servers.at(_sid).locations);
   if (httpCode == -1) {
-    std::cout << "_statusCode is 404 after processURI()\n";
+    std::cerr << "_statusCode is 404 after processURI()\n";
     _statusCode = 404;
     return;
   }
@@ -96,7 +97,7 @@ void HttpResponse::addBody(HttpRequest request) {
   // path = it->second;
   // end
   if (httpCode == -1) {
-    std::cout << "error opening html file: " << strerror(errno);
+    std::cerr << "error opening html file: " << strerror(errno);
     return; // error handling
   }
   htmlPage.seekg(0, std::ios::end);
@@ -104,7 +105,7 @@ void HttpResponse::addBody(HttpRequest request) {
   htmlPage.seekg(0, std::ios::beg);
   if (size == 0) {
     _statusCode = 404; // check statusCodes
-    std::cout << "empty file\n";
+    std::cerr << "empty file\n";
     return;
   }
   _responseBody.resize(size);

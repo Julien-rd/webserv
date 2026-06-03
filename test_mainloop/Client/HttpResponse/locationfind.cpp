@@ -27,9 +27,8 @@ int getLocation(std::string& path, const std::string& match,
   unsigned int index = getDestination(match, locations);
   if (!locations.at(index).alias.empty()) {
     path = locations.at(index).alias +
-           match.substr(locations.at(index).name.length()); 
-  }
-  else if (!locations.at(index).root.empty())
+           match.substr(locations.at(index).name.length());
+  } else if (!locations.at(index).root.empty())
     path = locations.at(index).root + match;
   else
     path = locations.at(index).name;
@@ -60,9 +59,10 @@ void printLocations(const std::vector<t_location>& locations) {
   std::cout << "=======================================================\n";
 }
 
-std::string processURI(const std::string& uri, int& httpCode, std::fstream& content,
-                const std::vector<t_location>& locations) {
-  printLocations(locations);
+std::string processURI(const std::string& uri, int& httpCode,
+                       std::fstream&                  content,
+                       const std::vector<t_location>& locations) {
+  // printLocations(locations);
   std::string path;
   httpCode = 0;
   int index = getLocation(path, uri, locations);
@@ -71,32 +71,32 @@ std::string processURI(const std::string& uri, int& httpCode, std::fstream& cont
            .redirect.second
            .empty()) { // fix: there are several redirects which dont need a
                        // file to be opened so check for the specific codes
-    std::cout << "path: {{" << path << "}} ====== append redirect: {{"
-              << locations.at(index).redirect.second << "}}\n";
+    // std::cout << "path: {{" << path << "}} ====== append redirect: {{"
+    //           << locations.at(index).redirect.second << "}}\n";
     content.open(path.append(locations.at(index).redirect.second).c_str(),
                  std::ios::in | std::ios::binary);
     httpCode = locations.at(index).redirect.first;
   } else if (!locations.at(index).tryFiles.empty()) {
     for (size_t i = 0; i < locations.at(index).tryFiles.size(); ++i) {
       std::string tmp(path);
-      std::cout << "tmp: {{" << tmp << "}} ====== append tryFiles: {{"
-                << locations.at(index).tryFiles.at(i) << "}}\n";
-            
+      // std::cout << "tmp: {{" << tmp << "}} ====== append tryFiles: {{"
+      //           << locations.at(index).tryFiles.at(i) << "}}\n";
+
       content.open(tmp.append(locations.at(index).tryFiles.at(i)).c_str(),
                    std::ios::in | std::ios::binary);
       if (content.is_open())
         return tmp;
     }
   } else if (!locations.at(index).index.empty()) {
-      std::string tmp2(path);
-    std::cout << "path: {{" << path << "}} ====== append index: {{"
-              << locations.at(index).index << "}}\n";
-    std::cout << std::endl << tmp2.append(locations.at(index).index) << "\n";
+    std::string tmp2(path);
+    // std::cout << "path: {{" << path << "}} ====== append index: {{"
+    //           << locations.at(index).index << "}}\n";
+    // std::cout << std::endl << tmp2.append(locations.at(index).index) << "\n";
     content.open(path.append(locations.at(index).index).c_str(),
                  std::ios::in | std::ios::binary);
   } else {
-    std::cout << "path: {{" << path << "}} ====== append default: {{"
-              << locations.at(index).index << "}}\n";
+    // std::cout << "path: {{" << path << "}} ====== append default: {{"
+    //           << locations.at(index).index << "}}\n";
     content.open(path.append("/index.html").c_str(),
                  std::ios::in | std::ios::binary);
   }
