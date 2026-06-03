@@ -2,6 +2,7 @@
 #define CGI_HPP
 
 #include "../Client/HttpRequest/HttpRequest.hpp"
+#include "../ConfigParser/Structs.hpp"
 #include <exception>
 #include <string>
 
@@ -43,12 +44,13 @@ typedef struct s_metaVariables {
 
 class CGI {
 private:
-  const HttpRequest& request;
-  std::string        scriptName;
-  t_metaVariables    meta;
-  pid_t              pid;
-  int                epfd;
-  int                clientFd;
+  const HttpRequest&               request;
+  std::string                      scriptName;
+  t_metaVariables                  meta;
+  pid_t                            pid;
+  int                              epfd;
+  int                              clientFd;
+  const std::vector<t_cgi_config>& cgiConfigs;
 
   const char* executable;
   char*       argv[3];
@@ -72,7 +74,8 @@ private:
   void execute(void);
 
 public:
-  CGI(const HttpRequest& request, int clientFd, int epfd);
+  CGI(const HttpRequest& request, int clientFd, int epfd,
+      const std::vector<t_cgi_config>& cgiConfigs);
   ~CGI(void);
   const CGI& operator=(const CGI& obj);
 
@@ -81,6 +84,7 @@ public:
 
   int  pipefd[2];
   bool validateRequest(void) const;
+  bool scriptFileExists(void) const;
   void initCGI(void);
   void pipeIO(void);
   void redirectIO(void);

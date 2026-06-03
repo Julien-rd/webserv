@@ -127,8 +127,11 @@ void Client::readCGIPipe(int pipeReadFd) {
 }
 
 bool Client::doCGI(void) {
-  CGI cgi(_request, _fd, _epfd);
+  CGI cgi(_request, _fd, _epfd, _config.servers.at(_sid).cgiConfigs);
   try {
+    if (!cgi.scriptFileExists()) {
+      return 1;
+    }
     cgi.initCGI();
     // std::cout << "========= initCGI() succeeded\n";
     cgi.pipeIO();

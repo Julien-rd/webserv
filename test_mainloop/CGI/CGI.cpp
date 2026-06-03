@@ -5,9 +5,9 @@
 #include <cstdio>
 #include <cstring>
 
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <stdexcept>
 #include <stdio.h>
 #include <sys/epoll.h>
 #include <sys/types.h>
@@ -16,8 +16,9 @@
 
 const char* CGI::_knownExtensions[2] = {".py", ".php"};
 
-CGI::CGI(const HttpRequest& request, int clientFd, int epfd)
-    : request(request), epfd(epfd), clientFd(clientFd) {
+CGI::CGI(const HttpRequest& request, int clientFd, int epfd,
+         const std::vector<t_cgi_config>& cgiConfigs)
+    : request(request), epfd(epfd), clientFd(clientFd), cgiConfigs(cgiConfigs) {
   this->pipefd[0] = -1;
   this->pipefd[1] = -1;
 }
@@ -75,9 +76,27 @@ const CGI& CGI::operator=(const CGI& obj) {
 // HttpRequest)??? 	return false;
 // }
 
+bool CGI::scriptFileExists(void) const {
+  std::cout << "in scriptFileExists(). cgiConfigs.size(): "
+            << this->cgiConfigs.size()
+            << " == cgiConfigs.at(0).execPath: " // TODO fix bug
+            << cgiConfigs.at(0).executablePath << "\n";
+  opendir(this->cgiConfigs.at(0).executablePath.c_str());
+  return 1;
+}
+
 void CGI::initCGI(void) {
   // this->scriptName = getScriptName(request._uri, this->pythonScriptName,
   // this->phpScriptName);
+  // std::cout << "in initCGI. _uriData.extension: "
+  //           << this->request._uriData.extension << std::endl;
+  // std::cout << "in initCGI. _uriData.path: " << this->request._uriData.path
+  //           << std::endl;
+  // std::cout << "in initCGI. _uriData.pathInfo: "
+  //           << this->request._uriData.pathInfo << std::endl;
+  // std::cout << "in initCGI. _uriData.query: " << this->request._uriData.query
+  //           << std::endl;
+
   if (this->request._uriData.extension == ".py") {
     initPythonScript();
   } else if (this->request._uriData.extension == ".php") {
