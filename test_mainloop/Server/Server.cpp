@@ -48,7 +48,6 @@ void Server::closeClientFds(void) {
 void Server::updateClientsMap(e_mapOperation op, const int clientFd) {
   switch (op) {
   case ADD:
-    std::cout << "here1\n";
     _clientToServerMap.insert(std::pair<int, int>(clientFd, _serverSocket));
     _clients.insert(
         std::pair<int, Client>(clientFd, Client(_epfd, _config, _sid)));
@@ -60,13 +59,11 @@ void Server::updateClientsMap(e_mapOperation op, const int clientFd) {
     _serverToClientsMap.at(_serverSocket).insert(clientFd);
     break;
   case REMOVE:
-    std::cout << "here2\n";
     _clientToServerMap.erase(clientFd);
     _clients.at(clientFd).reset();
     _clients.erase(clientFd);
     _serverToClientsMap.at(_serverSocket).erase(clientFd);
   }
-  std::cout << "here3\n";
 }
 
 void Server::closeConnection(int clientFd) {
