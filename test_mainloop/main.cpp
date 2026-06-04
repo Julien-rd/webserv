@@ -11,6 +11,8 @@
 
 #include <csignal>
 
+#include "debugPrint.cpp"
+
 /* TODO Claude says: In a single-process, non-blocking architecture, the rule is
 simple: Any fd you need to wait on must go through epoll. Waiting on it any
 other way blocks the loop. This applies to sockets, pipes, timers (timerfd),
@@ -35,6 +37,7 @@ int main(int argc, char** argv) {
     std::cerr << "ERROR: parsing configuration file failed. " << std::endl;
     return 1;
   }
+  printConfig(config);
   Poller poller;
   if (poller.createEpoll() != 0) {
     return 1;

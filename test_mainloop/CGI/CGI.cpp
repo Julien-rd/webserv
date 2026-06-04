@@ -77,10 +77,6 @@ const CGI& CGI::operator=(const CGI& obj) {
 // }
 
 bool CGI::scriptFileExists(void) const {
-  std::cout << "in scriptFileExists(). cgiConfigs.size(): "
-            << this->cgiConfigs.size()
-            << " == cgiConfigs.at(0).execPath: " // TODO fix bug
-            << cgiConfigs.at(0).executablePath << "\n";
   opendir(this->cgiConfigs.at(0).executablePath.c_str());
   return 1;
 }
