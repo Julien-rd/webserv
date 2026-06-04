@@ -11,6 +11,8 @@
 
 #include <csignal>
 
+#include "debugPrint.cpp"
+
 /* TODO Claude says: In a single-process, non-blocking architecture, the rule is
 simple: Any fd you need to wait on must go through epoll. Waiting on it any
 other way blocks the loop. This applies to sockets, pipes, timers (timerfd),
