@@ -63,7 +63,12 @@ protected:
   std::string _statusCodeStr;
 };
 
-std::string processURI(const std::string& uri, int& httpCode, std::fstream& content,
-                const std::vector<t_location>& locations);
+struct UriResult {
+    int httpCode;
+    std::string path;
+    bool autoindex;
+} ;
 
+
+UriResult processURI(const std::string& uri, const t_server&  serverConfig);
 #endif

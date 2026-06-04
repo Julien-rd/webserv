@@ -8,8 +8,7 @@ server {
     cgi_config .py /home/jel-ghna/github/webserv/test_mainloop/cgi-bin/;
     cgi_config .php /home/jel-ghna/github/webserv/test_mainloop/cgi-bin/;
     cgi_config .bla /home/jel-ghna/github/webserv/test_mainloop/ POST;
-	try_files ronaldo.png index.html;
-
+	try_files ronaldo.png index.html
     index index.html;
     location /fruits/ {
 	try_files sdkjfnskdfj ronaldo.png index.html;
