@@ -27,19 +27,21 @@ Client::Client(const t_config& config, const int sid)
     : _fd(-1), _sid(sid), _epfd(-1), _request(), _response(config, sid),
       _CGIResponseLen(0), _CGIPid(-1),
       _CGIResponse(_CGIResponseStream, _CGIResponseLen, config, sid),
-      _config(config) {}
+      _config(config), _CGI(_request, _fd, _epfd, _config.servers.at(_sid),
+                            _config.servers.at(_sid).cgiConfigs) {}
 
 Client::Client(int epfd, const t_config& config, const int sid)
     : _fd(-1), _sid(sid), _epfd(epfd), _request(), _response(config, sid),
       _CGIResponseLen(0), _CGIPid(-1),
       _CGIResponse(_CGIResponseStream, _CGIResponseLen, config, sid),
-      _config(config) {}
+      _config(config), _CGI(_request, _fd, _epfd, _config.servers.at(_sid),
+                            _config.servers.at(_sid).cgiConfigs) {}
 
 Client::Client(const Client& obj)
     : _fd(obj._fd), _sid(obj._sid), _epfd(obj._epfd), _request(obj._request),
       _response(obj._response), _CGIResponseLen(obj._CGIResponseLen),
       _CGIPid(obj._CGIPid), _CGIResponse(obj._CGIResponse),
-      _config(obj._config) {}
+      _config(obj._config), _CGI(obj._CGI) {}
 
 const Client& Client::operator=(const Client& obj) {
   if (&obj == this) {
@@ -127,21 +129,24 @@ void Client::readCGIPipe(int pipeReadFd) {
 }
 
 bool Client::doCGI(void) {
-  CGI cgi(_request, _fd, _epfd, _config.servers.at(_sid).cgiConfigs);
   try {
-    if (!cgi.scriptFileExists()) {
+    // std::cout << " in doCGI() => _config.servers.at(_sid).ip: "
+    //           << _config.servers.at(_sid).cgiConfigs.size() << "\n";
+    // std::cout << " in doCGI() => _config.servers.at(_sid).port: "
+    //           << _config.servers.at(_sid).port << "\n";
+    if (!_CGI.scriptFileExists()) {
       return 1;
     }
-    cgi.initCGI();
+    _CGI.initCGI();
     // std::cout << "========= initCGI() succeeded\n";
-    cgi.pipeIO();
+    _CGI.pipeIO();
     // std::cout << "========= pipeIO() succeeded\n";
-    cgi.spawnProcess();
-    _CGIPid = cgi.getPid();
+    _CGI.spawnProcess();
+    _CGIPid = _CGI.getPid();
     // std::cout << "========= spawnProcess() succeeded\n";
     // writing to the pipe? std::cout << "========= wait() succeeded\n";
   } catch (std::exception& e) {
-    std::cerr << "exception caught in startCGI(): " << e.what() << std::endl;
+    std::cerr << "exception caught in doCGI(): " << e.what() << std::endl;
     return 1;
   }
   return 0;
@@ -151,6 +156,7 @@ int Client::loop(std::string input) {
   _bytesRead = 0;
   bool err = false;
   while (_bytesRead < input.length()) {
+    std::cout << ">>>>>>>>>>>>>>here\n";
     if (_request.parseHttpRequest(input, _bytesRead) == 1)
       return closeConnection();
     if (_request.parsingDone() == false) {
@@ -161,8 +167,11 @@ int Client::loop(std::string input) {
     if (_request.parseURIContent() == 1) {
       return closeConnection();
     }
-    if (CGI::isCGIRequest(_request)) {
-      return doCGI();
+    std::cout << ">>>>>>>>>>>>>>calling isCGIRequest()\n";
+    if (_CGI.isCGIRequest(_request)) {
+      doCGI();
+      reset();
+      return 0;
     }
     if (_response.build(_request) == 1)
       err = true;

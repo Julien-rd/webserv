@@ -11,12 +11,6 @@ void evalDirective(Node* tree, t_config& evalData) {
     case CLIENTS_PER_SERVER:
       parseNumberGlobal(tree->args, &evalData.clientsPerServer);
       return;
-    case CGI_CONFIG:
-      if (evalData.locationFlag)
-        parseCGIConfigs(tree->args, evalData.servers.back().locations.back());
-      else
-        parseCGIConfigs(tree->args, evalData.servers.back());
-      return;
     default:
       throw std::runtime_error("wrong directive outside of server block");
     }
@@ -46,11 +40,6 @@ void evalDirective(Node* tree, t_config& evalData) {
   case ALLOWMETHODS:
     currLocation.allowMethods = allowMethods(tree->args);
     return;
-  case CGI_CONFIG:
-    parseCGIConfigs(
-        tree->args,
-        currLocation); // TODO is this repeated? we have it up in (!.serverFlag)
-    return;
   default:;
   }
   if (evalData.locationFlag)
@@ -67,6 +56,9 @@ void evalDirective(Node* tree, t_config& evalData) {
   case LOCALHOST:
     parseLocalhost(tree->args, evalData.servers.back());
     break;
+  case CGI_CONFIG:
+    parseCGIConfigs(tree->args, evalData.servers.back());
+    return;
   default:
     throw std::runtime_error("directive unknown");
   }

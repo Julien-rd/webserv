@@ -3,10 +3,16 @@
 #include <sstream>
 
 void CGI::setScriptAttributesPhp(void) {
-  this->executable = (char *)"/usr/bin/php-cgi";
-  this->argv[0] = (char *)"/usr/bin/php-cgi";  // TODO This is hardcoded!!
-  this->argv[1] = (char *)"./cgi-bin/php.php"; // TODO This is hardcoded!!
-  this->argv[2] = NULL;
+  for (size_t i = 0; i < this->cgiConfigs.size(); i++) {
+    if (this->cgiConfigs.at(i).extension == ".php") {
+      this->executable = this->cgiConfigs.at(i).executablePath;
+      this->argv.push_back(this->cgiConfigs.at(i).executablePath);
+      break;
+    } else if (i + 1 == this->cgiConfigs.size()) {
+      throw CGI::StandardException();
+    }
+  }
+  this->argv.push_back(this->request._uriData.path);
 }
 
 void CGI::setGETVariablesPhp(void) {
@@ -58,7 +64,8 @@ void CGI::initMetaPhp(void) {
   // this->meta.path_translated = this->meta.path_translated;
   this->meta.query_string =
       std::string("QUERY_STRING=").append(parseQueryString(request._uri));
-  this->meta.remote_addr = std::string("REMOTE_ADDR=").append("1.1.1.1");
+  this->meta.remote_addr =
+      std::string("REMOTE_ADDR=").append(this->serverConfig.port);
   // this->meta.remote_host = "";
   // this->meta.remote_ident = "";
   // this->meta.remote_user = "";
@@ -81,10 +88,9 @@ void CGI::initMetaPhp(void) {
   // // TODO maybe make this better
   this->meta.script_filename =
       std::string("SCRIPT_FILENAME=")
-          .append("/home/josefelghnam/github/webserv/test_mainloop/cgi-bin/"
-                  "php.php"); // TODO maybe make this better
-                              // this->meta.server_software = "";
-                              // this->meta.x = "";
+          .append(this->request._uriData.path); // TODO maybe make this better
+                                                // this->meta.server_software =
+                                                // ""; this->meta.x = "";
 }
 
 void CGI::initPhpScript(void) {

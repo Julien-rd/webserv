@@ -22,8 +22,8 @@ private:
   ssize_t           _CGIResponseLen;
   pid_t             _CGIPid;
   CGIResponse       _CGIResponse;
-
-  const t_config& _config;
+  const t_config&   _config;
+  CGI               _CGI;
 
   int closeConnection();
 

@@ -5,9 +5,10 @@ server {
     
     
     allow_methods GET;
-    cgi_config .py /home/jel-ghna/github/webserv/test_mainloop/cgi-bin/;
-    cgi_config .php /home/jel-ghna/github/webserv/test_mainloop/cgi-bin/;
-    cgi_config .bla /home/jel-ghna/github/webserv/test_mainloop/ POST;
+    cgi_config .py /usr/bin/python3;
+    cgi_config .php /usr/bin/python3;
+    cgi_config .bla /usr/bin/python3 POST;
+
 	try_files ronaldo.png index.html
     index index.html;
     location /fruits/ {
@@ -15,23 +16,4 @@ server {
     }
     
     listen 127.0.0.4:7070;
-}
-
-server {
-    client_max_body_size        1;
-        
-    
-    
-    
-    allow_methods GET;
-    cgi_config .py /home/jel-ghna/github/webserv/test_mainloop/cgi-bin/;
-    cgi_config .php /home/jel-ghna/github/webserv/test_mainloop/cgi-bin/;
-    cgi_config .bla /home/jel-ghna/github/webserv/test_mainloop/ POST;
-	try_files ronaldo.png index.html
-    index index.html;
-    location /fruits/ {
-	try_files sdkjfnskdfj ronaldo.png index.html;
-    }
-    
-    listen 127.0.0.5:7070;
 }

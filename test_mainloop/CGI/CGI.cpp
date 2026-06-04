@@ -14,13 +14,17 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-const char* CGI::_knownExtensions[2] = {".py", ".php"};
-
 CGI::CGI(const HttpRequest& request, int clientFd, int epfd,
+         const t_server&                  serverConfig,
          const std::vector<t_cgi_config>& cgiConfigs)
-    : request(request), epfd(epfd), clientFd(clientFd), cgiConfigs(cgiConfigs) {
+    : request(request), epfd(epfd), clientFd(clientFd), cgiConfigs(cgiConfigs),
+      serverConfig(serverConfig) {
   this->pipefd[0] = -1;
   this->pipefd[1] = -1;
+  // TODO this can be better moved to Server class
+  for (size_t i = 0; this->cgiConfigs.size(); i++) {
+    this->knownExtensions.push_back(this->cgiConfigs.at(i).extension);
+  }
 }
 
 CGI::~CGI(void) {
@@ -77,7 +81,7 @@ const CGI& CGI::operator=(const CGI& obj) {
 // }
 
 bool CGI::scriptFileExists(void) const {
-  opendir(this->cgiConfigs.at(0).executablePath.c_str());
+  // opendir(this->cgiConfigs.at(0).executablePath.c_str());
   return 1;
 }
 
@@ -95,10 +99,13 @@ void CGI::initCGI(void) {
 
   if (this->request._uriData.extension == ".py") {
     initPythonScript();
+    std::cout << "initialized python CGI" << std::endl;
   } else if (this->request._uriData.extension == ".php") {
     initPhpScript();
+    std::cout << "initialized php CGI" << std::endl;
   } else {
-    std::cerr << "shouldn't reach here" << std::endl;
+    // initUnkownExtension();
+    std::cout << "initialized CGI with unknown extension" << std::endl;
   }
 }
 
@@ -191,7 +198,11 @@ void CGI::execute(void) {
   // parameters, path:\n" << this->executable << " ================\n" <<
   // this->argv[0] << "------" << this->argv[1] << "================\n" <<
   // this->envp[0] << std::endl;
-  if (execve(this->executable, this->argv, const_cast<char**>(this->envp)) ==
+  char* argv[3];
+  argv[0] = &this->argv[0][0];
+  argv[1] = &this->argv[0][0];
+  argv[2] = NULL;
+  if (execve(this->executable.c_str(), argv, const_cast<char**>(this->envp)) ==
       -1) {
     std::cerr << "execve() failed. shouldn't reach here, maybe invalid "
                  "arguments (path or argv))"
@@ -201,6 +212,7 @@ void CGI::execute(void) {
 }
 
 bool CGI::isCGIRequest(const HttpRequest& request) {
+  std::cout << "<<<<<<<<<<<<<here\n";
   const std::string& uri = request._uri;
 
   // Strip query string for extension detection
@@ -216,14 +228,14 @@ bool CGI::isCGIRequest(const HttpRequest& request) {
   // Extract the extension including the dot (e.g. ".py", ".pl")
   std::string ext = uri.substr(dotPos, pathLen - dotPos);
 
-  for (size_t i = 0; i < KNOWN_EXTENSIONS_COUNT; i++) {
-    if (ext == _knownExtensions[i]) {
+  for (size_t i = 0; i < this->knownExtensions.size(); i++) {
+    std::cout << "comparing ((" << ext << ")) with (("
+              << this->knownExtensions[i] << "))\n";
+    if (ext == this->knownExtensions[i]) {
+      std::cout << "found a matching extension\n";
       return true;
     }
   }
-
-  // std::cout << "URI doesn't contain a known CGI extension: " << uri
-  //           << std::endl;
   return false;
 }
 

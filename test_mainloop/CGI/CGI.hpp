@@ -51,13 +51,14 @@ private:
   int                              epfd;
   int                              clientFd;
   const std::vector<t_cgi_config>& cgiConfigs;
+  const t_server&                  serverConfig;
 
-  const char* executable;
-  char*       argv[3];
-  const char* envp[20];
+  std::string              executable;
+  std::vector<std::string> argv;
+  const char*              envp[20];
 
   // static const std::string _knownExtensions[2];
-  static const char* _knownExtensions[2];
+  std::vector<std::string> knownExtensions;
 
   void initPythonScript(void);
   void initMetaPython(void);
@@ -75,6 +76,7 @@ private:
 
 public:
   CGI(const HttpRequest& request, int clientFd, int epfd,
+      const t_server&                  serverConfig,
       const std::vector<t_cgi_config>& cgiConfigs);
   ~CGI(void);
   const CGI& operator=(const CGI& obj);
@@ -94,7 +96,7 @@ public:
 
   pid_t getPid(void) const;
 
-  static bool isCGIRequest(const HttpRequest& request);
+  bool isCGIRequest(const HttpRequest& request);
 
   FT_DEFINE_EXCEPTION(StandardException, "ERROR: Standard Exception");
   FT_DEFINE_EXCEPTION(WaitException, "EXCEPTION CAUGHT IN PARENT: waiting");

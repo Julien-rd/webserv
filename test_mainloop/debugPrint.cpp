@@ -44,13 +44,6 @@ static void printLocation(const t_location& loc, const std::string& indent) {
   }
   std::cout << "]\n";
 
-  if (!loc.cgiConfigs.empty()) {
-    std::cout << indent << "cgiConfigs (" << loc.cgiConfigs.size() << "):\n";
-    for (size_t i = 0; i < loc.cgiConfigs.size(); i++) {
-      std::cout << indent << "  [" << i << "]:\n";
-      printCgiConfig(loc.cgiConfigs[i], indent + "    ");
-    }
-  }
 }
 
 static void printServer(const t_server& srv, size_t idx) {
