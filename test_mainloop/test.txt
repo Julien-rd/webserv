@@ -10,8 +10,8 @@ server {
     cgi_config .bla /home/jel-ghna/github/webserv/test_mainloop/ POST;
 	try_files ronaldo.png index.html
     index index.html;
-    location /fruits/ {
-	try_files sdkjfnskdfj ronaldo.png index.html;
+    location /vegetables/ {
+	autoindex on;
     }
     
     listen 127.0.0.4:7070;
