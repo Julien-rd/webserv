@@ -4,6 +4,7 @@
 #include "HttpRequest/HttpRequest.hpp"
 #include "HttpResponse/HttpResponse.hpp"
 
+#include <exception>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>

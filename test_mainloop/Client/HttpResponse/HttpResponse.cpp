@@ -6,6 +6,8 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <sys/types.h>
+#include <dirent.h>
 
 #include <csignal>
 #include <cstdlib>
@@ -79,10 +81,31 @@ void HttpResponse::extractContentLength() {
   _response += "Content-Length: " + ss.str() + "\r\n";
 }
 
+std::string autoindex(const std::string& path, const std::string& uri) {
+    std::string file;
+    (void)path;
+    file = "<!DOCTYPE html>\r\n"
+    "<html>\r\n"
+    "<body>\r\n\r\n"
+    "<h1>Index of " + uri + "</h1>\r\n";
+    DIR* dir = opendir(path.c_str());
+    if (!dir) 
+        return NULL;
+    struct dirent* dr = readdir(dir);
+    while (dr) {
+        if (std::string(".").compare(dr->d_name))
+            file += "<p><a href=\"" + uri + dr->d_name + "\">" + dr->d_name + "</a></p>\r\n";
+        dr = readdir(dir);
+    }
+    file += "\r\n\r\n</body>\r\n</html>";     
+    return file;
+}
+
 void HttpResponse::addBody(HttpRequest request) {
     UriResult result;
     std::fstream htmlPage;
     std::string uri = request.getURI();
+    std::string autoindexHtml;
   std::cout << uri << std::endl;
   result = processURI(uri, _config.servers.at(_sid));
   if (result.httpCode < 400 && result.httpCode > 299) {
@@ -90,32 +113,40 @@ void HttpResponse::addBody(HttpRequest request) {
       std::cout << "redirect\n";
       return; //TODO: implement a redirect meaning sending result.path back with code 301
   }
-  else if (result.autoindex == true)
-      ;//TODO: implement autoindexing with dynamic html from result.path as curr directory
+  else if (result.autoindex == true) {
+      autoindexHtml = autoindex(result.path, uri);
+      std::cout << "\n{" + autoindexHtml << "}\n";
+      std::stringstream here(autoindexHtml);
+      _responseBody.resize(autoindexHtml.size());
+      here.read(&_responseBody[0], autoindexHtml.size());
+      _response += "Content-Type: text/html\r\n";
+  }
   else if (result.httpCode == 404) { //OPTIONAL: find a way to join the errors without opening the file unnecessarily
           std::cout << "_statusCode is 404 after processURI()\n";
           _statusCode = 404;
           return;
-   }
-  htmlPage.open(result.path.c_str());
-  if (!htmlPage.is_open()) {
-    std::cout << "error opening html file: " << strerror(errno);
-    _statusCode = 404;
-    return;
   }
-  // check if method is allowed for this uri, if not _statusCode = 405
-  htmlPage.seekg(0, std::ios::end);
-  std::streampos size = htmlPage.tellg(); // TODO change this. we can't use seek
-  htmlPage.seekg(0, std::ios::beg);
-  if (size == 0) {
-    _statusCode = 404; // check statusCodes
-    std::cerr << "empty file\n";
-    return;
-  }
-  _responseBody.resize(size);
-  htmlPage.read(&_responseBody[0], size);
-  if (extractContentType(result.path) == 1) {
-    return;
+  else {
+      htmlPage.open(result.path.c_str());
+      if (!htmlPage.is_open()) {
+        std::cout << "error opening html file: " << strerror(errno);
+        _statusCode = 404;
+        return;
+      }
+      // check if method is allowed for this uri, if not _statusCode = 405
+      htmlPage.seekg(0, std::ios::end);
+      std::streampos size = htmlPage.tellg(); // TODO change this. we can't use seek
+      htmlPage.seekg(0, std::ios::beg);
+      if (size == 0) {
+        _statusCode = 404; // check statusCodes
+        std::cout << "empty file\n";
+        return;
+      }
+      _responseBody.resize(size);
+      htmlPage.read(&_responseBody[0], size);
+      if (extractContentType(result.path) == 1) {
+          return;
+      }
   }
   extractContentLength();
   _response += "\r\n";

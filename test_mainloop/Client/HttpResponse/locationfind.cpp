@@ -92,7 +92,6 @@ UriResult processURI(const std::string& uri, const t_server& serverConfig) {
     return result;
   }
   attachPrefix(uri, result.path, location);
-  std::cout << "resolved path: [" << result.path << "]" << std::endl;
   if (stat(result.path.c_str(), &stats) == -1) {
     result.httpCode = 404;
   } else if (S_ISDIR(stats.st_mode)) {
@@ -111,11 +110,12 @@ UriResult processURI(const std::string& uri, const t_server& serverConfig) {
       result.httpCode = 404;
     } else if (!location.index.empty()) {
       result.path += location.index;
-    } else if (access((result.path + "/index.html").c_str(), F_OK | R_OK) == 0)
+    } else if (access((result.path + "/index.html").c_str(), F_OK | R_OK) ==
+               0) {
       result.path += "/index.html";
-    else if (location.autoindex)
+    } else if (location.autoindex) {
       result.autoindex = true;
-    else
+    } else
       result.httpCode = 404;
   }
   return result;
