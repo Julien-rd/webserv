@@ -36,6 +36,7 @@ int main(int argc, char** argv) {
     std::cerr << "ERROR: parsing configuration file failed. " << std::endl;
     return 1;
   }
+  printConfig(config);
   Poller poller;
   if (poller.createEpoll() != 0) {
     return 1;
