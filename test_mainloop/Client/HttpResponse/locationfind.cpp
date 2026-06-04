@@ -108,10 +108,12 @@ UriResult processURI(const std::string& uri, const t_server&  serverConfig) {
         else if (!location.index.empty()) {
             result.path += location.index;
         }
-        else if (access((result.path + "/index.html").c_str(), F_OK | R_OK) == 0)
+        else if (access((result.path + "/index.html").c_str(), F_OK | R_OK) == 0) {
             result.path += "/index.html";
-        else if (location.autoindex)
+        }
+        else if (location.autoindex) {
             result.autoindex = true;
+        }
         else
             result.httpCode = 404;
     }
