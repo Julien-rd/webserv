@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <sys/epoll.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -22,7 +23,18 @@ CGI::CGI(const HttpRequest& request, int clientFd, int epfd,
   this->pipefd[0] = -1;
   this->pipefd[1] = -1;
   // TODO this can be better moved to Server class
-  for (size_t i = 0; this->cgiConfigs.size(); i++) {
+  for (size_t i = 0; i < this->cgiConfigs.size(); i++) {
+    this->knownExtensions.push_back(this->cgiConfigs.at(i).extension);
+  }
+}
+
+CGI::CGI(const CGI& obj)
+    : request(obj.request), epfd(obj.epfd), clientFd(obj.clientFd),
+      cgiConfigs(obj.cgiConfigs), serverConfig(obj.serverConfig) {
+  this->pipefd[0] = obj.pipefd[0];
+  this->pipefd[1] = obj.pipefd[1];
+  this->knownExtensions.clear();
+  for (size_t i = 0; i < this->cgiConfigs.size(); i++) {
     this->knownExtensions.push_back(this->cgiConfigs.at(i).extension);
   }
 }
@@ -81,26 +93,25 @@ const CGI& CGI::operator=(const CGI& obj) {
 // }
 
 bool CGI::scriptFileExists(void) const {
-  // opendir(this->cgiConfigs.at(0).executablePath.c_str());
-  return 1;
+  std::string scriptPath = "cgi-bin" + request._uriData.path;
+  struct stat data;
+  if (stat(scriptPath.c_str(), &data) == -1) {
+    std::cerr << "couldn't access CGI script file" << std::endl;
+    return false;
+  }
+  if (data.st_mode & S_IFREG & S_IXUSR) {
+    std::cout << "script is executable\n";
+    return true;
+  }
+  std::cout << "script is not executable\n";
+  return false;
 }
 
 void CGI::initCGI(void) {
-  // this->scriptName = getScriptName(request._uri, this->pythonScriptName,
-  // this->phpScriptName);
-  // std::cout << "in initCGI. _uriData.extension: "
-  //           << this->request._uriData.extension << std::endl;
-  // std::cout << "in initCGI. _uriData.path: " << this->request._uriData.path
-  //           << std::endl;
-  // std::cout << "in initCGI. _uriData.pathInfo: "
-  //           << this->request._uriData.pathInfo << std::endl;
-  // std::cout << "in initCGI. _uriData.query: " << this->request._uriData.query
-  //           << std::endl;
-
-  if (this->request._uriData.extension == ".py") {
+  if (request._uriData.extension == ".py") {
     initPythonScript();
     std::cout << "initialized python CGI" << std::endl;
-  } else if (this->request._uriData.extension == ".php") {
+  } else if (request._uriData.extension == ".php") {
     initPhpScript();
     std::cout << "initialized php CGI" << std::endl;
   } else {
@@ -133,14 +144,18 @@ void CGI::spawnProcess(void) {
     throw std::runtime_error("fork() failed in CGI");
   }
   if (this->pid == 0) {
-    close(this->pipefd[0]);
-    close(this->epfd);
-    close(this->clientFd);
+    if (this->pipefd[0] != -1)
+      close(this->pipefd[0]);
+    if (this->epfd != -1)
+      close(this->epfd);
+    if (this->clientFd != -1)
+      close(this->clientFd);
     this->redirectIO();
     // std::cerr << "========= redirectIO() succeeded\n";
     this->execute();
   } else {
-    close(this->pipefd[1]);
+    if (this->pipefd[1] != -1)
+      close(this->pipefd[1]);
     this->addPipeToEpoll();
     // std::cout << "========= addPipeToEpoll() succeeded\n";
   }
@@ -159,6 +174,8 @@ void CGI::addPipeToEpoll(void) {
       this->clientFd; // TODO do we need to set all of this to null if the
                       // clients disconnects?
   ev.data.u64 = u64;
+  std::cout << "pipefd[0]: " << this->pipefd[0]
+            << " clientFd: " << this->clientFd << "\n";
   if (epoll_ctl(this->epfd, EPOLL_CTL_ADD, this->pipefd[0], &ev) == -1) {
     // std::cerr << "rfd: " << this->pipefd[0] << ", wfd: " << this->pipefd[1]
     //           << ", epfd: " << this->epfd << ": " << strerror(errno)
@@ -188,20 +205,21 @@ void CGI::wait(void) const {
 }
 
 void CGI::execute(void) {
-  std::cerr << "executing CGI" << std::endl;
   // int fd = open("cgi_output.txt", O_CREAT | O_NONBLOCK | O_RDWR, 0777);
   // dup2(fd, STDOUT_FILENO);
   // std::cout << "executable is (" << this->executable << ") argv[0] is (" <<
-  // this->argv[0] << ")" << std::endl; read(STDIN_FILENO, buf, ) printf(">>>>>
-  // path(%s) argv(%s && %s)\n", this->executable, this->argv[0],
-  // this->argv[1]); fflush(stdout); std::cout << "caling execve with
-  // parameters, path:\n" << this->executable << " ================\n" <<
-  // this->argv[0] << "------" << this->argv[1] << "================\n" <<
-  // this->envp[0] << std::endl;
+  // this->argv[0] << ")" << std::endl; read(STDIN_FILENO, buf, )
+  // printf(">>>>> path(%s) argv(%s && %s)\n", this->executable,
+  // this->argv[0], this->argv[1]); fflush(stdout); std::cout << "caling
+  // execve with parameters, path:\n" << this->executable << "
+  // ================\n" << this->argv[0] << "------" << this->argv[1] <<
+  // "================\n" << this->envp[0] << std::endl;
   char* argv[3];
   argv[0] = &this->argv[0][0];
-  argv[1] = &this->argv[0][0];
+  argv[1] = &this->argv[1][0];
   argv[2] = NULL;
+  // std::cerr << "executing (" << this->executable << ")\nargs:\n("
+  //           << this->argv[0] << ")\n(" << this->argv[1] << ")\n";
   if (execve(this->executable.c_str(), argv, const_cast<char**>(this->envp)) ==
       -1) {
     std::cerr << "execve() failed. shouldn't reach here, maybe invalid "
@@ -212,9 +230,7 @@ void CGI::execute(void) {
 }
 
 bool CGI::isCGIRequest(const HttpRequest& request) {
-  std::cout << "<<<<<<<<<<<<<here\n";
   const std::string& uri = request._uri;
-
   // Strip query string for extension detection
   size_t queryPos = uri.find('?');
   size_t pathLen = (queryPos == std::string::npos) ? uri.size() : queryPos;
@@ -229,15 +245,17 @@ bool CGI::isCGIRequest(const HttpRequest& request) {
   std::string ext = uri.substr(dotPos, pathLen - dotPos);
 
   for (size_t i = 0; i < this->knownExtensions.size(); i++) {
-    std::cout << "comparing ((" << ext << ")) with (("
-              << this->knownExtensions[i] << "))\n";
     if (ext == this->knownExtensions[i]) {
-      std::cout << "found a matching extension\n";
+      this->request = request;
       return true;
     }
   }
   return false;
 }
+
+void CGI::setClientFd(const int fd) { this->clientFd = fd; }
+
+void CGI::reset(void) { ; }
 
 pid_t CGI::getPid(void) const { return this->pid; }
 

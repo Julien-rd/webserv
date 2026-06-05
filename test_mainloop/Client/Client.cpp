@@ -57,7 +57,10 @@ const Client& Client::operator=(const Client& obj) {
   return *this;
 }
 
-void Client::setFd(int fd) { _fd = fd; }
+void Client::setFd(int fd) {
+  _fd = fd;
+  _CGI.setClientFd(fd);
+}
 
 int Client::getFd() const { return _fd; }
 
@@ -157,7 +160,6 @@ int Client::loop(std::string input) {
   _bytesRead = 0;
   bool err = false;
   while (_bytesRead < input.length()) {
-    std::cout << ">>>>>>>>>>>>>>here\n";
     if (_request.parseHttpRequest(input, _bytesRead) == 1)
       return closeConnection();
     if (_request.parsingDone() == false) {
@@ -168,11 +170,8 @@ int Client::loop(std::string input) {
     if (_request.parseURIContent() == 1) {
       return closeConnection();
     }
-    std::cout << ">>>>>>>>>>>>>>calling isCGIRequest()\n";
     if (_CGI.isCGIRequest(_request)) {
-      doCGI();
-      reset();
-      return 0;
+      return doCGI();
     }
     if (_response.build(_request) == 1)
       err = true;

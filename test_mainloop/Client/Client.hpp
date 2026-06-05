@@ -34,7 +34,7 @@ public:
   const Client& operator=(const Client& obj);
 
   int    loop(std::string input);
-  bool   doCGI(void);
+  bool   doCGI();
   size_t getBytesRead();
   void   readCGIPipe(int pipeReadFd);
   void   reset();

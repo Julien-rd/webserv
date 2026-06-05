@@ -44,7 +44,7 @@ typedef struct s_metaVariables {
 
 class CGI {
 private:
-  const HttpRequest&               request;
+  HttpRequest                      request;
   std::string                      scriptName;
   t_metaVariables                  meta;
   pid_t                            pid;
@@ -78,6 +78,7 @@ public:
   CGI(const HttpRequest& request, int clientFd, int epfd,
       const t_server&                  serverConfig,
       const std::vector<t_cgi_config>& cgiConfigs);
+  CGI(const CGI& obj);
   ~CGI(void);
   const CGI& operator=(const CGI& obj);
 
@@ -97,6 +98,12 @@ public:
   pid_t getPid(void) const;
 
   bool isCGIRequest(const HttpRequest& request);
+
+  void reset();
+  void reconstruct(const HttpRequest& request, int clientFd, int epfd,
+                   const t_server&                  serverConfig,
+                   const std::vector<t_cgi_config>& cgiConfigs);
+  void setClientFd(const int fd);
 
   FT_DEFINE_EXCEPTION(StandardException, "ERROR: Standard Exception");
   FT_DEFINE_EXCEPTION(WaitException, "EXCEPTION CAUGHT IN PARENT: waiting");
