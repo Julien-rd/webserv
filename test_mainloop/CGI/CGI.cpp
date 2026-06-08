@@ -1,6 +1,8 @@
 #include "CGI.hpp"
 #include "../Client/HttpRequest/HttpRequest.hpp"
+
 #include <iostream>
+#include <sstream>
 
 #include <cstdio>
 #include <cstring>
@@ -8,6 +10,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdexcept>
 #include <stdio.h>
 #include <sys/epoll.h>
 #include <sys/stat.h>
@@ -22,6 +25,8 @@ CGI::CGI(const HttpRequest& request, int clientFd, int epfd,
       serverConfig(serverConfig) {
   this->pipefd[0] = -1;
   this->pipefd[1] = -1;
+  this->postPipefd[0] = -1;
+  this->postPipefd[1] = -1;
   // TODO this can be better moved to Server class
   for (size_t i = 0; i < this->cgiConfigs.size(); i++) {
     this->knownExtensions.push_back(this->cgiConfigs.at(i).extension);
@@ -32,7 +37,9 @@ CGI::CGI(const CGI& obj)
     : request(obj.request), epfd(obj.epfd), clientFd(obj.clientFd),
       cgiConfigs(obj.cgiConfigs), serverConfig(obj.serverConfig) {
   this->pipefd[0] = obj.pipefd[0];
-  this->pipefd[1] = obj.pipefd[1];
+  this->pipefd[0] = obj.pipefd[0];
+  this->postPipefd[1] = obj.postPipefd[1];
+  this->postPipefd[1] = obj.postPipefd[1];
   this->knownExtensions.clear();
   for (size_t i = 0; i < this->cgiConfigs.size(); i++) {
     this->knownExtensions.push_back(this->cgiConfigs.at(i).extension);
@@ -57,7 +64,9 @@ const CGI& CGI::operator=(const CGI& obj) {
   meta = obj.meta;
   pid = obj.pid;
   pipefd[0] = obj.pipefd[0];
-  pipefd[1] = obj.pipefd[1];
+  pipefd[0] = obj.pipefd[0];
+  postPipefd[1] = obj.postPipefd[1];
+  postPipefd[1] = obj.postPipefd[1];
   epfd = obj.epfd;
   executable = obj.executable;
   argv[0] = obj.argv[0];
@@ -75,21 +84,6 @@ const CGI& CGI::operator=(const CGI& obj) {
 
 // void	CGI::setPid(pid_t pid) {
 // 	this->pid = pid;
-// }
-
-// bool	CGI::validateRequest(void) const {
-// 	if (this->request._uri.compare(0, this->pythonScriptName.size(),
-// this->pythonScriptName) == 0
-// 		|| this->request._uri.compare(0, this->phpScriptName.size(),
-// this->phpScriptName) == 0) { // TODO Or could replace this with a dynamic
-// array of known scripts and check if URI matches one of them, then set a
-// variable indicating that we will work with this specifi script for the rest
-// of the execution oF CGI 		std::cout << "URI doesn't contain a
-// known script" << std::endl; 		return true;
-// 	}
-// 	// TODO Validate minimum requirements needed for CGI execution (maybe
-// headers for GET or POST. specific requirements for attributes of
-// HttpRequest)??? 	return false;
 // }
 
 bool CGI::scriptFileExists(void) const {
@@ -136,9 +130,32 @@ void CGI::pipeIO(void) {
   if (fcntl(this->pipefd[1], F_SETFL, O_NONBLOCK) == -1) {
     throw std::runtime_error("CGI fcntl");
   }
+  if (this->request._method == "POST") {
+    if (pipe(this->postPipefd) == -1) {
+      throw std::runtime_error("CGI post pipe failed");
+    }
+    if (fcntl(this->postPipefd[0], F_SETFD, FD_CLOEXEC) == -1) {
+      throw std::runtime_error("CGI fcntl");
+    }
+    if (fcntl(this->postPipefd[0], F_SETFL, O_NONBLOCK) == -1) {
+      throw std::runtime_error("CGI fcntl");
+    }
+    if (fcntl(this->postPipefd[1], F_SETFD, FD_CLOEXEC) == -1) {
+      throw std::runtime_error("CGI fcntl");
+    }
+    if (fcntl(this->postPipefd[1], F_SETFL, O_NONBLOCK) == -1) {
+      throw std::runtime_error("CGI fcntl");
+    }
+  }
 }
 
 void CGI::spawnProcess(void) {
+  // std::cout << "postpipe[0]: " << this->postPipefd[0] << "\n";
+  if (this->request._method == "POST") {
+    if (dup2(this->postPipefd[0], STDIN_FILENO) == -1) {
+      throw std::runtime_error("dup2 failed for post pipe");
+    }
+  }
   this->pid = fork();
   if (this->pid == -1) {
     throw std::runtime_error("fork() failed in CGI");
@@ -151,21 +168,26 @@ void CGI::spawnProcess(void) {
     if (this->clientFd != -1)
       close(this->clientFd);
     this->redirectIO();
-    // std::cerr << "========= redirectIO() succeeded\n";
     this->execute();
   } else {
-    if (this->pipefd[1] != -1)
+    if (this->pipefd[1] != -1) {
       close(this->pipefd[1]);
+    }
     this->addPipeToEpoll();
-    // std::cout << "========= addPipeToEpoll() succeeded\n";
+    if (this->request._method == "POST") {
+      std::stringstream ss;
+      for (size_t i = 0; i < this->request.getBody().size(); i++) {
+        ss << this->request.getBody()[i];
+      }
+      write(this->postPipefd[1], ss.str().c_str(),
+            this->request._contentLength);
+      close(this->postPipefd[1]);
+      close(this->postPipefd[0]);
+    }
   }
 }
 
 void CGI::addPipeToEpoll(void) {
-  // std::cout << "in addPipeToEpoll(), pipefd[0]: " << pipefd[0] << " ==
-  // this->epfd: " << this->epfd << std::endl; std::cout << "in
-  // addPipeToEpoll(), pipefd[1]: " << pipefd[1] << " == this->epfd: " <<
-  // this->epfd << std::endl;
   struct epoll_event ev;
   ev.events = EPOLLIN;
   uint64_t u64;
@@ -174,27 +196,17 @@ void CGI::addPipeToEpoll(void) {
       this->clientFd; // TODO do we need to set all of this to null if the
                       // clients disconnects?
   ev.data.u64 = u64;
-  // std::cout << "pipefd[0]: " << this->pipefd[0]
-  //           << " clientFd: " << this->clientFd << "\n";
   if (epoll_ctl(this->epfd, EPOLL_CTL_ADD, this->pipefd[0], &ev) == -1) {
-    // std::cerr << "rfd: " << this->pipefd[0] << ", wfd: " << this->pipefd[1]
-    //           << ", epfd: " << this->epfd << ": " << strerror(errno)
-    //           << std::endl;
     throw std::runtime_error("addPipeToEpoll() failed in CGI");
   }
 }
 
 void CGI::redirectIO(void) {
 
-  // std::cout << "redirectIO(): this->pipefd[1]: " << this->pipefd[1] << " ==
-  // this->pipefd[0]: " << this->pipefd[0] << std::endl;
   if (dup2(this->pipefd[1], STDOUT_FILENO) == -1) {
     throw std::runtime_error("dup2() failed in CGI");
   }
   close(this->pipefd[1]);
-  // if (dup2(this->pipefd[0], STDIN_FILENO) == -1) {
-  // 	throw CGI::StandardException();
-  // }
 }
 
 void CGI::wait(void) const {
@@ -205,21 +217,10 @@ void CGI::wait(void) const {
 }
 
 void CGI::execute(void) {
-  // int fd = open("cgi_output.txt", O_CREAT | O_NONBLOCK | O_RDWR, 0777);
-  // dup2(fd, STDOUT_FILENO);
-  // std::cout << "executable is (" << this->executable << ") argv[0] is (" <<
-  // this->argv[0] << ")" << std::endl; read(STDIN_FILENO, buf, )
-  // printf(">>>>> path(%s) argv(%s && %s)\n", this->executable,
-  // this->argv[0], this->argv[1]); fflush(stdout); std::cout << "caling
-  // execve with parameters, path:\n" << this->executable << "
-  // ================\n" << this->argv[0] << "------" << this->argv[1] <<
-  // "================\n" << this->envp[0] << std::endl;
   char* argv[3];
   argv[0] = &this->argv[0][0];
   argv[1] = &this->argv[1][0];
   argv[2] = NULL;
-  // std::cerr << "executing (" << this->executable << ")\nargs:\n("
-  //           << this->argv[0] << ")\n(" << this->argv[1] << ")\n";
   if (execve(this->executable.c_str(), argv, const_cast<char**>(this->envp)) ==
       -1) {
     std::cerr << "execve() failed. shouldn't reach here, maybe invalid "
@@ -258,37 +259,3 @@ void CGI::setClientFd(const int fd) { this->clientFd = fd; }
 void CGI::reset(void) { ; }
 
 pid_t CGI::getPid(void) const { return this->pid; }
-
-// int	main(const int argc, const char **argv, const char **envp) {
-// 	(void)argc, void(argv), (void)envp;
-// 	std::string	content =
-// 	"GET /cgi-bin/php.php/this-is-path-info?key1=valuee HTTP/1.1\r\n"
-// 	"Host:localhost:8080\r\n"
-// 	"User-Agent:    SuperBrowser/1.0\r\n"
-// 	"Accept:\ttext/html\r\n"
-// 	"Connection: keep-alive  \r\n"
-// 	"X-Empty-Header:\r\n"
-// 	"Accept-Language: de\r\n"
-// 	"Connection: keep-alive  \r\n"
-// 	"Accept-Language: en\r\n"
-// 	"Accept-Language            : en\r\n"
-// 	"\r\n"
-// 	"BODYBODYBODYBODYBODYBODYBODYBODYBODYBODY";
-
-// 	HttpRequest	request;
-// 	CGI			cgi;
-
-// 	request.parseHttpRequest(content);
-// 	try {
-// 		cgi.validateRequest(request);
-// 		cgi.initCGI();
-// 		cgi.pipeIO();
-// 		cgi.spawnProcess();
-// 		cgi.wait();
-// 		// cgi.redirectIO(); // I don't think I need this ¯\_(ツ)_/¯
-// 	}
-// 	catch (std::exception& e) {
-// 		std::cerr << e.what() << std::endl;
-// 	}
-// 	return 0;
-// }

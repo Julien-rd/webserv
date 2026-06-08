@@ -86,6 +86,7 @@ public:
   // void	setPid(pid_t pid);
 
   int  pipefd[2];
+  int  postPipefd[2];
   bool validateRequest(void) const;
   bool scriptFileExists(void) const;
   void initCGI(void);

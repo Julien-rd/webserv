@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 import cgi
 import cgitb
+import html
 import os
 import sys
+
+cgitb.enable()
 
 method = os.environ.get("REQUEST_METHOD", "GET")
 query_string = os.environ.get("QUERY_STRING", "")
@@ -99,7 +102,7 @@ if keys:
     print('    <table>')
     for key in keys:
         value = form.getvalue(key, "")
-        print(f'      <tr class="highlight"><td>{cgi.escape(key)}</td><td>{cgi.escape(str(value))}</td></tr>')
+        print(f'      <tr class="highlight"><td>{html.escape(key)}</td><td>{html.escape(str(value))}</td></tr>')
     print('    </table>')
 else:
     print('    <p class="empty">no fields submitted</p>')
@@ -110,13 +113,13 @@ print('  </section>')
 print('  <section>')
 print('    <h2>Query string</h2>')
 if query_string:
-    print(f'    <table><tr><td>raw</td><td>{cgi.escape(query_string)}</td></tr></table>')
+    print(f'    <table><tr><td>raw</td><td>{html.escape(query_string)}</td></tr></table>')
     import urllib.parse
     parsed = urllib.parse.parse_qs(query_string, keep_blank_values=True)
     if parsed:
         print('    <table style="margin-top:8px">')
         for k, v in parsed.items():
-            print(f'      <tr class="highlight"><td>{cgi.escape(k)}</td><td>{cgi.escape(", ".join(v))}</td></tr>')
+            print(f'      <tr class="highlight"><td>{html.escape(k)}</td><td>{html.escape(", ".join(v))}</td></tr>')
         print('    </table>')
 else:
     print('    <p class="empty">empty</p>')
@@ -136,7 +139,7 @@ print('    <table>')
 for var in cgi_vars:
     val = os.environ.get(var, "")
     if val:
-        print(f'      <tr><td>{var}</td><td>{cgi.escape(val)}</td></tr>')
+        print(f'      <tr><td>{var}</td><td>{html.escape(val)}</td></tr>')
 print('    </table>')
 print('  </section>')
 
