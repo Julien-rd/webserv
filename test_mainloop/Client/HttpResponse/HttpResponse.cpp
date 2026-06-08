@@ -274,7 +274,7 @@ int HttpResponse::build(HttpRequest request) {
   if (_statusCode > 299 && _statusCode < 400) //EDIT: Put this somewhere where it makes sense
       _response += "Location: " + result.path + "\r\n";
   addRules();
-  if (_statusCode < 400)
+  if (_statusCode < 400 && _statusCode != 301)
     addBody(request, result);
   else if (_statusCode >= 400) {
     serveErrorPage();
