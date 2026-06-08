@@ -43,14 +43,16 @@ void CGI::initMetaPython(void) {
   std::stringstream ss;
   ss << request._contentLength;
 
-  this->meta.content_length = std::string("CONTENT_LENGTH=").append(ss.str());
-  this->meta.content_type =
-      std::string("CONTENT_TYPE=")
-          .append("text/html"); // ?? Default value is "US-ASCII"
+  if (this->request._method == "POST") {
+    this->meta.content_length = std::string("CONTENT_LENGTH=").append(ss.str());
+  } else {
+    this->meta.content_length = std::string("CONTENT_LENGTH=").append("0");
+  }
+  this->meta.content_type = std::string("CONTENT_TYPE=")
+                                .append(this->request._headers["content-type"]);
   // this->meta.gateway_interface = "CGI/1.1";
   this->meta.path_info =
-      std::string("PATH_INFO=")
-          .append(parsePathInfo(request._uri, this->scriptName));
+      std::string("PATH_INFO=").append(this->request._uriData.pathInfo);
   // this->meta.path_translated = this->meta.path_translated;
   this->meta.query_string =
       std::string("QUERY_STRING=").append(parseQueryString(request._uri));
