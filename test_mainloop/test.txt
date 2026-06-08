@@ -21,6 +21,9 @@ server {
       allow_methods GET;
 	    autoindex on;
     }
+	location /fruits/ {
+	allow_methods POST DELETE;
+	}
     location /post_body/ {
       allow_methods POST;
     }

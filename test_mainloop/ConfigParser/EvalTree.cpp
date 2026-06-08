@@ -38,7 +38,7 @@ void evalDirective(Node* tree, t_config& evalData) {
     parseAlias(tree->args, currLocation);
     return;
   case ALLOWMETHODS:
-    currLocation.allowMethods = allowMethods(tree->args);
+    allowMethods(tree->args, currLocation);
     return;
   default:;
   }
@@ -72,7 +72,6 @@ void setServer(t_server& server) {
 }
 
 void setLocation(t_location& location) {
-  location.allowMethods |= 1 << GET | 1 << POST | 1 << DELETE;
   location.autoindex = false;
 }
 

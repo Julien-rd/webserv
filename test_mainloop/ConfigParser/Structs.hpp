@@ -32,7 +32,6 @@ enum c_tags { SERVER, LOCATION, MAIN };
 typedef struct c_cgi_config {
   std::string extension;
   std::string executablePath;
-  int         allowedMethods;
 } t_cgi_config;
 
 typedef struct s_location {
@@ -43,7 +42,7 @@ typedef struct s_location {
   std::string                 alias;
   std::vector<std::string>    tryFiles;
   std::pair<int, std::string> redirect;
-  int                         allowMethods;
+  std::vector<std::string>    allowMethods;
 } t_location;
 
 typedef struct s_server {

@@ -3,25 +3,9 @@
 #include <string>
 #include <vector>
 
-static std::string methodsToStr(int methods) {
-  // Adjust bit flags to match your actual definitions
-  std::string result;
-  if (methods & 0x1)
-    result += "GET ";
-  if (methods & 0x2)
-    result += "POST ";
-  if (methods & 0x4)
-    result += "DELETE ";
-  if (result.empty())
-    result = "NONE";
-  return result;
-}
-
 static void printCgiConfig(const t_cgi_config& cgi, const std::string& indent) {
   std::cout << indent << "extension:      " << cgi.extension << "\n";
   std::cout << indent << "executablePath: " << cgi.executablePath << "\n";
-  std::cout << indent << "allowedMethods: " << methodsToStr(cgi.allowedMethods)
-            << "\n";
 }
 
 static void printLocation(const t_location& loc, const std::string& indent) {
@@ -31,8 +15,9 @@ static void printLocation(const t_location& loc, const std::string& indent) {
   std::cout << indent << "root:        " << loc.root << "\n";
   std::cout << indent << "index:       " << loc.index << "\n";
   std::cout << indent << "alias:       " << loc.alias << "\n";
-  std::cout << indent << "allowMethods:" << methodsToStr(loc.allowMethods)
-            << "\n";
+  std::cout << indent << "allowMethods:" << "\n";
+  for (unsigned int i = 0; i < loc.allowMethods.size(); ++i)
+      std::cout << loc.allowMethods.at(i) << "\n";
   std::cout << indent << "redirect:    [" << loc.redirect.first << "] "
             << loc.redirect.second << "\n";
 

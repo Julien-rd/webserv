@@ -13,7 +13,7 @@ CLASS_SOURCES = Error/Error.cpp \
 				Client/Client.cpp \
 				Client/HttpRequest/HttpRequest.cpp Client/HttpRequest/HttpRequestGetters.cpp \
 				Client/HttpRequest/HttpRequestHelpers.cpp \
-				Client/HttpResponse/HttpResponse.cpp Client/HttpResponse/ReasonPhrase.cpp Client/HttpResponse/locationfind.cpp \
+				Client/HttpResponse/HttpResponse.cpp Client/HttpResponse/ReasonPhrase.cpp \
 				ConfigParser/DirectiveHandlers.cpp ConfigParser/EvalTree.cpp ConfigParser/Parser.cpp \
 				ConfigParser/ParseTree.cpp ConfigParser/Tokenizer.cpp
 

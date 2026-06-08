@@ -312,6 +312,3 @@ int HttpRequest::parseURIContent(void) {
   return 0;
 }
 
-int HttpRequest::getStatusCode() const { return _statusCode; }
-
-size_t HttpRequest::getBytesRead() const { return _bytesRead; }

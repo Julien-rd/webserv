@@ -16,7 +16,7 @@ void parseNumberGlobal(const std::vector<std::string>& args,
                        unsigned int*                   number);
 void parseMaxBody(const std::vector<std::string>& args, t_server& server);
 void parseListen(const std::vector<std::string>& args, t_server& server);
-int  allowMethods(std::vector<std::string>& args);
+void allowMethods(const std::vector<std::string>& args, t_location& location);
 void parseRoot(const std::vector<std::string>& args, t_location& location);
 void parseIndex(const std::vector<std::string>& args, t_location& location);
 void parseCGIConfigs(const std::vector<std::string>& args, t_server& context);

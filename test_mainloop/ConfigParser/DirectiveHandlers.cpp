@@ -61,24 +61,17 @@ void parseListen(const std::vector<std::string>& args, t_server& server) {
   server.port = std::string(convert);
 }
 
-int allowMethods(std::vector<std::string>& args) {
-  unsigned int count = 0;
-  int          bitmap = 0;
-  if (std::find(args.begin(), args.end(), "GET") != args.end()) {
-    bitmap |= 1 << GET;
-    ++count;
+void allowMethods(const std::vector<std::string>& args, t_location& location) {
+  if (args.size() == 0 || args.size() > 3)
+      throw std::runtime_error("allow_methods has wrong number of arguments");
+  for (unsigned int i = 0; i < args.size(); ++i) {
+      if ((args.at(i) != "GET" && args.at(i) != "POST" && args.at(i) != "DELETE") 
+          || std::find(location.allowMethods.begin(), 
+              location.allowMethods.end(), 
+              args.at(i)) != location.allowMethods.end())
+        throw std::runtime_error("allow_methods has wrong arguments");
+      location.allowMethods.push_back(args.at(i));
   }
-  if (std::find(args.begin(), args.end(), "POST") != args.end()) {
-    bitmap |= 1 << POST;
-    ++count;
-  }
-  if (std::find(args.begin(), args.end(), "DELETE") != args.end()) {
-    bitmap |= 1 << DELETE;
-    ++count;
-  }
-  if (args.size() == 0 || args.size() != count)
-    throw std::runtime_error("allow_methods has wrong arguments");
-  return bitmap;
 }
 
 void parseRoot(const std::vector<std::string>& args, t_location& location) {
@@ -129,11 +122,5 @@ void parseCGIConfigs(const std::vector<std::string>& args, t_server& server) {
   t_cgi_config cgiConfig;
   cgiConfig.extension = args.at(0);
   cgiConfig.executablePath = args.at(1);
-  if (args.size() == 3) { // TODO recheck all this logic
-    std::vector<std::string> methodArgs(args.begin() + 2, args.end());
-    cgiConfig.allowedMethods = allowMethods(methodArgs);
-  } else {
-    cgiConfig.allowedMethods = (1 << GET) | (1 << POST) | (1 << DELETE);
-  }
   server.cgiConfigs.push_back(cgiConfig);
 }

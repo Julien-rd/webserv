@@ -42,6 +42,7 @@ public:
   HttpRequest();
   const HttpRequest& operator=(const HttpRequest& obj);
   int                getStatusCode() const;
+  std::string        getMethod() const;
   bool               parsingDone();
   void               reset();
   size_t             getBytesRead() const;

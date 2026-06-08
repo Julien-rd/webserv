@@ -45,6 +45,12 @@ protected:
   void getReasonPhraseRedir();
   void getReasonPhraseClientErr();
   void getReasonPhraseServerErr();
+  
+  static bool isDirectory(std::string& path);
+  static unsigned int getLocation(const std::string& match, const t_server&    serverConfig);
+  static void attachPrefix(const std::string& uri, std::string& path,
+                    t_location& location);
+  UriResult processURI(const std::string& uri, const t_server&  serverConfig);
 
   std::map<std::string, std::string>
       _mimeTypes; // should be extracted out of conf file
@@ -66,10 +72,10 @@ protected:
   std::vector<char> _responseBody;
 
   size_t      _statusCode;
+  std::string _method;
   std::string _statusCodeStr;
 };
 
 
 
-UriResult processURI(const std::string& uri, const t_server&  serverConfig);
 #endif
