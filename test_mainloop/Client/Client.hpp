@@ -22,8 +22,8 @@ private:
   ssize_t           _CGIResponseLen;
   pid_t             _CGIPid;
   CGIResponse       _CGIResponse;
-
-  const t_config& _config;
+  const t_config&   _config;
+  CGI               _CGI;
 
   int closeConnection();
 
@@ -34,7 +34,7 @@ public:
   const Client& operator=(const Client& obj);
 
   int    loop(std::string input);
-  bool   doCGI(void);
+  bool   doCGI();
   size_t getBytesRead();
   void   readCGIPipe(int pipeReadFd);
   void   reset();

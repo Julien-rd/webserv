@@ -2,6 +2,7 @@
 #define CGI_HPP
 
 #include "../Client/HttpRequest/HttpRequest.hpp"
+#include "../ConfigParser/Structs.hpp"
 #include <exception>
 #include <string>
 
@@ -43,19 +44,21 @@ typedef struct s_metaVariables {
 
 class CGI {
 private:
-  const HttpRequest& request;
-  std::string        scriptName;
-  t_metaVariables    meta;
-  pid_t              pid;
-  int                epfd;
-  int                clientFd;
+  HttpRequest                      request;
+  std::string                      scriptName;
+  t_metaVariables                  meta;
+  pid_t                            pid;
+  int                              epfd;
+  int                              clientFd;
+  const std::vector<t_cgi_config>& cgiConfigs;
+  const t_server&                  serverConfig;
 
-  const char* executable;
-  char*       argv[3];
-  const char* envp[20];
+  std::string              executable;
+  std::vector<std::string> argv;
+  const char*              envp[20];
 
   // static const std::string _knownExtensions[2];
-  static const char* _knownExtensions[2];
+  std::vector<std::string> knownExtensions;
 
   void initPythonScript(void);
   void initMetaPython(void);
@@ -72,7 +75,10 @@ private:
   void execute(void);
 
 public:
-  CGI(const HttpRequest& request, int clientFd, int epfd);
+  CGI(const HttpRequest& request, int clientFd, int epfd,
+      const t_server&                  serverConfig,
+      const std::vector<t_cgi_config>& cgiConfigs);
+  CGI(const CGI& obj);
   ~CGI(void);
   const CGI& operator=(const CGI& obj);
 
@@ -81,6 +87,7 @@ public:
 
   int  pipefd[2];
   bool validateRequest(void) const;
+  bool scriptFileExists(void) const;
   void initCGI(void);
   void pipeIO(void);
   void redirectIO(void);
@@ -90,7 +97,13 @@ public:
 
   pid_t getPid(void) const;
 
-  static bool isCGIRequest(const HttpRequest& request);
+  bool isCGIRequest(const HttpRequest& request);
+
+  void reset();
+  void reconstruct(const HttpRequest& request, int clientFd, int epfd,
+                   const t_server&                  serverConfig,
+                   const std::vector<t_cgi_config>& cgiConfigs);
+  void setClientFd(const int fd);
 
   FT_DEFINE_EXCEPTION(StandardException, "ERROR: Standard Exception");
   FT_DEFINE_EXCEPTION(WaitException, "EXCEPTION CAUGHT IN PARENT: waiting");

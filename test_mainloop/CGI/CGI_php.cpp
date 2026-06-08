@@ -3,10 +3,16 @@
 #include <sstream>
 
 void CGI::setScriptAttributesPhp(void) {
-  this->executable = (char *)"/usr/bin/php-cgi";
-  this->argv[0] = (char *)"/usr/bin/php-cgi";  // TODO This is hardcoded!!
-  this->argv[1] = (char *)"./cgi-bin/php.php"; // TODO This is hardcoded!!
-  this->argv[2] = NULL;
+  for (size_t i = 0; i < this->cgiConfigs.size(); i++) {
+    if (this->cgiConfigs.at(i).extension == ".php") {
+      this->executable = this->cgiConfigs.at(i).executablePath;
+      this->argv.push_back(this->cgiConfigs.at(i).executablePath);
+      break;
+    } else if (i + 1 == this->cgiConfigs.size()) {
+      throw CGI::StandardException();
+    }
+  }
+  this->argv.push_back("cgi-bin" + this->request._uriData.path);
 }
 
 void CGI::setGETVariablesPhp(void) {
@@ -58,33 +64,30 @@ void CGI::initMetaPhp(void) {
   // this->meta.path_translated = this->meta.path_translated;
   this->meta.query_string =
       std::string("QUERY_STRING=").append(parseQueryString(request._uri));
-  this->meta.remote_addr = std::string("REMOTE_ADDR=").append("1.1.1.1");
+  // this->meta.remote_addr =
+  //     std::string("REMOTE_ADDR=").append(this->serverConfig.port);
   // this->meta.remote_host = "";
   // this->meta.remote_ident = "";
   // this->meta.remote_user = "";
   this->meta.request_method =
       std::string("REQUEST_METHOD=").append(request._method);
   this->meta.script_name = std::string("SCRIPT_NAME=").append(this->scriptName);
-  this->meta.server_name =
-      std::string("SERVER_NAME=")
-          .append(request._headers.at(
-              "Host")); // TODO get this from result of config_parser instead
+  // this->meta.server_name =
+  //     std::string("SERVER_NAME=")
+  //         .append(request._headers.at(
+  //             "Host")); // TODO get this from result of config_parser instead
   this->meta.server_port =
-      std::string("SERVER_PORT=")
-          .append(request._headers.at("Host").substr(
-              request._headers.at("Host").find(':') +
-              1)); // TODO get this from result of config_parser instead
+      std::string("SERVER_PORT=").append(this->serverConfig.port);
   this->meta.server_protocol =
       std::string("SERVER_PROTOCOL=").append("HTTP/1.1");
   // this->meta.script_filename =
   // std::string("SCRIPT_FILENAME=").append("/home/jel-ghna/github/webserv/cgi-bin/php.php");
   // // TODO maybe make this better
   this->meta.script_filename =
-      std::string("SCRIPT_FILENAME=")
-          .append("/home/josefelghnam/github/webserv/test_mainloop/cgi-bin/"
-                  "php.php"); // TODO maybe make this better
-                              // this->meta.server_software = "";
-                              // this->meta.x = "";
+      std::string("SCRIPT_FILENAME=cgi-bin")
+          .append(this->request._uriData.path); // TODO maybe make this better
+                                                // this->meta.server_software =
+                                                // ""; this->meta.x = "";
 }
 
 void CGI::initPhpScript(void) {

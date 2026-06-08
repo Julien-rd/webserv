@@ -5,14 +5,33 @@ server {
     
     
     allow_methods GET;
-    cgi_config .py /home/jel-ghna/github/webserv/test_mainloop/cgi-bin/;
-    cgi_config .php /home/jel-ghna/github/webserv/test_mainloop/cgi-bin/;
-    cgi_config .bla /home/jel-ghna/github/webserv/test_mainloop/ POST;
-	try_files ronaldo.png index.html
+
+    cgi_config .py /usr/bin/python3;
+    cgi_config .php /usr/bin/php-cgi;
+    cgi_config .bla cgi_tester POST;
+
+	  try_files ronaldo.png index.html
+
     index index.html;
+<<<<<<< HEAD
     location /vegetables/ {
     return 301 /fruits/;
 	autoindex on;
+=======
+
+    location / {
+      allow_methods GET;
+	    autoindex on;
+    }
+    location /post_body/ {
+      allow_methods POST;
+    }
+    location /directory/ {
+      allow_methods GET;
+      root YoupiBanane;
+      index youpi.bad_extension;
+      try_files youpi.bad_extension not_happy.bad_extension;
+>>>>>>> refs/remotes/origin/test
     }
     
     listen 127.0.0.4:7070;

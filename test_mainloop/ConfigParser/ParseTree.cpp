@@ -106,7 +106,6 @@ void initDefaults(void) {
       std::pair<std::string, int>("clients_per_server", CLIENTS_PER_SERVER));
   d.push_back(std::pair<std::string, int>("localhost", LOCALHOST));
   d.push_back(std::pair<std::string, int>("cgi_config", CGI_CONFIG));
-  c.push_back(std::pair<std::string, int>("cgi_config", CGI_CONFIG));
   c.push_back(std::pair<std::string, int>("server", SERVER));
   c.push_back(std::pair<std::string, int>("location", LOCATION));
 }

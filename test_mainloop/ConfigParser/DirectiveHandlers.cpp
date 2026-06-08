@@ -116,3 +116,24 @@ void parseReturn(const std::vector<std::string>& args, t_location& location) {
   location.redirect.first = (int)val;
   location.redirect.second = args.at(1);
 }
+
+void parseCGIConfigs(const std::vector<std::string>& args, t_server& server) {
+  if (args.size() < 2) {
+    throw std::runtime_error("cgi_config needs more arguments");
+  }
+  for (size_t i = 0; i < server.cgiConfigs.size(); i++) {
+    if (server.cgiConfigs.at(i).extension == args.at(0)) {
+      throw std::runtime_error("duplicate cgi extensions");
+    }
+  }
+  t_cgi_config cgiConfig;
+  cgiConfig.extension = args.at(0);
+  cgiConfig.executablePath = args.at(1);
+  if (args.size() == 3) { // TODO recheck all this logic
+    std::vector<std::string> methodArgs(args.begin() + 2, args.end());
+    cgiConfig.allowedMethods = allowMethods(methodArgs);
+  } else {
+    cgiConfig.allowedMethods = (1 << GET) | (1 << POST) | (1 << DELETE);
+  }
+  server.cgiConfigs.push_back(cgiConfig);
+}

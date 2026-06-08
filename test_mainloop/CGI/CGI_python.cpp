@@ -3,16 +3,19 @@
 #include <sstream>
 
 void CGI::setScriptAttributesPython(void) {
-  this->executable = (char *)"/usr/bin/python3";
-  this->argv[0] = (char *)"/usr/bin/python3";  // TODO This is hardcoded!!
-  this->argv[1] = (char *)"cgi-bin/python.py"; // TODO This is hardcoded!!
-  this->argv[2] = NULL;
+  for (size_t i = 0; i < this->cgiConfigs.size(); i++) {
+    if (this->cgiConfigs.at(i).extension == ".py") {
+      this->executable = this->cgiConfigs.at(i).executablePath;
+      this->argv.push_back(this->cgiConfigs.at(i).executablePath);
+      break;
+    } else if (i + 1 == this->cgiConfigs.size()) {
+      throw CGI::StandardException();
+    }
+  }
+  this->argv.push_back("cgi-bin" + this->request._uriData.path);
 }
 
 void CGI::setGETVariablesPython(void) {
-  // std::cout << "in setGETVariablesPython, this->meta.request_method: (" <<
-  // this->meta.request_method << "). c_str(): (" <<
-  // this->meta.request_method.c_str() << ")\n";
   this->envp[0] = this->meta.request_method.c_str();
   this->envp[1] = this->meta.query_string.c_str();
   this->envp[2] = this->meta.script_name.c_str();
@@ -51,8 +54,8 @@ void CGI::initMetaPython(void) {
   // this->meta.path_translated = this->meta.path_translated;
   this->meta.query_string =
       std::string("QUERY_STRING=").append(parseQueryString(request._uri));
-  this->meta.remote_addr =
-      std::string("REMOTE_ADDR=").append("1.1.1.1"); // TODO change this
+  // this->meta.remote_addr =
+  //     std::string("REMOTE_ADDR=").append("1.1.1.1"); // TODO change this
   // this->meta.remote_host = "";
   // this->meta.remote_ident = "";
   // this->meta.remote_user = "";
@@ -69,10 +72,7 @@ void CGI::initMetaPython(void) {
   // "request._headers.at(host).substr(request._headers).at(host).find(:) + 1
   // is: " << request._headers.at("host").find(':') + 1 << std::endl;
   this->meta.server_port =
-      std::string("SERVER_PORT=")
-          .append(request._headers.at("host").substr(
-              request._headers.at("host").find(':') +
-              1)); // TODO get this from result of config_parser instead
+      std::string("SERVER_PORT=").append(this->serverConfig.port);
   this->meta.server_protocol =
       std::string("SERVER_PROTOCOL=").append("HTTP/1.1");
   // this->meta.server_software = "";
@@ -80,14 +80,10 @@ void CGI::initMetaPython(void) {
 }
 
 void CGI::initPythonScript(void) {
-  // std::cout << "here2\n";
   this->initMetaPython();
-  // std::cout << "here3\n";
   this->setScriptAttributesPython();
   if (request._method == "GET") {
-    // std::cout << "here4\n";
     this->setGETVariablesPython();
-    // std::cout << "here5\n";
   } else if (request._method == "POST") {
     this->setPOSTVariablesPython();
   } else {

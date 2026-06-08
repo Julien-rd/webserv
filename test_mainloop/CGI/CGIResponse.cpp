@@ -79,6 +79,8 @@ void CGIResponse::addRules() {
 
 int CGIResponse::build(HttpRequest request) {
   _statusCode = request.getStatusCode();
+  if (_CGIResponseLen == 0)
+    return 1;
   buildStatusLine(); // only mandatory part
   if (getTimeStamp() == 1)
     return 1;

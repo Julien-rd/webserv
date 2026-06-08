@@ -4,6 +4,7 @@
 #include "HttpRequest/HttpRequest.hpp"
 #include "HttpResponse/HttpResponse.hpp"
 
+#include <exception>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -27,19 +28,21 @@ Client::Client(const t_config& config, const int sid)
     : _fd(-1), _sid(sid), _epfd(-1), _request(), _response(config, sid),
       _CGIResponseLen(0), _CGIPid(-1),
       _CGIResponse(_CGIResponseStream, _CGIResponseLen, config, sid),
-      _config(config) {}
+      _config(config), _CGI(_request, _fd, _epfd, _config.servers.at(_sid),
+                            _config.servers.at(_sid).cgiConfigs) {}
 
 Client::Client(int epfd, const t_config& config, const int sid)
     : _fd(-1), _sid(sid), _epfd(epfd), _request(), _response(config, sid),
       _CGIResponseLen(0), _CGIPid(-1),
       _CGIResponse(_CGIResponseStream, _CGIResponseLen, config, sid),
-      _config(config) {}
+      _config(config), _CGI(_request, _fd, _epfd, _config.servers.at(_sid),
+                            _config.servers.at(_sid).cgiConfigs) {}
 
 Client::Client(const Client& obj)
     : _fd(obj._fd), _sid(obj._sid), _epfd(obj._epfd), _request(obj._request),
       _response(obj._response), _CGIResponseLen(obj._CGIResponseLen),
       _CGIPid(obj._CGIPid), _CGIResponse(obj._CGIResponse),
-      _config(obj._config) {}
+      _config(obj._config), _CGI(obj._CGI) {}
 
 const Client& Client::operator=(const Client& obj) {
   if (&obj == this) {
@@ -54,7 +57,10 @@ const Client& Client::operator=(const Client& obj) {
   return *this;
 }
 
-void Client::setFd(int fd) { _fd = fd; }
+void Client::setFd(int fd) {
+  _fd = fd;
+  _CGI.setClientFd(fd);
+}
 
 int Client::getFd() const { return _fd; }
 
@@ -79,7 +85,6 @@ void Client::readCGIPipe(int pipeReadFd) {
   ssize_t bytesRead;
 
   bytesRead = read(pipeReadFd, buf, BUFFER_SIZE - 1);
-  // std::cout << "bytes read from CGI pipe: " << bytesRead << std::endl;
   if (bytesRead == -1) {
     _CGIResponseLen = 0;
     _CGIResponseStream.clear();
@@ -98,12 +103,13 @@ void Client::readCGIPipe(int pipeReadFd) {
       throw std::runtime_error("couldn't remove CGI pipe from epoll");
     }
     close(pipeReadFd);
-    std::cout << "\nbuilding HttpResponse from CGI Response:\n{\n"
-              << _CGIResponseStream.str() << "\n}\n";
+    // std::cout << "\nbuilding HttpResponse from CGI Response:\n{\n"
+    //           << _CGIResponseStream.str() << "\n}\n";
     _CGIResponse.setCGIResponseStr(_CGIResponseStream.str());
     _CGIResponse.setCGIResponseLen(_CGIResponseLen);
     if (_CGIResponse.build(_request) == 1) {
-      throw std::runtime_error("couldn't build HttpResponse from CGI Response");
+      closeConnection();
+      return;
       // TODO handle error
     }
     const char* response = _CGIResponse.getResponse();
@@ -127,19 +133,25 @@ void Client::readCGIPipe(int pipeReadFd) {
 }
 
 bool Client::doCGI(void) {
-  CGI cgi(_request, _fd, _epfd);
   try {
-    cgi.initCGI();
+    // std::cout << " in doCGI() => _config.servers.at(_sid).ip: "
+    //           << _config.servers.at(_sid).cgiConfigs.size() << "\n";
+    // std::cout << " in doCGI() => _config.servers.at(_sid).port: "
+    //           << _config.servers.at(_sid).port << "\n";
+    if (!_CGI.scriptFileExists()) {
+      return closeConnection();
+    }
+    _CGI.initCGI();
     // std::cout << "========= initCGI() succeeded\n";
-    cgi.pipeIO();
+    _CGI.pipeIO();
     // std::cout << "========= pipeIO() succeeded\n";
-    cgi.spawnProcess();
-    _CGIPid = cgi.getPid();
+    _CGI.spawnProcess();
+    _CGIPid = _CGI.getPid();
     // std::cout << "========= spawnProcess() succeeded\n";
     // writing to the pipe? std::cout << "========= wait() succeeded\n";
   } catch (std::exception& e) {
-    std::cerr << "exception caught in startCGI(): " << e.what() << std::endl;
-    return 1;
+    std::cerr << "exception caught in doCGI(): " << e.what() << std::endl;
+    return closeConnection();
   }
   return 0;
 }
@@ -158,8 +170,12 @@ int Client::loop(std::string input) {
     if (_request.parseURIContent() == 1) {
       return closeConnection();
     }
-    if (CGI::isCGIRequest(_request)) {
-      return doCGI();
+    if (_CGI.isCGIRequest(_request)) {
+      std::cout << "==> found a CGI request\n";
+      doCGI();
+      _request.reset();
+      _response.reset();
+      continue;
     }
     if (_response.build(_request) == 1)
       err = true;

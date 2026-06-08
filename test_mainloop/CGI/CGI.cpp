@@ -5,21 +5,38 @@
 #include <cstdio>
 #include <cstring>
 
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <stdexcept>
 #include <stdio.h>
 #include <sys/epoll.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
-const char* CGI::_knownExtensions[2] = {".py", ".php"};
-
-CGI::CGI(const HttpRequest& request, int clientFd, int epfd)
-    : request(request), epfd(epfd), clientFd(clientFd) {
+CGI::CGI(const HttpRequest& request, int clientFd, int epfd,
+         const t_server&                  serverConfig,
+         const std::vector<t_cgi_config>& cgiConfigs)
+    : request(request), epfd(epfd), clientFd(clientFd), cgiConfigs(cgiConfigs),
+      serverConfig(serverConfig) {
   this->pipefd[0] = -1;
   this->pipefd[1] = -1;
+  // TODO this can be better moved to Server class
+  for (size_t i = 0; i < this->cgiConfigs.size(); i++) {
+    this->knownExtensions.push_back(this->cgiConfigs.at(i).extension);
+  }
+}
+
+CGI::CGI(const CGI& obj)
+    : request(obj.request), epfd(obj.epfd), clientFd(obj.clientFd),
+      cgiConfigs(obj.cgiConfigs), serverConfig(obj.serverConfig) {
+  this->pipefd[0] = obj.pipefd[0];
+  this->pipefd[1] = obj.pipefd[1];
+  this->knownExtensions.clear();
+  for (size_t i = 0; i < this->cgiConfigs.size(); i++) {
+    this->knownExtensions.push_back(this->cgiConfigs.at(i).extension);
+  }
 }
 
 CGI::~CGI(void) {
@@ -75,15 +92,31 @@ const CGI& CGI::operator=(const CGI& obj) {
 // HttpRequest)??? 	return false;
 // }
 
+bool CGI::scriptFileExists(void) const {
+  std::string scriptPath = "cgi-bin" + request._uriData.path;
+  struct stat data;
+  if (stat(scriptPath.c_str(), &data) == -1) {
+    std::cerr << "couldn't access CGI script file"
+              << std::endl; // TODO handle error pages here too???
+    return false;
+  }
+  if (data.st_mode & S_IXUSR) {
+    return true;
+  }
+  std::cout << "script is not executable\n";
+  return false;
+}
+
 void CGI::initCGI(void) {
-  // this->scriptName = getScriptName(request._uri, this->pythonScriptName,
-  // this->phpScriptName);
-  if (this->request._uriData.extension == ".py") {
+  if (request._uriData.extension == ".py") {
     initPythonScript();
-  } else if (this->request._uriData.extension == ".php") {
+    // std::cout << "initialized python CGI" << std::endl;
+  } else if (request._uriData.extension == ".php") {
     initPhpScript();
+    // std::cout << "initialized php CGI" << std::endl;
   } else {
-    std::cerr << "shouldn't reach here" << std::endl;
+    // initUnkownExtension();
+    // std::cout << "initialized CGI with unknown extension" << std::endl;
   }
 }
 
@@ -111,14 +144,18 @@ void CGI::spawnProcess(void) {
     throw std::runtime_error("fork() failed in CGI");
   }
   if (this->pid == 0) {
-    close(this->pipefd[0]);
-    close(this->epfd);
-    close(this->clientFd);
+    if (this->pipefd[0] != -1)
+      close(this->pipefd[0]);
+    if (this->epfd != -1)
+      close(this->epfd);
+    if (this->clientFd != -1)
+      close(this->clientFd);
     this->redirectIO();
     // std::cerr << "========= redirectIO() succeeded\n";
     this->execute();
   } else {
-    close(this->pipefd[1]);
+    if (this->pipefd[1] != -1)
+      close(this->pipefd[1]);
     this->addPipeToEpoll();
     // std::cout << "========= addPipeToEpoll() succeeded\n";
   }
@@ -137,6 +174,8 @@ void CGI::addPipeToEpoll(void) {
       this->clientFd; // TODO do we need to set all of this to null if the
                       // clients disconnects?
   ev.data.u64 = u64;
+  // std::cout << "pipefd[0]: " << this->pipefd[0]
+  //           << " clientFd: " << this->clientFd << "\n";
   if (epoll_ctl(this->epfd, EPOLL_CTL_ADD, this->pipefd[0], &ev) == -1) {
     // std::cerr << "rfd: " << this->pipefd[0] << ", wfd: " << this->pipefd[1]
     //           << ", epfd: " << this->epfd << ": " << strerror(errno)
@@ -166,17 +205,22 @@ void CGI::wait(void) const {
 }
 
 void CGI::execute(void) {
-  std::cerr << "executing CGI" << std::endl;
   // int fd = open("cgi_output.txt", O_CREAT | O_NONBLOCK | O_RDWR, 0777);
   // dup2(fd, STDOUT_FILENO);
   // std::cout << "executable is (" << this->executable << ") argv[0] is (" <<
-  // this->argv[0] << ")" << std::endl; read(STDIN_FILENO, buf, ) printf(">>>>>
-  // path(%s) argv(%s && %s)\n", this->executable, this->argv[0],
-  // this->argv[1]); fflush(stdout); std::cout << "caling execve with
-  // parameters, path:\n" << this->executable << " ================\n" <<
-  // this->argv[0] << "------" << this->argv[1] << "================\n" <<
-  // this->envp[0] << std::endl;
-  if (execve(this->executable, this->argv, const_cast<char**>(this->envp)) ==
+  // this->argv[0] << ")" << std::endl; read(STDIN_FILENO, buf, )
+  // printf(">>>>> path(%s) argv(%s && %s)\n", this->executable,
+  // this->argv[0], this->argv[1]); fflush(stdout); std::cout << "caling
+  // execve with parameters, path:\n" << this->executable << "
+  // ================\n" << this->argv[0] << "------" << this->argv[1] <<
+  // "================\n" << this->envp[0] << std::endl;
+  char* argv[3];
+  argv[0] = &this->argv[0][0];
+  argv[1] = &this->argv[1][0];
+  argv[2] = NULL;
+  // std::cerr << "executing (" << this->executable << ")\nargs:\n("
+  //           << this->argv[0] << ")\n(" << this->argv[1] << ")\n";
+  if (execve(this->executable.c_str(), argv, const_cast<char**>(this->envp)) ==
       -1) {
     std::cerr << "execve() failed. shouldn't reach here, maybe invalid "
                  "arguments (path or argv))"
@@ -187,7 +231,6 @@ void CGI::execute(void) {
 
 bool CGI::isCGIRequest(const HttpRequest& request) {
   const std::string& uri = request._uri;
-
   // Strip query string for extension detection
   size_t queryPos = uri.find('?');
   size_t pathLen = (queryPos == std::string::npos) ? uri.size() : queryPos;
@@ -199,18 +242,20 @@ bool CGI::isCGIRequest(const HttpRequest& request) {
   }
 
   // Extract the extension including the dot (e.g. ".py", ".pl")
-  std::string ext = uri.substr(dotPos, pathLen - dotPos);
-
-  for (size_t i = 0; i < KNOWN_EXTENSIONS_COUNT; i++) {
-    if (ext == _knownExtensions[i]) {
+  for (size_t i = 0; i < this->knownExtensions.size(); i++) {
+    // std::cout << "comparing " << request._uriData.extension << " with "
+    //           << this->knownExtensions[i] << "\n";
+    if (request._uriData.extension == this->knownExtensions[i]) {
+      this->request = request;
       return true;
     }
   }
-
-  // std::cout << "URI doesn't contain a known CGI extension: " << uri
-  //           << std::endl;
   return false;
 }
+
+void CGI::setClientFd(const int fd) { this->clientFd = fd; }
+
+void CGI::reset(void) { ; }
 
 pid_t CGI::getPid(void) const { return this->pid; }
 

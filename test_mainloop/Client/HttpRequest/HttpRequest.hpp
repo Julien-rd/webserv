@@ -38,6 +38,7 @@ public:
   int  parseURIContent(void);
   void print();
   HttpRequest(size_t client_max_body_size);
+  HttpRequest(const HttpRequest& obj);
   HttpRequest();
   const HttpRequest& operator=(const HttpRequest& obj);
   int                getStatusCode() const;

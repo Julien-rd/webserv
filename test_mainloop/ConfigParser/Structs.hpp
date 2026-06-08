@@ -44,7 +44,6 @@ typedef struct s_location {
   std::vector<std::string>    tryFiles;
   std::pair<int, std::string> redirect;
   int                         allowMethods;
-  std::vector<t_cgi_config>   cgiConfigs;
 } t_location;
 
 typedef struct s_server {

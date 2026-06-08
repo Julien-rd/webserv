@@ -2,12 +2,12 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <dirent.h>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <sys/types.h>
-#include <dirent.h>
 
 #include <csignal>
 #include <cstdlib>
@@ -82,24 +82,29 @@ void HttpResponse::extractContentLength() {
 }
 
 std::string autoindex(const std::string& path, const std::string& uri) {
-    std::string file;
-    (void)path;
-    file = "<!DOCTYPE html>\r\n"
-    "<html>\r\n"
-    "<body>\r\n\r\n"
-    "<h1>Index of " + uri + "</h1>\r\n";
-    DIR* dir = opendir(path.c_str());
-    if (!dir) 
-        return NULL;
-    struct dirent* dr = readdir(dir);
-    while (dr) {
-        if (std::string(".").compare(dr->d_name))
-            file += "<p><a href=\"" + uri + dr->d_name + "\">" + dr->d_name + "</a></p>\r\n";
-        dr = readdir(dir);
-    }
-    file += "\r\n\r\n</body>\r\n</html>";     
-    return file;
+  std::string file;
+  (void)path;
+  file = "<!DOCTYPE html>\r\n"
+         "<html>\r\n"
+         "<body>\r\n\r\n"
+         "<h1>Index of " +
+         uri + "</h1>\r\n";
+  DIR* dir = opendir(path.c_str());
+  if (!dir)
+    return NULL;
+  struct dirent* dr = readdir(dir);
+  while (dr) {
+    if (std::string(".").compare(dr->d_name))
+      file += "<p><a href=\"" + uri + dr->d_name + "\">" + dr->d_name +
+              "</a></p>\r\n";
+    dr = readdir(dir);
+  }
+  file += "\r\n\r\n</body>\r\n</html>";
+  return file;
 }
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 void HttpResponse::addBody(HttpRequest request,const UriResult& result) {
     
