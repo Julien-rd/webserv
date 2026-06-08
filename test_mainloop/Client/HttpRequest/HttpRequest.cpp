@@ -290,7 +290,11 @@ int HttpRequest::parseURIContent(void) {
 
   size_t dot = path.rfind('.');
   size_t lastSlash = path.rfind('/');
-  if (dot != std::string::npos && dot > lastSlash) {
+  if (lastSlash == 0) {
+    path.append("/");
+    lastSlash = path.size() - 1;
+  }
+  if (dot != std::string::npos && dot < lastSlash) {
     size_t extEnd = path.find('/', dot);
     _uriData.extension = path.substr(dot, extEnd - dot);
     _uriData.path = path.substr(0, extEnd);
@@ -300,6 +304,11 @@ int HttpRequest::parseURIContent(void) {
     _uriData.path = path;
   }
   _uriData.query = percentDecode(_uriData.query, true);
+  // std::cout << "from URI: " << _uri << " parsed =>\n"
+  //           << "path:   " << _uriData.path << "\next:  " <<
+  //           _uriData.extension
+  //           << "\npathInfo: " << _uriData.pathInfo
+  //           << "\nquery: " << _uriData.query << "\n";
   return 0;
 }
 

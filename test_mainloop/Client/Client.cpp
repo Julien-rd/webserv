@@ -104,8 +104,8 @@ void Client::readCGIPipe(int pipeReadFd) {
       throw std::runtime_error("couldn't remove CGI pipe from epoll");
     }
     close(pipeReadFd);
-    std::cout << "\nbuilding HttpResponse from CGI Response:\n{\n"
-              << _CGIResponseStream.str() << "\n}\n";
+    // std::cout << "\nbuilding HttpResponse from CGI Response:\n{\n"
+    //           << _CGIResponseStream.str() << "\n}\n";
     _CGIResponse.setCGIResponseStr(_CGIResponseStream.str());
     _CGIResponse.setCGIResponseLen(_CGIResponseLen);
     if (_CGIResponse.build(_request) == 1) {
@@ -139,7 +139,7 @@ bool Client::doCGI(void) {
     // std::cout << " in doCGI() => _config.servers.at(_sid).port: "
     //           << _config.servers.at(_sid).port << "\n";
     if (!_CGI.scriptFileExists()) {
-      return 1;
+      return closeConnection();
     }
     _CGI.initCGI();
     // std::cout << "========= initCGI() succeeded\n";
@@ -151,7 +151,7 @@ bool Client::doCGI(void) {
     // writing to the pipe? std::cout << "========= wait() succeeded\n";
   } catch (std::exception& e) {
     std::cerr << "exception caught in doCGI(): " << e.what() << std::endl;
-    return 1;
+    return closeConnection();
   }
   return 0;
 }
@@ -171,6 +171,7 @@ int Client::loop(std::string input) {
       return closeConnection();
     }
     if (_CGI.isCGIRequest(_request)) {
+      std::cout << "==> found a CGI request\n";
       return doCGI();
     }
     if (_response.build(_request) == 1)

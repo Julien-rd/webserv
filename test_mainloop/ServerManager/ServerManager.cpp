@@ -91,8 +91,8 @@ void ServerManager::loopReadyEvents(void) {
       // std::cout << "caught CGI in epoll... client fd: " << fds[1]
       //           << ". pipefd is: " << fds[0] << std::endl;
       // try {
-      std::cout << "in loopReadyEvents(): fds[0]:" << fds[0]
-                << " fds[1]:" << fds[1] << "\n";
+      // std::cout << "in loopReadyEvents(): fds[0]:" << fds[0]
+      //           << " fds[1]:" << fds[1] << "\n";
       _clients.at(fds[1]).readCGIPipe(fds[0]);
       // } catch (std::exception& e) {
       // std::cout << "exception caught in loopReadyEvents():\nfds[1]:" <<

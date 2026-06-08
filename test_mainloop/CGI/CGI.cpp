@@ -97,11 +97,10 @@ bool CGI::scriptFileExists(void) const {
   struct stat data;
   if (stat(scriptPath.c_str(), &data) == -1) {
     std::cerr << "couldn't access CGI script file"
-              << std::endl; // TODO server error pages here
+              << std::endl; // TODO handle error pages here too???
     return false;
   }
-  if (data.st_mode & S_IFREG & S_IXUSR) {
-    std::cout << "script is executable\n";
+  if (data.st_mode & S_IXUSR) {
     return true;
   }
   std::cout << "script is not executable\n";
@@ -111,13 +110,13 @@ bool CGI::scriptFileExists(void) const {
 void CGI::initCGI(void) {
   if (request._uriData.extension == ".py") {
     initPythonScript();
-    std::cout << "initialized python CGI" << std::endl;
+    // std::cout << "initialized python CGI" << std::endl;
   } else if (request._uriData.extension == ".php") {
     initPhpScript();
-    std::cout << "initialized php CGI" << std::endl;
+    // std::cout << "initialized php CGI" << std::endl;
   } else {
     // initUnkownExtension();
-    std::cout << "initialized CGI with unknown extension" << std::endl;
+    // std::cout << "initialized CGI with unknown extension" << std::endl;
   }
 }
 
@@ -175,8 +174,8 @@ void CGI::addPipeToEpoll(void) {
       this->clientFd; // TODO do we need to set all of this to null if the
                       // clients disconnects?
   ev.data.u64 = u64;
-  std::cout << "pipefd[0]: " << this->pipefd[0]
-            << " clientFd: " << this->clientFd << "\n";
+  // std::cout << "pipefd[0]: " << this->pipefd[0]
+  //           << " clientFd: " << this->clientFd << "\n";
   if (epoll_ctl(this->epfd, EPOLL_CTL_ADD, this->pipefd[0], &ev) == -1) {
     // std::cerr << "rfd: " << this->pipefd[0] << ", wfd: " << this->pipefd[1]
     //           << ", epfd: " << this->epfd << ": " << strerror(errno)
@@ -243,10 +242,10 @@ bool CGI::isCGIRequest(const HttpRequest& request) {
   }
 
   // Extract the extension including the dot (e.g. ".py", ".pl")
-  std::string ext = uri.substr(dotPos, pathLen - dotPos);
-
   for (size_t i = 0; i < this->knownExtensions.size(); i++) {
-    if (ext == this->knownExtensions[i]) {
+    // std::cout << "comparing " << request._uriData.extension << " with "
+    //           << this->knownExtensions[i] << "\n";
+    if (request._uriData.extension == this->knownExtensions[i]) {
       this->request = request;
       return true;
     }

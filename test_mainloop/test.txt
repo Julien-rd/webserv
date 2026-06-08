@@ -6,8 +6,8 @@ server {
     
     allow_methods GET;
     cgi_config .py /usr/bin/python3;
-    cgi_config .php /usr/bin/python3;
-    cgi_config .bla /usr/bin/python3 POST;
+    cgi_config .php /usr/bin/php-cgi;
+    cgi_config .bla cgi_tester POST;
 
 	try_files ronaldo.png index.html
     index index.html;
