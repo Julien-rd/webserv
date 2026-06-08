@@ -96,7 +96,8 @@ bool CGI::scriptFileExists(void) const {
   std::string scriptPath = "cgi-bin" + request._uriData.path;
   struct stat data;
   if (stat(scriptPath.c_str(), &data) == -1) {
-    std::cerr << "couldn't access CGI script file" << std::endl;
+    std::cerr << "couldn't access CGI script file"
+              << std::endl; // TODO server error pages here
     return false;
   }
   if (data.st_mode & S_IFREG & S_IXUSR) {
