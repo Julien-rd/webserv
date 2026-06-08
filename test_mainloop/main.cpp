@@ -17,16 +17,16 @@
 simple: Any fd you need to wait on must go through epoll. Waiting on it any
 other way blocks the loop. This applies to sockets, pipes, timers (timerfd),
 signals (signalfd) — anything. CGI pipes are no exception. */
-// void signalHandler(int sig) {
-//   std::cout << "Exiting with signal: " << sig << std::endl;
-//   // _exit(sig);
-//   throw std::exception(); // TODO we shouldn't use exceptions for normal
-//   logic
-//                           // routes, except that ctrl+c is not normal??? idk
-// }
+void signalHandler(int sig) {
+  std::cout << "Exiting with signal: " << sig << std::endl;
+  // _exit(sig);
+  throw std::exception(); // TODO we shouldn't use exceptions for normal
+  // logic
+  // routes, except that ctrl+c is not normal??? idk
+}
 
 int main(int argc, char** argv) {
-  // signal(SIGINT, signalHandler);
+  signal(SIGINT, signalHandler);
   t_config config;
   if (argc != 2) {
     std::cerr << "ERROR: provide exactly one argument ./webserv [filename] "
@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
       poller.epollWait();
       serverManager.loopReadyEvents();
     } catch (std::exception& e) {
-      // std::cerr << e.what() << std::endl;
+      std::cerr << e.what() << std::endl;
       return 1;
     }
   }

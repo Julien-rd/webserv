@@ -25,7 +25,10 @@ void CGIResponse::addBody(HttpRequest request) {
   size_t separatorPos = _CGIResponseStr.find("\r\n\r\n");
   // std::cout << "_CGIResponseLen: " << _CGIResponseLen
   //           << " ====== sepeartorPos: " << separatorPos << std::endl;
+  std::cout << "calling resize() _CGIResponseLen: " << _CGIResponseLen
+            << " -==- separatorPos: " << separatorPos << std::endl;
   _responseBody.resize(_CGIResponseLen - 4 - separatorPos);
+  std::cout << "++++++++++++ 3" << std::endl;
   std::stringstream responseStream(_CGIResponseStr);
   responseStream.seekg(separatorPos + 4);
   responseStream.read(&_responseBody[0], _CGIResponseLen - 4 - separatorPos);
@@ -79,6 +82,8 @@ void CGIResponse::addRules() {
 
 int CGIResponse::build(HttpRequest request) {
   _statusCode = request.getStatusCode();
+  if (_CGIResponseLen == 0)
+    return 1;
   buildStatusLine(); // only mandatory part
   if (getTimeStamp() == 1)
     return 1;

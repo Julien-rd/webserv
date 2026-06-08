@@ -4,8 +4,6 @@ import cgitb
 import os
 import sys
 
-cgitb.enable()
-
 method = os.environ.get("REQUEST_METHOD", "GET")
 query_string = os.environ.get("QUERY_STRING", "")
 

@@ -85,7 +85,6 @@ void Client::readCGIPipe(int pipeReadFd) {
   ssize_t bytesRead;
 
   bytesRead = read(pipeReadFd, buf, BUFFER_SIZE - 1);
-  // std::cout << "bytes read from CGI pipe: " << bytesRead << std::endl;
   if (bytesRead == -1) {
     _CGIResponseLen = 0;
     _CGIResponseStream.clear();
@@ -109,7 +108,8 @@ void Client::readCGIPipe(int pipeReadFd) {
     _CGIResponse.setCGIResponseStr(_CGIResponseStream.str());
     _CGIResponse.setCGIResponseLen(_CGIResponseLen);
     if (_CGIResponse.build(_request) == 1) {
-      throw std::runtime_error("couldn't build HttpResponse from CGI Response");
+      closeConnection();
+      return;
       // TODO handle error
     }
     const char* response = _CGIResponse.getResponse();
@@ -172,7 +172,10 @@ int Client::loop(std::string input) {
     }
     if (_CGI.isCGIRequest(_request)) {
       std::cout << "==> found a CGI request\n";
-      return doCGI();
+      doCGI();
+      _request.reset();
+      _response.reset();
+      continue;
     }
     if (_response.build(_request) == 1)
       err = true;
