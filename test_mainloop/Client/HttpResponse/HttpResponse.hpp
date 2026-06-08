@@ -6,6 +6,12 @@
 #include <map>
 #include <string>
 
+struct UriResult {
+    int httpCode;
+    std::string path;
+    bool autoindex;
+} ;
+
 enum responseClass {
   INFO = 1,
   SUCCESS = 2,
@@ -32,7 +38,7 @@ protected:
   virtual void addRules();
   void         addMandatoryHeaders();
   void         serveSuccessPage(HttpRequest request);
-  virtual void addBody(HttpRequest request);
+  virtual void addBody(HttpRequest request, const UriResult& result);
 
   void getReasonPhraseInfo();
   void getReasonPhraseSuccess();
@@ -63,11 +69,6 @@ protected:
   std::string _statusCodeStr;
 };
 
-struct UriResult {
-    int httpCode;
-    std::string path;
-    bool autoindex;
-} ;
 
 
 UriResult processURI(const std::string& uri, const t_server&  serverConfig);

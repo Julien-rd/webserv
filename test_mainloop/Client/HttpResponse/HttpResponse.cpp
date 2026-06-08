@@ -101,30 +101,18 @@ std::string autoindex(const std::string& path, const std::string& uri) {
     return file;
 }
 
-void HttpResponse::addBody(HttpRequest request) {
-    UriResult result;
+void HttpResponse::addBody(HttpRequest request,const UriResult& result) {
+    
     std::fstream htmlPage;
     std::string uri = request.getURI();
     std::string autoindexHtml;
-  std::cout << uri << std::endl;
-  result = processURI(uri, _config.servers.at(_sid));
-  if (result.httpCode < 400 && result.httpCode > 299) {
-      _statusCode = 301;
-      std::cout << "redirect\n";
-      return; //TODO: implement a redirect meaning sending result.path back with code 301
-  }
-  else if (result.autoindex == true) {
+  if (result.autoindex == true) {
       autoindexHtml = autoindex(result.path, uri);
       std::cout << "\n{" + autoindexHtml << "}\n";
       std::stringstream here(autoindexHtml);
       _responseBody.resize(autoindexHtml.size());
       here.read(&_responseBody[0], autoindexHtml.size());
       _response += "Content-Type: text/html\r\n";
-  }
-  else if (result.httpCode == 404) { //OPTIONAL: find a way to join the errors without opening the file unnecessarily
-          std::cout << "_statusCode is 404 after processURI()\n";
-          _statusCode = 404;
-          return;
   }
   else {
       htmlPage.open(result.path.c_str());
@@ -138,9 +126,9 @@ void HttpResponse::addBody(HttpRequest request) {
       std::streampos size = htmlPage.tellg(); // TODO change this. we can't use seek
       htmlPage.seekg(0, std::ios::beg);
       if (size == 0) {
-        _statusCode = 404; // check statusCodes
-        std::cout << "empty file\n";
-        return;
+          _statusCode = 404; // check statusCodes
+          std::cout << "empty file\n";
+          return;
       }
       _responseBody.resize(size);
       htmlPage.read(&_responseBody[0], size);
@@ -230,7 +218,7 @@ void HttpResponse::serveErrorPage() {
   _response += htmlBody; // fix it to char vec
 }
 
-void HttpResponse::serveSuccessPage(HttpRequest request) {
+void HttpResponse::serveSuccessPage(HttpRequest request) { //FIX: why is this function never used? or where is it used
   std::ostringstream ss;
   getReasonPhrase();
 
@@ -264,14 +252,26 @@ void HttpResponse::serveSuccessPage(HttpRequest request) {
 
 int HttpResponse::build(HttpRequest request) {
   _statusCode = request.getStatusCode();
+  if (_statusCode >= 400) {
+    serveErrorPage();
+    return 1;
+  }
+  UriResult result;
+  std::fstream htmlPage;
+  std::string uri = request.getURI();
+  std::string autoindexHtml;
+  result = processURI(uri, _config.servers.at(_sid));
+  _statusCode = result.httpCode;
   buildStatusLine(); // only mandatory part
   if (getTimeStamp() == 1)
     return 1;
   addMandatoryHeaders();
+  if (_statusCode > 299 && _statusCode < 400) //EDIT: Put this somewhere where it makes sense
+      _response += "Location: " + result.path + "\r\n";
   addRules();
   if (_statusCode < 400)
-    addBody(request);
-  if (_statusCode >= 400) {
+    addBody(request, result);
+  else if (_statusCode >= 400) {
     serveErrorPage();
     return 1;
   }

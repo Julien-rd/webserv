@@ -15,7 +15,7 @@ CGIResponse::CGIResponse(std::stringstream& CGIResponseStream,
   //           << _CGIResponseStr << "))\n";
 }
 
-void CGIResponse::addBody(HttpRequest request) {
+void CGIResponse::addCGIBody(HttpRequest request) {
   (void)request;
   // std::string str = _CGIResponseStream.str();
   // size_t      bodyPos = str.find("\r\n\r\n");
@@ -85,7 +85,7 @@ int CGIResponse::build(HttpRequest request) {
   addMandatoryHeaders();
   addRules();
   if (_statusCode < 400)
-    addBody(request);
+    addCGIBody(request);
   if (_statusCode >= 400) {
     serveErrorPage();
     return 1;

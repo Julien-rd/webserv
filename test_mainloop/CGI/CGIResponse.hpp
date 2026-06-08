@@ -11,7 +11,7 @@ private:
   std::string _CGIResponseStr;
   size_t      _CGIResponseLen;
   void        addRules();
-  void        addBody(HttpRequest request);
+  void        addCGIBody(HttpRequest request); //FIX: had to avoid errors to compile. addBody changed in httpresponse
 
 public:
   int  build(HttpRequest request);

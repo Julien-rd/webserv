@@ -11,6 +11,7 @@ server {
 	try_files ronaldo.png index.html
     index index.html;
     location /vegetables/ {
+    return 301 /fruits/;
 	autoindex on;
     }
     
