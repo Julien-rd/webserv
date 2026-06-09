@@ -31,7 +31,7 @@ bool HttpResponse::isDirectory(std::string& path) {
 }
 
 unsigned int HttpResponse::getLocation(const std::string& match,
-                         const t_server&    serverConfig) {
+                                       const t_server&    serverConfig) {
   unsigned int longestMatch = 0;
   unsigned int ret = 0;
 
@@ -47,7 +47,7 @@ unsigned int HttpResponse::getLocation(const std::string& match,
 }
 
 void HttpResponse::attachPrefix(const std::string& uri, std::string& path,
-                  t_location& location) {
+                                t_location& location) {
   if (!location.alias.empty())
     path = "../mySites" + location.alias + uri.substr(location.name.length());
   else if (!location.root.empty())
@@ -64,7 +64,8 @@ void HttpResponse::attachPrefix(const std::string& uri, std::string& path,
  * @return UriResult - httpCode to determine action, path to execute action
  * with, bool for autoindex.
  */
-UriResult HttpResponse::processURI(const std::string& uri, const t_server& serverConfig) {
+UriResult HttpResponse::processURI(const std::string& uri,
+                                   const t_server&    serverConfig) {
   UriResult   result;
   struct stat stats;
 
@@ -79,8 +80,9 @@ UriResult HttpResponse::processURI(const std::string& uri, const t_server& serve
     return result;
   }
   attachPrefix(uri, result.path, location);
-  if (std::find(location.allowMethods.begin(), location.allowMethods.end(), _method) == location.allowMethods.end())
-      result.httpCode = 405;
+  if (std::find(location.allowMethods.begin(), location.allowMethods.end(),
+                _method) == location.allowMethods.end())
+    result.httpCode = 405;
   else if (stat(result.path.c_str(), &stats) == -1) {
     result.httpCode = 404;
   } else if (S_ISDIR(stats.st_mode)) {
@@ -109,7 +111,6 @@ UriResult HttpResponse::processURI(const std::string& uri, const t_server& serve
   }
   return result;
 }
-
 
 const std::string HttpResponse::_httpVersion = "HTTP/1.1";
 
@@ -201,39 +202,39 @@ std::string autoindex(const std::string& path, const std::string& uri) {
 #include <sys/types.h>
 #include <unistd.h>
 
-void HttpResponse::addBody(HttpRequest request,const UriResult& result) {
-    
-    std::fstream htmlPage;
-    std::string uri = request.getURI();
-    std::string autoindexHtml;
+void HttpResponse::addBody(HttpRequest request, const UriResult& result) {
+
+  std::fstream htmlPage;
+  std::string  uri = request.getURI();
+  std::string  autoindexHtml;
   if (result.autoindex == true) {
-      autoindexHtml = autoindex(result.path, uri);
-      std::cout << "\n{" + autoindexHtml << "}\n";
-      std::stringstream here(autoindexHtml);
-      _responseBody.resize(autoindexHtml.size());
-      here.read(&_responseBody[0], autoindexHtml.size());
-      _response += "Content-Type: text/html\r\n";
-  }
-  else {
-      htmlPage.open(result.path.c_str());
-      if (!htmlPage.is_open()) {
-        std::cout << "error opening html file: " << strerror(errno);
-        _statusCode = 404;
-        return;
-      }
-      htmlPage.seekg(0, std::ios::end);
-      std::streampos size = htmlPage.tellg(); // TODO change this. we can't use seek
-      htmlPage.seekg(0, std::ios::beg);
-      if (size == 0) {
-          _statusCode = 404; // check statusCodes
-          std::cout << "empty file\n";
-          return;
-      }
-      _responseBody.resize(size);
-      htmlPage.read(&_responseBody[0], size);
-      if (extractContentType(result.path) == 1) {
-          return;
-      }
+    autoindexHtml = autoindex(result.path, uri);
+    std::cout << "\n{" + autoindexHtml << "}\n";
+    std::stringstream here(autoindexHtml);
+    _responseBody.resize(autoindexHtml.size());
+    here.read(&_responseBody[0], autoindexHtml.size());
+    _response += "Content-Type: text/html\r\n";
+  } else {
+    htmlPage.open(result.path.c_str());
+    if (!htmlPage.is_open()) {
+      std::cout << "error opening html file: " << strerror(errno);
+      _statusCode = 404;
+      return;
+    }
+    htmlPage.seekg(0, std::ios::end);
+    std::streampos size =
+        htmlPage.tellg(); // TODO change this. we can't use seek
+    htmlPage.seekg(0, std::ios::beg);
+    if (size == 0) {
+      _statusCode = 404; // check statusCodes
+      std::cout << "empty file\n";
+      return;
+    }
+    _responseBody.resize(size);
+    htmlPage.read(&_responseBody[0], size);
+    if (extractContentType(result.path) == 1) {
+      return;
+    }
   }
   extractContentLength();
   _response += "\r\n";
@@ -317,7 +318,9 @@ void HttpResponse::serveErrorPage() {
   _response += htmlBody; // fix it to char vec
 }
 
-void HttpResponse::serveSuccessPage(HttpRequest request) { //FIX: why is this function never used? or where is it used
+void HttpResponse::serveSuccessPage(
+    HttpRequest
+        request) { // FIX: why is this function never used? or where is it used
   std::ostringstream ss;
   getReasonPhrase();
 
@@ -349,6 +352,21 @@ void HttpResponse::serveSuccessPage(HttpRequest request) { //FIX: why is this fu
   _response += htmlBody;
 }
 
+std::string HttpResponse::getRandomID() {
+  srand(time(NULL)); // TODO check if allowed
+  std::stringstream ss;
+  ss << rand();
+  return ss.str();
+}
+
+void HttpResponse::addCookies() {
+  if (_method != "POST") // doesnt need to be checked if checked before -> cookieExists == true) // && check if new cookie is neccessary
+    return;
+  _response += "Set-Cookie: id=";
+  _response += getRandomID(); // we could add extra check to see if the num doesnt collide with another on but chances are 1:32000 sth
+  _response += "; Max-Age=2592000\r\n";
+}
+
 int HttpResponse::build(HttpRequest request) {
   _statusCode = request.getStatusCode();
   _method = request.getMethod();
@@ -356,19 +374,22 @@ int HttpResponse::build(HttpRequest request) {
     serveErrorPage();
     return 1;
   }
-  UriResult result;
+  UriResult    result;
   std::fstream htmlPage;
-  std::string uri = request.getURI();
-  std::string autoindexHtml;
+  std::string  uri = request.getURI();
+  std::string  autoindexHtml;
   result = processURI(uri, _config.servers.at(_sid));
+  //check if there are cookies sent in the request and then serve page accordingly
   _statusCode = result.httpCode;
   buildStatusLine(); // only mandatory part
   if (getTimeStamp() == 1)
     return 1;
   addMandatoryHeaders();
-  if (_statusCode > 299 && _statusCode < 400) //EDIT: Put this somewhere where it makes sense
-      _response += "Location: " + result.path + "\r\n";
+  if (_statusCode > 299 &&
+      _statusCode < 400) // EDIT: Put this somewhere where it makes sense
+    _response += "Location: " + result.path + "\r\n";
   addRules();
+  addCookies();
   if (_statusCode < 400 && _statusCode != 301)
     addBody(request, result);
   else if (_statusCode >= 400) {

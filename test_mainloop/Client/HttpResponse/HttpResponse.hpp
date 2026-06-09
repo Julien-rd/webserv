@@ -7,10 +7,10 @@
 #include <string>
 
 struct UriResult {
-    int httpCode;
-    std::string path;
-    bool autoindex;
-} ;
+  int         httpCode;
+  std::string path;
+  bool        autoindex;
+};
 
 enum responseClass {
   INFO = 1,
@@ -39,18 +39,21 @@ protected:
   void         addMandatoryHeaders();
   void         serveSuccessPage(HttpRequest request);
   virtual void addBody(HttpRequest request, const UriResult& result);
+  void         addCookies();
+  std::string  getRandomID();
 
   void getReasonPhraseInfo();
   void getReasonPhraseSuccess();
   void getReasonPhraseRedir();
   void getReasonPhraseClientErr();
   void getReasonPhraseServerErr();
-  
-  static bool isDirectory(std::string& path);
-  static unsigned int getLocation(const std::string& match, const t_server&    serverConfig);
-  static void attachPrefix(const std::string& uri, std::string& path,
-                    t_location& location);
-  UriResult processURI(const std::string& uri, const t_server&  serverConfig);
+
+  static bool         isDirectory(std::string& path);
+  static unsigned int getLocation(const std::string& match,
+                                  const t_server&    serverConfig);
+  static void         attachPrefix(const std::string& uri, std::string& path,
+                                   t_location& location);
+  UriResult processURI(const std::string& uri, const t_server& serverConfig);
 
   std::map<std::string, std::string>
       _mimeTypes; // should be extracted out of conf file
@@ -75,7 +78,5 @@ protected:
   std::string _method;
   std::string _statusCodeStr;
 };
-
-
 
 #endif
