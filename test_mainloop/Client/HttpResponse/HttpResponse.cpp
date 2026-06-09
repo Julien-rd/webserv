@@ -359,11 +359,43 @@ std::string HttpResponse::getRandomID() {
   return ss.str();
 }
 
-void HttpResponse::addCookies() {
-  if (_method != "POST") // doesnt need to be checked if checked before -> cookieExists == true) // && check if new cookie is neccessary
+bool stringCaseCmp(std::string str1, std::string str2){
+  if(str1.size() != str2.size())
+    return 1;
+  for(size_t it = 0; it < str1.size(); ++it)
+    if(tolower(str1[it]) != tolower(str2[it]))
+      return 1;
+  return 0;
+}
+
+// TODO CHECK IF HEADERS ARE IMPLEMENTED CASE INSENSITIVE !!!!!!
+void HttpResponse::addCookies(HttpRequest request) {
+  size_t                                       end = 0;
+  size_t                                       start = 0;
+  std::map<std::string, std::string>           headers = request.getHeaders();
+  std::map<std::string, std::string>::iterator it;
+  for (it = headers.begin(); it != headers.end(); ++it) {
+    if (stringCaseCmp(it->first, "cookie") == 0) {
+      while (1) {
+        end = it->second.find('=', start);
+        _response += "Set-Cookie: ";
+        _response += it->second.substr(start, end - start);
+        _response += "=deleted; path=/; expires=Thu, 01 Jan 1970 "
+                     "00:00:00 GMT\r\n";
+        start = it->second.find(';', start);
+        if (start == std::string::npos)
+          return;
+        ++start;
+      }
+    }
+  }
+  if (_method != "POST" & 0) // doesnt need to be checked if checked before -> cookieExists ==
+              // true) && check if new cookie is neccessary
     return;
   _response += "Set-Cookie: id=";
-  _response += getRandomID(); // we could add extra check to see if the num doesnt collide with another on but chances are 1:32000 sth
+  _response +=
+      getRandomID(); // we could add extra check to see if the num doesnt
+                     // collide with another on but chances are 1:32000 sth
   _response += "; Max-Age=2592000\r\n";
 }
 
@@ -379,7 +411,8 @@ int HttpResponse::build(HttpRequest request) {
   std::string  uri = request.getURI();
   std::string  autoindexHtml;
   result = processURI(uri, _config.servers.at(_sid));
-  //check if there are cookies sent in the request and then serve page accordingly
+  // check if there are cookies sent in the request and then serve page
+  // accordingly
   _statusCode = result.httpCode;
   buildStatusLine(); // only mandatory part
   if (getTimeStamp() == 1)
@@ -389,7 +422,7 @@ int HttpResponse::build(HttpRequest request) {
       _statusCode < 400) // EDIT: Put this somewhere where it makes sense
     _response += "Location: " + result.path + "\r\n";
   addRules();
-  addCookies();
+  addCookies(request);
   if (_statusCode < 400 && _statusCode != 301)
     addBody(request, result);
   else if (_statusCode >= 400) {

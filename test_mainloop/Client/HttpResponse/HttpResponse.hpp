@@ -39,7 +39,7 @@ protected:
   void         addMandatoryHeaders();
   void         serveSuccessPage(HttpRequest request);
   virtual void addBody(HttpRequest request, const UriResult& result);
-  void         addCookies();
+  void         addCookies(HttpRequest request);
   std::string  getRandomID();
 
   void getReasonPhraseInfo();

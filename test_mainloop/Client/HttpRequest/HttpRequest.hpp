@@ -40,13 +40,14 @@ public:
   HttpRequest(size_t client_max_body_size);
   HttpRequest(const HttpRequest& obj);
   HttpRequest();
-  const HttpRequest& operator=(const HttpRequest& obj);
-  int                getStatusCode() const;
-  std::string        getMethod() const;
-  bool               parsingDone();
-  void               reset();
-  size_t             getBytesRead() const;
-  std::vector<char>  getBody() const;
+  const HttpRequest&                 operator=(const HttpRequest& obj);
+  int                                getStatusCode() const;
+  std::string                        getMethod() const;
+  bool                               parsingDone();
+  void                               reset();
+  size_t                             getBytesRead() const;
+  std::map<std::string, std::string> getHeaders() const;
+  std::vector<char>                  getBody() const;
 
   // these have to be private, please implement getters in script functions
   std::string                        _method;
