@@ -1,6 +1,4 @@
-#ifndef POLLER_CLASS_HPP
-#define POLLER_CLASS_HPP
-
+#pragma once
 #include "../Error/Error.hpp"
 
 #include <vector>
@@ -25,4 +23,3 @@ public:
   int                       getEpfd(void) const;
 };
 
-#endif /* POLLER_CLASS_HPP */

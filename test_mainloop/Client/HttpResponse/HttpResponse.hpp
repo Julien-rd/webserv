@@ -1,6 +1,4 @@
-#ifndef HTTPRESPONSEHPP
-#define HTTPRESPONSEHPP
-
+#pragma once
 #include "../../ConfigParser/Structs.hpp"
 #include "../HttpRequest/HttpRequest.hpp"
 #include <map>
@@ -78,4 +76,3 @@ protected:
 
 
 
-#endif

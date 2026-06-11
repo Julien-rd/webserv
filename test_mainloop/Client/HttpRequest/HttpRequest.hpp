@@ -1,6 +1,4 @@
-#ifndef HTTPREQUESTHPP
-#define HTTPREQUESTHPP
-
+#pragma once
 #include <cstdio>
 #include <map>
 #include <string>
@@ -98,4 +96,3 @@ private:
   size_t _client_max_body_size;
 };
 
-#endif

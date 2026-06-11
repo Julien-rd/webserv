@@ -9,7 +9,6 @@ void HttpResponse::getReasonPhraseInfo() {
     _reasonPhrase = "Switching Protocols";
   }
 }
-#include <iostream>
 void HttpResponse::getReasonPhraseSuccess() {
   switch (_statusCode) {
   case (200):

@@ -1,6 +1,4 @@
-#ifndef CGI_HPP
-#define CGI_HPP
-
+#pragma once
 #include "../Client/HttpRequest/HttpRequest.hpp"
 #include "../ConfigParser/Structs.hpp"
 #include <exception>
@@ -115,4 +113,3 @@ std::string parseQueryString(const std::string& _uri);
 // std::string	getScriptName(const std::string& _uri, const std::string& name1,
 // const std::string& name2);
 
-#endif /* CGI_HPP */

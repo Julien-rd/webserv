@@ -1,6 +1,4 @@
-#ifndef SERVER_MANAGER_CLASS_HPP
-#define SERVER_MANAGER_CLASS_HPP
-
+#pragma once
 #include "../Server/Server.hpp"
 #include "../headers/structs/ServerManagerContext.hpp"
 #include "../headers/typedefs.hpp"
@@ -43,5 +41,3 @@ public:
   void loopReadyEvents(void);
   int  matchClientToServer(int fd);
 };
-
-#endif /* SERVER_MANAGER_CLASS_HPP */

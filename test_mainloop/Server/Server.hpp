@@ -1,6 +1,4 @@
-#ifndef SERVER_CLASS_HPP
-#define SERVER_CLASS_HPP
-
+#pragma once
 #include "../Client/Client.hpp"
 #include "../ConfigParser/Structs.hpp"
 #include "../Error/Error.hpp"
@@ -60,5 +58,3 @@ public:
 
   int getIdentifier(void) const;
 };
-
-#endif /* SERVER_CLASS_HPP */

@@ -1,6 +1,4 @@
-#ifndef ERROR_CLASS_HPP
-#define ERROR_CLASS_HPP
-
+#pragma once
 enum ErrorType {
   ERR_EPOLL_WAIT,
   ERR_SOCKET,
@@ -20,4 +18,3 @@ public:
   void error_msg(ErrorType type);
 };
 
-#endif /* ERROR_CLASS_HPP */

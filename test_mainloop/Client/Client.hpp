@@ -1,6 +1,4 @@
-#ifndef CLIENT_HPP
-#define CLIENT_HPP
-
+#pragma once
 #include "../CGI/CGI.hpp"
 #include "../CGI/CGIResponse.hpp"
 #include "../Error/Error.hpp"
@@ -42,4 +40,3 @@ public:
   int    getFd() const;
 };
 
-#endif

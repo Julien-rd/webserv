@@ -1,6 +1,4 @@
-#ifndef CGI_RESPONSE_CLASS_HPP
-#define CGI_RESPONSE_CLASS_HPP
-
+#pragma once
 #include "../Client/HttpResponse/HttpResponse.hpp"
 
 #include <sstream>
@@ -23,4 +21,3 @@ public:
               const t_config& config, const int sid);
 };
 
-#endif /* CGI_RESPONSE_CLASS_HPP */
