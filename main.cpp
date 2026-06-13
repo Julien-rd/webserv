@@ -25,12 +25,44 @@ void signalHandler(int sig) {
   // routes, except that ctrl+c is not normal??? idk
 }
 
+size_t ft_strlen(char* str) {
+  size_t ret = 0;
+  while (str[ret]) {
+    ret++;
+  }
+  return ret;
+}
+
+bool validConfigFile(char* fileName) {
+  size_t fileLen = ft_strlen(fileName);
+  if (fileLen < 5) {
+    return false;
+  }
+  if (fileName[fileLen - 5] == '/') {
+    return false;
+  }
+  if (std::string(&fileName[fileLen - 4]) != ".pps") {
+    return false;
+  }
+  int fd = open(fileName, O_RDONLY);
+  if (fd == -1) {
+    return false;
+  }
+  close(fd);
+  return true;
+}
+
 int main(int argc, char** argv) {
   signal(SIGINT, signalHandler);
   t_config config;
   if (argc != 2) {
-    std::cerr << "ERROR: provide exactly one argument ./webserv [filename] "
+    std::cerr << "ERROR: provide exactly one argument ./webserv FILENAME.pps "
               << std::endl;
+    return 1;
+  }
+  if (!validConfigFile(argv[1])) {
+    std::cerr << "ERROR: invalid config file." << std::endl
+              << "  usage: ./webserv FILENAME.pps" << std::endl;
     return 1;
   }
   if (parseConfigFile(config, argv[1])) {
