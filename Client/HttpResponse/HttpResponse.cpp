@@ -85,6 +85,7 @@ UriResult HttpResponse::processURI(const std::string& uri,
   attachPrefix(uri, result.path, location);
   // std::cout << "returned from attachPrefix(). path: " << result.path
   //           << std::endl;
+  std::cout << result.path << "\n";
   if (std::find(location.allowMethods.begin(), location.allowMethods.end(),
                 _method) == location.allowMethods.end()) {
     result.httpCode = 405;
@@ -93,7 +94,7 @@ UriResult HttpResponse::processURI(const std::string& uri,
               << "status code: " << result.httpCode << std::endl;
   } else if (stat(result.path.c_str(), &stats) == -1) {
     result.httpCode = 404;
-    std::cerr << "stat() failed. status code: " << result.httpCode << std::endl;
+    std::cerr << "stat() failed with path:" << result.path << ". status code: " << result.httpCode << std::endl;
   } else if (S_ISDIR(stats.st_mode)) {
     if (!uri.empty() && uri[uri.size() - 1] != '/') {
       result.httpCode = 301;

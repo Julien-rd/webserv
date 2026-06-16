@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+    nav {
+      background: white;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 0 2rem;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    nav .logo {
+      font-size: 1rem;
+      font-weight: 500;
+      color: #111;
+    }
+    nav .user {
+      font-size: 0.85rem;
+      color: #555;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    nav .user .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #111;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    main {
+      max-width: 720px;
+      margin: 3rem auto;
+      padding: 0 1.5rem;
+    }
+    .welcome {
+      margin-bottom: 2rem;
+    }
+    .welcome h1 {
+      font-size: 1.4rem;
+      font-weight: 500;
+      color: #111;
+      margin-bottom: 0.3rem;
+    }
+    .welcome p {
+      font-size: 0.9rem;
+      color: #777;
+    }
+    .badge {
+      display: inline-block;
+      background: #e8f5e9;
+      color: #2e7d32;
+      font-size: 0.75rem;
+      padding: 3px 10px;
+      border-radius: 99px;
+      margin-bottom: 1rem;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+    .card .label {
+      font-size: 0.8rem;
+      color: #888;
+      margin-bottom: 0.4rem;
+    }
+    .card .value {
+      font-size: 1.4rem;
+      font-weight: 500;
+      color: #111;
+    }
+    .logout {
+      margin-top: 2.5rem;
+    }
+    .logout a {
+      font-size: 0.85rem;
+      color: #888;
+      text-decoration: none;
+      border: 1px solid #ddd;
+      padding: 0.4rem 1rem;
+      border-radius: 8px;
+    }
+    .logout a:hover {
+      background: #f0f0f0;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <span class="logo">PasswordManager</span>
+    <div class="user">
+      <span>eric@gmail.com</span>
+      <div class="avatar">E</div>
+    </div>
+  </nav>
+  <main>
+    <div class="welcome">
+      <span class="badge">&#10003; Logged in</span>
+      <h1>Welcome back, Eric.</h1>
+      <p>You are successfully authenticated.</p>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <div class="label">Status</div>
+        <div class="value" style="font-size:1rem; color:#2e7d32;">Active</div>
+      </div>
+      <div class="card">
+        <div class="label">Session</div>
+        <div class="value" style="font-size:1rem;">Secure</div>
+      </div>
+      <div class="card">
+        <div class="label">Passwords stored</div>
+        <div class="value">—</div>
+      </div>
+    </div>
+    <div class="logout">
+      <a href="/PasswordManager/login/">Log out</a>
+    </div>
+  </main>
+</body>
+</html>

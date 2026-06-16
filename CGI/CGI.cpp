@@ -1,4 +1,5 @@
 #include "CGI.hpp"
+#include "../Utils/Macros.hpp"
 #include "../Client/HttpRequest/HttpRequest.hpp"
 
 #include <iostream>
@@ -87,7 +88,9 @@ const CGI& CGI::operator=(const CGI& obj) {
 // }
 
 bool CGI::scriptFileExists(void) const {
-  std::string scriptPath = "cgi-bin" + request._uriData.path;
+    std::string scriptPath(ROOT_FOLDER);
+    scriptPath += "/PasswordManager" + request._uriData.path; //Fix: This is hardcoded, pls add something like locationfind here we want our server adaptable so the config setup matters
+   std::cout << scriptPath << "\n"; 
   struct stat data;
   if (stat(scriptPath.c_str(), &data) == -1) {
     std::cerr << "couldn't access CGI script file"

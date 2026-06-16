@@ -12,7 +12,7 @@ void CGI::setScriptAttributesPhp(void) {
       throw CGI::StandardException();
     }
   }
-  this->argv.push_back("cgi-bin" + this->request._uriData.path);
+  this->argv.push_back("Path/PasswordManager" + this->request._uriData.path); //Fix: hardcoded, needs to be adaptable to serverConfig
 }
 
 void CGI::setGETVariablesPhp(void) {

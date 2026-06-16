@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login fehlgeschlagen</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 2.5rem 2rem;
+      text-align: center;
+      max-width: 320px;
+      width: 100%;
+    }
+    .icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: #111;
+      margin-bottom: 0.5rem;
+    }
+    p {
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 1.5rem;
+    }
+    a {
+      display: inline-block;
+      padding: 0.6rem 1.5rem;
+      background: #111;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+    a:hover {
+      background: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">&#x26A0;</div>
+    <h1>Login fehlgeschlagen</h1>
+    <p>E-Mail oder Passwort ist falsch.</p>
+    <a href="../error/">Erneut versuchen</a>
+  </div>
+</body>
+</html>

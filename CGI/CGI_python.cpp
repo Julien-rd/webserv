@@ -12,7 +12,7 @@ void CGI::setScriptAttributesPython(void) {
       throw CGI::StandardException();
     }
   }
-  this->argv.push_back("cgi-bin" + this->request._uriData.path);
+  this->argv.push_back("Pages/PasswordManager" + this->request._uriData.path);//Fix: hardcoded, needs to be adaptable to serverConfig
 }
 
 void CGI::setGETVariablesPython(void) {
