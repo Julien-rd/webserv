@@ -32,7 +32,7 @@ bool HttpResponse::isDirectory(std::string& path) {
 }
 
 unsigned int HttpResponse::getLocation(const std::string& match,
-                         const t_server&    serverConfig) {
+                                       const t_server&    serverConfig) {
   unsigned int longestMatch = 0;
   unsigned int ret = 0;
 
@@ -48,7 +48,8 @@ unsigned int HttpResponse::getLocation(const std::string& match,
 }
 
 void HttpResponse::attachPrefix(const std::string& uri, std::string& path,
-                  t_location& location) {
+                                t_location& location) {
+  // TODO we can set "Pages/mySites" in config file
   if (!location.alias.empty())
     path = ROOT_FOLDER + location.alias + uri.substr(location.name.length());
   else if (!location.root.empty())
@@ -65,25 +66,34 @@ void HttpResponse::attachPrefix(const std::string& uri, std::string& path,
  * @return UriResult - httpCode to determine action, path to execute action
  * with, bool for autoindex.
  */
-UriResult HttpResponse::processURI(const std::string& uri, const t_server& serverConfig) {
+UriResult HttpResponse::processURI(const std::string& uri,
+                                   const t_server&    serverConfig) {
   UriResult   result;
   struct stat stats;
 
   result.httpCode = 200;
   result.autoindex = false;
-  // printLocations(serverConfig.locations);
   unsigned int index = getLocation(uri, serverConfig);
   t_location   location = serverConfig.locations.at(index);
   if (!location.redirect.second.empty()) {
     result.httpCode = location.redirect.first;
     result.path = location.redirect.second;
+    std::cerr << "redirect not empty. status code: " << result.httpCode
+              << std::endl;
     return result;
   }
   attachPrefix(uri, result.path, location);
-  if (std::find(location.allowMethods.begin(), location.allowMethods.end(), _method) == location.allowMethods.end())
-      result.httpCode = 405;
-  else if (stat(result.path.c_str(), &stats) == -1) {
+  // std::cout << "returned from attachPrefix(). path: " << result.path
+  //           << std::endl;
+  if (std::find(location.allowMethods.begin(), location.allowMethods.end(),
+                _method) == location.allowMethods.end()) {
+    result.httpCode = 405;
+    std::cerr << "couldn't find " << _method << " as allowed method"
+              << std::endl
+              << "status code: " << result.httpCode << std::endl;
+  } else if (stat(result.path.c_str(), &stats) == -1) {
     result.httpCode = 404;
+    std::cerr << "stat() failed. status code: " << result.httpCode << std::endl;
   } else if (S_ISDIR(stats.st_mode)) {
     if (!uri.empty() && uri[uri.size() - 1] != '/') {
       result.httpCode = 301;
@@ -98,6 +108,9 @@ UriResult HttpResponse::processURI(const std::string& uri, const t_server& serve
         }
       }
       result.httpCode = 404;
+      std::cerr << "couldn't match (" << result.path
+                << ") with tryFiles. status code: " << result.httpCode
+                << std::endl;
     } else if (!location.index.empty()) {
       result.path += location.index;
     } else if (access((result.path + "index.html").c_str(), F_OK | R_OK) ==
@@ -107,11 +120,13 @@ UriResult HttpResponse::processURI(const std::string& uri, const t_server& serve
       result.autoindex = true;
     } else {
       result.httpCode = 404;
+      std::cerr << "couldn't match (" << result.path
+                << ") with any configurations. status code: " << result.httpCode
+                << std::endl;
     }
   }
   return result;
 }
-
 
 const std::string HttpResponse::_httpVersion = "HTTP/1.1";
 
@@ -180,7 +195,6 @@ void HttpResponse::extractContentLength() {
 
 std::string autoindex(const std::string& path, const std::string& uri) {
   std::string file;
-  (void)path;
   file = "<!DOCTYPE html>\r\n"
          "<html>\r\n"
          "<body>\r\n\r\n"
@@ -203,11 +217,11 @@ std::string autoindex(const std::string& path, const std::string& uri) {
 #include <sys/types.h>
 #include <unistd.h>
 
-void HttpResponse::addBody(HttpRequest request,const UriResult& result) {
-    
-    std::fstream htmlPage;
-    std::string uri = request.getURI();
-    std::string autoindexHtml;
+void HttpResponse::addBody(HttpRequest request, const UriResult& result) {
+
+  std::fstream htmlPage;
+  std::string  uri = request.getURI();
+  std::string  autoindexHtml;
   if (result.autoindex == true) {
       autoindexHtml = autoindex(result.path, uri);
       std::cout << "\n{" + autoindexHtml << "}\n";
@@ -319,7 +333,9 @@ void HttpResponse::serveErrorPage() {
   _response += htmlBody; // fix it to char vec
 }
 
-void HttpResponse::serveSuccessPage(HttpRequest request) { //FIX: why is this function never used? or where is it used
+void HttpResponse::serveSuccessPage(
+    HttpRequest
+        request) { // FIX: why is this function never used? or where is it used
   std::ostringstream ss;
   getReasonPhrase();
 
@@ -352,24 +368,29 @@ void HttpResponse::serveSuccessPage(HttpRequest request) { //FIX: why is this fu
 }
 
 int HttpResponse::build(HttpRequest request) {
+  // std::cout << "building response from request with:\n  " <<
+  // request.getMethod()
+  //           << "\n  " << request.getStatusCode()
+  //           << "\n  URI: " << request.getURI() << "\n";
   _statusCode = request.getStatusCode();
   _method = request.getMethod();
   if (_statusCode >= 400) {
     serveErrorPage();
     return 1;
   }
-  UriResult result;
+  UriResult    result;
   std::fstream htmlPage;
-  std::string uri = request.getURI();
-  std::string autoindexHtml;
+  std::string  uri = request.getURI();
+  std::string  autoindexHtml;
   result = processURI(uri, _config.servers.at(_sid));
   _statusCode = result.httpCode;
   buildStatusLine(); // only mandatory part
   if (getTimeStamp() == 1)
     return 1;
   addMandatoryHeaders();
-  if (_statusCode > 299 && _statusCode < 400) //EDIT: Put this somewhere where it makes sense
-      _response += "Location: " + result.path + "\r\n";
+  if (_statusCode > 299 &&
+      _statusCode < 400) // EDIT: Put this somewhere where it makes sense
+    _response += "Location: " + result.path + "\r\n";
   addRules();
   if (_statusCode < 400 && _statusCode != 301)
     addBody(request, result);

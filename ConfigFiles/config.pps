@@ -1,0 +1,43 @@
+server {
+  client_max_body_size        1;
+      
+  
+  
+  
+  allow_methods GET;
+
+  cgi_config .py /usr/bin/python3;
+  cgi_config .php /usr/bin/php-cgi;
+  cgi_config .bla Tester/cgi_tester POST;
+
+  try_files ronaldo.png index.html
+
+  index index.html;
+
+  location /vegetables/ {
+    return 301 /fruits/;
+	  autoindex on;
+	}
+
+  location / {
+    allow_methods GET;
+    autoindex on;
+  }
+
+	location /fruits/ {
+	  allow_methods POST DELETE;
+	}
+
+  location /post_body/ {
+    allow_methods POST;
+  }
+
+  location /directory/ {
+    allow_methods GET;
+    alias YoupiBanane/;
+    index youpi.bad_extension;
+    try_files youpi.bad_extension not_happy.bad_extension;
+  }
+
+  listen 127.0.0.4:7070;
+}

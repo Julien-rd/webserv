@@ -15,9 +15,10 @@ static void printLocation(const t_location& loc, const std::string& indent) {
   std::cout << indent << "root:        " << loc.root << "\n";
   std::cout << indent << "index:       " << loc.index << "\n";
   std::cout << indent << "alias:       " << loc.alias << "\n";
-  std::cout << indent << "allowMethods:" << "\n";
+  std::cout << indent << "allowMethods: ";
   for (unsigned int i = 0; i < loc.allowMethods.size(); ++i)
-      std::cout << loc.allowMethods.at(i) << "\n";
+    std::cout << loc.allowMethods.at(i) << " ";
+  std::cout << std::endl;
   std::cout << indent << "redirect:    [" << loc.redirect.first << "] "
             << loc.redirect.second << "\n";
 
@@ -28,7 +29,6 @@ static void printLocation(const t_location& loc, const std::string& indent) {
     std::cout << loc.tryFiles[i];
   }
   std::cout << "]\n";
-
 }
 
 static void printServer(const t_server& srv, size_t idx) {
