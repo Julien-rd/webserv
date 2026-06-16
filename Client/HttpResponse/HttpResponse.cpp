@@ -1,4 +1,5 @@
 #include "HttpResponse.hpp"
+#include "../../Utils/Macros.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -49,11 +50,11 @@ unsigned int HttpResponse::getLocation(const std::string& match,
 void HttpResponse::attachPrefix(const std::string& uri, std::string& path,
                   t_location& location) {
   if (!location.alias.empty())
-    path = "../mySites/" + location.alias + uri.substr(location.name.length());
+    path = ROOT_FOLDER + location.alias + uri.substr(location.name.length());
   else if (!location.root.empty())
-    path = "../mySites/" + location.root + uri;
+    path = ROOT_FOLDER + location.root + uri;
   else
-    path = "../mySites/" + uri;
+    path = ROOT_FOLDER + uri;
 }
 
 /**
@@ -99,13 +100,14 @@ UriResult HttpResponse::processURI(const std::string& uri, const t_server& serve
       result.httpCode = 404;
     } else if (!location.index.empty()) {
       result.path += location.index;
-    } else if (access((result.path + "/index.html").c_str(), F_OK | R_OK) ==
+    } else if (access((result.path + "index.html").c_str(), F_OK | R_OK) ==
                0) {
-      result.path += "/index.html";
+      result.path += "index.html";
     } else if (location.autoindex) {
       result.autoindex = true;
-    } else
+    } else {
       result.httpCode = 404;
+    }
   }
   return result;
 }
@@ -224,11 +226,11 @@ void HttpResponse::addBody(HttpRequest request,const UriResult& result) {
       htmlPage.seekg(0, std::ios::end);
       std::streampos size = htmlPage.tellg(); // TODO change this. we can't use seek
       htmlPage.seekg(0, std::ios::beg);
-      if (size == 0) {
-          _statusCode = 404; // check statusCodes
-          std::cout << "empty file\n";
-          return;
-      }
+      // if (size == 0) {
+      //     _statusCode = 404; // check statusCodes
+      //     std::cout << "empty file\n";
+      //     return;
+      // }
       _responseBody.resize(size);
       htmlPage.read(&_responseBody[0], size);
       if (extractContentType(result.path) == 1) {
