@@ -257,7 +257,7 @@ void HttpResponse::addBody(HttpRequest request, const UriResult& result) {
 }
 
 void HttpResponse::addRules() {
-  if (_statusCode >= 400) {
+  if (_statusCode >= 300) {
     _response += "Connection: close\r\n";
     return;
   }
