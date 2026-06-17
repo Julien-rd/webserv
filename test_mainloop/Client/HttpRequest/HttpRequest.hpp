@@ -93,6 +93,7 @@ private:
   size_t      _bytesRead;
   int         _statusCode;
   bool        _parsingDone;
+  bool        _expectingChunkTrailer;
   // size_t _bytes_read implent bytes_read!!! erase is to inefficient;
 
   // containers

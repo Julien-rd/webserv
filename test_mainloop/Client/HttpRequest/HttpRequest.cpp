@@ -4,11 +4,11 @@
 #include <string>
 
 HttpRequest::HttpRequest(size_t client_max_body_size)
-    : _currentState(METHOD), _contentLength(0), _parsingDone(false),
+    : _currentState(METHOD), _contentLength(0), _parsingDone(false), _expectingChunkTrailer(false),
       _client_max_body_size(client_max_body_size) {}
 
 HttpRequest::HttpRequest()
-    : _currentState(METHOD), _contentLength(0), _parsingDone(false),
+    : _currentState(METHOD), _contentLength(0), _parsingDone(false), _expectingChunkTrailer(false),
       _client_max_body_size(300000) {} // TODO hardcoded fix accordingly
 
 std::vector<char> HttpRequest::getBody() const { return _body; }
@@ -28,6 +28,7 @@ HttpRequest::HttpRequest(const HttpRequest& obj) {
   _parsingDone = obj._parsingDone;
   _body = obj._body;
   _client_max_body_size = obj._client_max_body_size;
+  _expectingChunkTrailer = obj._expectingChunkTrailer;
 }
 
 const HttpRequest& HttpRequest::operator=(const HttpRequest& obj) {
@@ -252,7 +253,6 @@ int HttpRequest::endOfChunkedBody(size_t pos) {
 }
 
 int HttpRequest::parse_body(std::string request_content) {
-  std::cout << "[" << request_content << "]\n";
   if (_currentState == BODY) {
     _bytesNeeded = _contentLength - _body.size();
     std::string::iterator start = request_content.begin() + _bytesRead;
@@ -268,43 +268,35 @@ int HttpRequest::parse_body(std::string request_content) {
     }
   }
   if (_currentState == BODY_CHUNKED && _EOF == true)
-    return endOfChunkedBody(0); 
+    return endOfChunkedBody(0);
   if (_currentState == BODY_CHUNKED) {
+    _buffer += request_content;
     while (true) {
-      if(_bytesNeeded == 0){
-        std::cout << "bytes_read: " << _bytesRead << std::endl;
-        std::cout << "size: " << request_content.size() << std::endl;
-        _buffer += request_content.substr(_bytesRead);
-        size_t pos = _buffer.find("\r\n");
-        if (pos == std::string::npos) {
-          _bytesRead += _buffer.length();
-          std::cout << "bytes_read hinten: " << _bytesRead << std::endl;
+      if (_expectingChunkTrailer) {
+        if (_buffer.size() < 2)
           return 0;
-        }
-        _bytesRead += pos + 2;
-        std::cout << "bytes_read vorne: " << _bytesRead << std::endl;
-        _bytesNeeded = hexaToDeci(_buffer.substr(0, pos));
-        if (_bytesNeeded == 0)
-          return endOfChunkedBody(pos);
+        _buffer.erase(0, 2);
+        _expectingChunkTrailer = false;
       }
-      std::string::iterator start = _buffer.begin();
-      std::string::iterator end = _buffer.end();
-      if (start + _bytesNeeded > end) {
-        _body.insert(_body.end(), start, end);
-        _bytesRead += end - start;
-        std::cout << "bytes_read hier: " << _bytesRead << std::endl;
-        _bytesNeeded -= end - start;
+      if (_bytesNeeded == 0) {
+        size_t pos = _buffer.find("\r\n");
+        if (pos == std::string::npos)
+          return 0;
+        _bytesNeeded = hexaToDeci(_buffer.substr(0, pos));
+        _buffer.erase(0, pos + 2);
+        if (_bytesNeeded == 0)
+          return endOfChunkedBody(0);
+      }
+      if (_buffer.size() < _bytesNeeded) {
+        _body.insert(_body.end(), _buffer.begin(), _buffer.end());
+        _bytesNeeded -= _buffer.size();
         _buffer.clear();
         return 0;
-      } else {
-        _body.insert(_body.end(), start, start + _bytesNeeded);
-        _bytesRead += _bytesNeeded;
-        std::cout << "bytes_read dort: " << _bytesRead << std::endl;
-        std::cout << "start - end " << end - start << std::endl;
-        std::cout << "bytesneeded " << _bytesNeeded << std::endl;
-        _bytesNeeded = 0;
       }
-      // _buffer.clear();
+      _body.insert(_body.end(), _buffer.begin(), _buffer.begin() + _bytesNeeded);
+      _buffer.erase(0, _bytesNeeded);
+      _bytesNeeded = 0;
+      _expectingChunkTrailer = true;
     }
   }
   return 0;
