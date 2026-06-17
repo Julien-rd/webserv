@@ -203,28 +203,109 @@ int HttpRequest::parseHeaders(std::string& request_content) {
   return 0;
 }
 
+size_t hexaToDeci(std::string hexaNum) {
+  size_t      ret = 0;
+  size_t      exponent = hexaNum.length();
+  std::string hexaDigits = "0123456789ABCDEF";
+  for (std::string::iterator it = hexaNum.begin(); it != hexaNum.end(); ++it) {
+    --exponent;
+    size_t pos = hexaDigits.find(toupper(*it));
+    // if (pos == std::string::npos)
+    // TODO necessary?
+    size_t num = 1;
+    for (size_t i = exponent; i != 0; --i)
+      num *= 16;
+    ret += pos * num;
+  }
+  std::cout << ret << std::endl;
+  return ret;
+}
+
+#include <fstream>
+bool saveData(std::vector<char> body) {
+  std::ofstream file("user", std::ios::out | std::ios::binary);
+  if (!file.is_open()) {
+    std::cerr << "file could not be opened\n";
+    return false;
+  }
+
+  file.write(body.data(), body.size());
+
+  file.close();
+  return true;
+}
+
+int HttpRequest::endOfChunkedBody(size_t pos) {
+  _EOF = true;
+  if (_buffer.length() - pos < 2)
+    return 0;
+  size_t pos1 = _buffer.find("\r\n", pos);
+  if (pos1 == std::string::npos || pos1 > 1) {
+    abort();
+    return 1;
+  }
+  _bytesRead += 2;
+  _parsingDone = true;
+  _statusCode = 200;
+  saveData(_body);
+  return 0;
+}
+
 int HttpRequest::parse_body(std::string request_content) {
+  std::cout << "[" << request_content << "]\n";
   if (_currentState == BODY) {
-    size_t                bytes_needed = _contentLength - _body.size();
+    _bytesNeeded = _contentLength - _body.size();
     std::string::iterator start = request_content.begin() + _bytesRead;
     std::string::iterator end = request_content.end();
-    if (start + bytes_needed > end) {
-      std::cout << "BIG L\n";
+    if (start + _bytesNeeded > end) {
       _body.insert(_body.end(), start, end);
+      _bytesRead += end - start;
     } else {
-      std::cout << "BIG W\n";
-      _body.insert(_body.end(), start, start + bytes_needed);
+      _body.insert(_body.end(), start, start + _bytesNeeded);
       _parsingDone = true;
       _statusCode = 200;
+      _bytesRead += _bytesNeeded;
     }
-    _bytesRead += end - start;
-    std::cout << "bytesRead: " << _bytesRead << "\n";
-    std::cout << "end - start : " << end - start << "\n";
-    std::cout << "contentLength: " << _contentLength << "\n";
-    std::cout << "bogySize: " << _body.size() << "\n";
   }
+  if (_currentState == BODY_CHUNKED && _EOF == true)
+    return endOfChunkedBody(0); 
   if (_currentState == BODY_CHUNKED) {
-    // implement code for chunked_uri
+    while (true) {
+      if(_bytesNeeded == 0){
+        std::cout << "bytes_read: " << _bytesRead << std::endl;
+        std::cout << "size: " << request_content.size() << std::endl;
+        _buffer += request_content.substr(_bytesRead);
+        size_t pos = _buffer.find("\r\n");
+        if (pos == std::string::npos) {
+          _bytesRead += _buffer.length();
+          std::cout << "bytes_read hinten: " << _bytesRead << std::endl;
+          return 0;
+        }
+        _bytesRead += pos + 2;
+        std::cout << "bytes_read vorne: " << _bytesRead << std::endl;
+        _bytesNeeded = hexaToDeci(_buffer.substr(0, pos));
+        if (_bytesNeeded == 0)
+          return endOfChunkedBody(pos);
+      }
+      std::string::iterator start = _buffer.begin();
+      std::string::iterator end = _buffer.end();
+      if (start + _bytesNeeded > end) {
+        _body.insert(_body.end(), start, end);
+        _bytesRead += end - start;
+        std::cout << "bytes_read hier: " << _bytesRead << std::endl;
+        _bytesNeeded -= end - start;
+        _buffer.clear();
+        return 0;
+      } else {
+        _body.insert(_body.end(), start, start + _bytesNeeded);
+        _bytesRead += _bytesNeeded;
+        std::cout << "bytes_read dort: " << _bytesRead << std::endl;
+        std::cout << "start - end " << end - start << std::endl;
+        std::cout << "bytesneeded " << _bytesNeeded << std::endl;
+        _bytesNeeded = 0;
+      }
+      // _buffer.clear();
+    }
   }
   return 0;
 }
@@ -233,28 +314,20 @@ int HttpRequest::parseHttpRequest(std::string request_content,
                                   size_t      bytes_read) {
   _bytesRead = bytes_read;
   _parsingDone = false;
-  if (parseRequestLine(request_content) == 1) {
-    std::cout << "RequestLine Issue\n";
+  if (parseRequestLine(request_content) == 1)
     return 1;
-  }
-  if (parseHeaders(request_content) == 1) {
-    std::cout << "Header Issue\n";
+  if (parseHeaders(request_content) == 1)
     return 1;
-  }
   if (_currentState == BODY) {
-    if (validateMandatoryHeaders() == false) {
-      std::cout << "validation of mandatory header issue\n";
+    if (validateMandatoryHeaders() == false)
       return 1;
-    }
-    if (_currentState != BODY) {
+    if (_currentState != BODY && _currentState != BODY_CHUNKED) {
       _parsingDone = true;
       _statusCode = 200;
       return 0;
     }
-    if (parse_body(request_content) == 1) {
-      std::cout << "body issue\n";
+    if (parse_body(request_content) == 1)
       return 1;
-    }
   }
   return 0;
 }
@@ -311,4 +384,3 @@ int HttpRequest::parseURIContent(void) {
   //           << "\nquery: " << _uriData.query << "\n";
   return 0;
 }
-

@@ -351,6 +351,7 @@ void HttpResponse::serveSuccessPage(HttpRequest request) { //FIX: why is this fu
 
 int HttpResponse::build(HttpRequest request) {
   _statusCode = request.getStatusCode();
+  std::cout << "[" << _statusCode << "]\n";
   _method = request.getMethod();
   if (_statusCode >= 400) {
     serveErrorPage();

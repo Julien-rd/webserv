@@ -34,6 +34,7 @@ typedef struct s_uri {
 class HttpRequest {
 
 public:
+  int endOfChunkedBody(size_t pos);
   int  parseHttpRequest(std::string request_content, size_t bytes_read);
   int  parseURIContent(void);
   void print();
@@ -56,6 +57,9 @@ public:
   size_t                             _contentLength;
   t_uri                              _uriData;
 
+  std::string _buffer;
+  size_t _bytesNeeded;
+  bool _EOF;
   // getters
   std::string getURI() const;
 
