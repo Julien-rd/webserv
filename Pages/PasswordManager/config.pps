@@ -10,6 +10,17 @@ server {
   index index.html;
   allow_methods GET POST DELETE;
   }
+  location /error/ {
+  root /PasswordManager;
+  index index.html;
+  allow_methods GET POST DELETE;
+  }
+  location /dashboard/ {
+  root /PasswordManager;
+  index index.html;
+  allow_methods GET POST DELETE;
+  }
+  
   root /PasswordManager;
   location /dashboard/ {
   allow_methods GET POST DELETE;

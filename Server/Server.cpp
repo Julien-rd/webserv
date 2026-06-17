@@ -199,7 +199,8 @@ void Server::handleClientEvent(const int clientFd) {
     return;
   }
   buffer[bytesRead] = 0;
-  if (_clients.at(clientFd).loop(buffer) == 1) {
+  int responseStatus = _clients.at(clientFd).loop(buffer);
+  if (responseStatus >= 1) {
     closeConnection(clientFd);
     return;
   }

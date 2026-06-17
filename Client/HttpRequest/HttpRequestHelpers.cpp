@@ -114,8 +114,8 @@ bool HttpRequest::validateURIPath(std::string& path) {
       return false;
     }
   }
-  if (path.find("/../") != std::string::npos ||
-      path.rfind("/..") == path.size() - 3) {
+  if (path.size() > 2 && (path.find("/../") != std::string::npos ||
+      path.rfind("/..") == path.size() - 3)) {
     _statusCode = 400;
     std::cout << "ERROR: escape root sequence found in URI path\n";
     return false;

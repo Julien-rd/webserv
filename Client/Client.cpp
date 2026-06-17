@@ -4,6 +4,7 @@
 #include "HttpRequest/HttpRequest.hpp"
 #include "HttpResponse/HttpResponse.hpp"
 
+#include <cstdio>
 #include <exception>
 #include <iostream>
 #include <sstream>
@@ -113,11 +114,15 @@ void Client::readCGIPipe(int pipeReadFd) {
       // TODO handle error
     }
     const char* response = _CGIResponse.getResponse();
-    // std::cout << "\nHttpResponse Response:\n" << response << std::endl;
-    if (send(_fd, response, strlen(response), 0) ==
+    // std::cout << "\nHttpResponse Response:\n" << response << "]" <<std::endl;
+    if (send(_fd, response, strlen(response), 0) == //Fix: we are not allowed to use strlen right
         -1) // how should we protect here? cut client/close server?
       abort();
     std::vector<char> responseBody = _CGIResponse.getResponseBody();
+    for (unsigned int i = 0; i < responseBody.size(); ++i) {
+        std::cout << responseBody.at(i);
+    }
+    std::cout << std::endl;
     if (send(_fd, &responseBody[0], responseBody.size(), 0) == -1)
       abort();
     _request.reset();
@@ -159,6 +164,7 @@ bool Client::doCGI(void) {
 int Client::loop(std::string input) {
   _bytesRead = 0;
   bool err = false;
+  int responseStatus;
   while (_bytesRead < input.length()) {
     if (_request.parseHttpRequest(input, _bytesRead) == 1) {
       return closeConnection();
@@ -178,7 +184,8 @@ int Client::loop(std::string input) {
       _response.reset();
       continue;
     }
-    if (_response.build(_request) == 1)
+    responseStatus = _response.build(_request);
+    if (responseStatus == 1)
       err = true;
     const char* response = _response.getResponse();
     // std::cout << "response:\n" << response << std::endl;
@@ -194,5 +201,7 @@ int Client::loop(std::string input) {
       return 1;
     // std::cout << "SUCCESS\n";
   }
+  if (responseStatus == 2) //Fix: Sry this is really ugly but we need to close the connection for redirects too not only for errors
+      return 2;
   return 0;
 }

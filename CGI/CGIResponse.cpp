@@ -3,6 +3,27 @@
 #include "CGIResponse.hpp"
 
 #include <cstring>
+#include <sstream>
+
+void CGIResponse::extractStatus(void)
+{
+    std::istringstream stream(_CGIResponseStr);
+    std::string line;
+
+    while (std::getline(stream, line))
+    {
+        if (line.empty() || line == "\r")
+            break;
+        if (line.substr(0, 7) == "Status:")
+        {
+            std::string value = line.substr(8);
+            std::stringstream(value) >> _statusCode;
+            return;
+        }
+    }
+    _statusCode = 200;
+    return;
+}
 
 CGIResponse::CGIResponse(std::stringstream& CGIResponseStream,
                          size_t CGIResponseLen, const t_config& config,
@@ -32,18 +53,18 @@ void CGIResponse::addCGIBody(HttpRequest request) {
 
   std::ostringstream ss;
   ss << _CGIResponseLen - 4 - separatorPos;
-  _response += "Content-Type: text/html\r\n";
+  // _response += "Content-Type: text/html\r\n";
   _response += "Content-Length: " + ss.str() + "\r\n";
-  _response += "\r\n";
+  _response += _CGIResponseStr.substr(0, separatorPos + 4);
+  // _response += "\r\n";
 }
 
 void CGIResponse::addRules() {
-  if (_statusCode >= 400) {
+  if (_statusCode >= 300) {
     _response += "Connection: close\r\n";
     return;
   }
-  _response += _response +=
-      "Connection: close\r\n"; // or close, maybe also add timeout
+  _response += "Connection: keep-alive\r\n"; // or close, maybe also add timeout
   _response += "Cache-Control: max-age=3600\r\n";
   _response += "Custom-CGI-header: the custom value\r\n";
   _response +=
@@ -79,8 +100,13 @@ void CGIResponse::addRules() {
 
 int CGIResponse::build(HttpRequest request) {
   _statusCode = request.getStatusCode();
+  if (_statusCode >= 400) {
+    serveErrorPage();
+    return 1;
+  }
   if (_CGIResponseLen == 0)
     return 1;
+  extractStatus();
   buildStatusLine(); // only mandatory part
   if (getTimeStamp() == 1)
     return 1;

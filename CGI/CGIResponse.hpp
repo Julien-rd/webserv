@@ -13,6 +13,7 @@ private:
 
 public:
   int  build(HttpRequest request);
+  void   extractStatus(void);
   void setCGIResponseStr(const std::string& CGIResponseStr);
   void setCGIResponseLen(size_t len);
   // CGIResponse();
