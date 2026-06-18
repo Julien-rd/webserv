@@ -18,6 +18,8 @@ enum state {
   BODY_CHUNKED
 };
 
+enum chunkedBodyState { BYTES, LINE, _EOF };
+
 typedef struct s_uri {
   std::string path;      //  "/python.py"
   std::string pathInfo;  //  "/extra/info"
@@ -34,7 +36,7 @@ typedef struct s_uri {
 class HttpRequest {
 
 public:
-  int endOfChunkedBody(size_t pos);
+  int  endOfChunkedBody(size_t pos);
   int  parseHttpRequest(std::string request_content, size_t bytes_read);
   int  parseURIContent(void);
   void print();
@@ -57,9 +59,9 @@ public:
   size_t                             _contentLength;
   t_uri                              _uriData;
 
-  std::string _buffer;
-  size_t _bytesNeeded;
-  bool _EOF;
+  std::string      _buffer;
+  chunkedBodyState _chunkedBodyState;
+  size_t           _bytesNeeded;
   // getters
   std::string getURI() const;
 
@@ -87,14 +89,16 @@ private:
   bool brokenSyntax(size_t pos, size_t max_pos);
   void addHeader();
 
+  void parseBody(std::string request_content);
+  void parseChunkedBody(std::string request_content);
+  bool saveData();
+
   std::string _httpVersion;
   std::string _fieldName;
   std::string _fieldValue;
   size_t      _bytesRead;
   int         _statusCode;
   bool        _parsingDone;
-  bool        _expectingChunkTrailer;
-  // size_t _bytes_read implent bytes_read!!! erase is to inefficient;
 
   // containers
   std::vector<char> _body;

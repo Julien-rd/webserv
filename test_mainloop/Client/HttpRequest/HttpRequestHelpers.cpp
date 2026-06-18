@@ -149,16 +149,19 @@ bool HttpRequest::hasContentLength() {
   if (it != _headers.end()) {
     if (_currentState == BODY_CHUNKED) {
       std::cerr << "Header has both transfer-encoding and content-length\n";
+      _statusCode = 400;
       return false;
     }
     std::stringstream ss(_headers["content-length"]);
     ss >> _contentLength;
     if (ss.fail()) {
       std::cerr << "Invalid Content-Length\n";
+      _statusCode = 400;
       return false;
     }
     if (_contentLength > _client_max_body_size) {
-      std::cerr << "Request Entity Too Large\n<";
+      std::cerr << "Request Entity Too Large\n";
+      _statusCode = 413;
       return false;
     }
   }
@@ -186,6 +189,7 @@ bool HttpRequest::validateMandatoryHeaders() {
 
 void HttpRequest::reset() {
   _currentState = METHOD;
+  _chunkedBodyState = BYTES;
   _method.clear();
   _uri.clear();
   _httpVersion.clear();
@@ -197,4 +201,6 @@ void HttpRequest::reset() {
   _parsingDone = false;
   _headers.clear();
   _body.clear();
+  _buffer.clear();
+  _bytesNeeded = 0;
 }

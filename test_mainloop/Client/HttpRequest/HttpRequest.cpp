@@ -4,12 +4,15 @@
 #include <string>
 
 HttpRequest::HttpRequest(size_t client_max_body_size)
-    : _currentState(METHOD), _contentLength(0), _parsingDone(false), _expectingChunkTrailer(false),
-      _client_max_body_size(client_max_body_size) {}
+    : _currentState(METHOD), _contentLength(0), _buffer(""),
+      _chunkedBodyState(BYTES), _bytesNeeded(0), _bytesRead(0), _statusCode(0),
+      _parsingDone(false), _client_max_body_size(client_max_body_size) {}
 
 HttpRequest::HttpRequest()
-    : _currentState(METHOD), _contentLength(0), _parsingDone(false), _expectingChunkTrailer(false),
-      _client_max_body_size(300000) {} // TODO hardcoded fix accordingly
+    : _currentState(METHOD), _contentLength(0), _buffer(""),
+      _chunkedBodyState(BYTES), _bytesNeeded(0), _bytesRead(0), _statusCode(0),
+      _parsingDone(false), _client_max_body_size(300000) {
+} // TODO hardcoded fix accordingly
 
 std::vector<char> HttpRequest::getBody() const { return _body; }
 
@@ -18,17 +21,19 @@ HttpRequest::HttpRequest(const HttpRequest& obj) {
   _uri = obj._uri;
   _headers = obj._headers;
   _currentState = obj._currentState;
+  _chunkedBodyState = obj._chunkedBodyState;
   _contentLength = obj._contentLength;
   _uriData = obj._uriData;
   _httpVersion = obj._httpVersion;
   _fieldName = obj._fieldName;
-  _fieldValue = obj._fieldName;
+  _fieldValue = obj._fieldValue;
   _bytesRead = obj._bytesRead;
   _statusCode = obj._statusCode;
   _parsingDone = obj._parsingDone;
   _body = obj._body;
   _client_max_body_size = obj._client_max_body_size;
-  _expectingChunkTrailer = obj._expectingChunkTrailer;
+  _buffer = obj._buffer;
+  _bytesNeeded = obj._bytesNeeded;
 }
 
 const HttpRequest& HttpRequest::operator=(const HttpRequest& obj) {
@@ -40,15 +45,18 @@ const HttpRequest& HttpRequest::operator=(const HttpRequest& obj) {
   _headers = obj._headers;
   _currentState = obj._currentState;
   _contentLength = obj._contentLength;
+  _chunkedBodyState = obj._chunkedBodyState;
   _uriData = obj._uriData;
   _httpVersion = obj._httpVersion;
   _fieldName = obj._fieldName;
-  _fieldValue = obj._fieldName;
+  _fieldValue = obj._fieldValue;
   _bytesRead = obj._bytesRead;
   _statusCode = obj._statusCode;
   _parsingDone = obj._parsingDone;
   _body = obj._body;
   _client_max_body_size = obj._client_max_body_size;
+  _buffer = obj._buffer;
+  _bytesNeeded = obj._bytesNeeded;
   return *this;
 }
 
@@ -218,87 +226,103 @@ size_t hexaToDeci(std::string hexaNum) {
       num *= 16;
     ret += pos * num;
   }
-  std::cout << ret << std::endl;
   return ret;
 }
 
 #include <fstream>
-bool saveData(std::vector<char> body) {
+bool HttpRequest::saveData() {
   std::ofstream file("user", std::ios::out | std::ios::binary);
   if (!file.is_open()) {
     std::cerr << "file could not be opened\n";
     return false;
   }
-
-  file.write(body.data(), body.size());
-
+  file.write(_body.data(), _body.size());
   file.close();
   return true;
 }
 
-int HttpRequest::endOfChunkedBody(size_t pos) {
-  _EOF = true;
-  if (_buffer.length() - pos < 2)
-    return 0;
-  size_t pos1 = _buffer.find("\r\n", pos);
-  if (pos1 == std::string::npos || pos1 > 1) {
-    abort();
-    return 1;
+// int HttpRequest::endOfChunkedBody(size_t pos) {
+//   if (_buffer.size() < pos + 2)
+//     return 0;
+//   size_t pos1 = _buffer.find("\r\n", pos);
+//   if (pos1 != pos) {
+//     _statusCode = 400;
+//     return 1;
+//   }
+//   _buffer.erase(0, pos1 + 2);
+//   _bytesRead += pos1 + 2 - pos;
+//   _parsingDone = true;
+//   _statusCode = 200;
+//   saveData(_body);
+//   return 0;
+// }
+
+void HttpRequest::parseBody(std::string request_content) {
+  _bytesNeeded = _contentLength - _body.size();
+  std::string::iterator start = request_content.begin() + _bytesRead;
+  std::string::iterator end = request_content.end();
+  if (start + _bytesNeeded > end) {
+    _body.insert(_body.end(), start, end);
+    _bytesRead += end - start;
+  } else {
+    _body.insert(_body.end(), start, start + _bytesNeeded);
+    _parsingDone = true;
+    _statusCode = 200;
+    _bytesRead += _bytesNeeded;
   }
-  _bytesRead += 2;
-  _parsingDone = true;
-  _statusCode = 200;
-  saveData(_body);
-  return 0;
+}
+
+void HttpRequest::parseChunkedBody(std::string request_content) {
+  size_t pos;
+  while (_bytesRead < request_content.length()) {
+    switch (_chunkedBodyState) {
+    case BYTES:
+      _buffer += request_content.substr(_bytesRead);
+      pos = _buffer.find("\r\n");
+      if (pos == std::string::npos)
+        return;
+      _bytesNeeded = hexaToDeci(_buffer.substr(0, pos));
+      _buffer.erase(0, pos + 2);
+      if (_bytesNeeded != 0)
+        _chunkedBodyState = LINE;
+      else
+        _chunkedBodyState = _EOF;
+      _bytesRead += pos + 2;
+      if (_bytesRead >= request_content.length())
+        return _buffer.clear();
+    case _EOF:
+      if (_chunkedBodyState == _EOF) {
+        if (_buffer.size() >= 2) {
+          pos = _buffer.find("\r\n");
+          if (pos == std::string::npos)
+            abort(); // wrong eof
+          _parsingDone = true;
+          _statusCode = 200;
+          _bytesRead += 2;
+          saveData();
+        }
+        return;
+      }
+    case LINE:
+      _buffer += request_content.substr(_bytesRead);
+      if (_buffer.size() < _bytesNeeded)
+        return;
+      std::string::iterator start = _buffer.begin();
+      _body.insert(_body.end(), start, start + _bytesNeeded);
+      _buffer.erase(0, _bytesNeeded + 2);
+      _bytesRead += _bytesNeeded + 2;
+      _chunkedBodyState = BYTES;
+    }
+  }
 }
 
 int HttpRequest::parse_body(std::string request_content) {
-  if (_currentState == BODY) {
-    _bytesNeeded = _contentLength - _body.size();
-    std::string::iterator start = request_content.begin() + _bytesRead;
-    std::string::iterator end = request_content.end();
-    if (start + _bytesNeeded > end) {
-      _body.insert(_body.end(), start, end);
-      _bytesRead += end - start;
-    } else {
-      _body.insert(_body.end(), start, start + _bytesNeeded);
-      _parsingDone = true;
-      _statusCode = 200;
-      _bytesRead += _bytesNeeded;
-    }
-  }
-  if (_currentState == BODY_CHUNKED && _EOF == true)
-    return endOfChunkedBody(0);
-  if (_currentState == BODY_CHUNKED) {
-    _buffer += request_content;
-    while (true) {
-      if (_expectingChunkTrailer) {
-        if (_buffer.size() < 2)
-          return 0;
-        _buffer.erase(0, 2);
-        _expectingChunkTrailer = false;
-      }
-      if (_bytesNeeded == 0) {
-        size_t pos = _buffer.find("\r\n");
-        if (pos == std::string::npos)
-          return 0;
-        _bytesNeeded = hexaToDeci(_buffer.substr(0, pos));
-        _buffer.erase(0, pos + 2);
-        if (_bytesNeeded == 0)
-          return endOfChunkedBody(0);
-      }
-      if (_buffer.size() < _bytesNeeded) {
-        _body.insert(_body.end(), _buffer.begin(), _buffer.end());
-        _bytesNeeded -= _buffer.size();
-        _buffer.clear();
-        return 0;
-      }
-      _body.insert(_body.end(), _buffer.begin(), _buffer.begin() + _bytesNeeded);
-      _buffer.erase(0, _bytesNeeded);
-      _bytesNeeded = 0;
-      _expectingChunkTrailer = true;
-    }
-  }
+  if (_currentState == BODY)
+    parseBody(request_content);
+  // if (_currentState == BODY_CHUNKED )
+  //   return endOfChunkedBody(0);
+  if (_currentState == BODY_CHUNKED)
+    parseChunkedBody(request_content);
   return 0;
 }
 
