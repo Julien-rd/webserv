@@ -294,8 +294,11 @@ void HttpRequest::parseChunkedBody(std::string request_content) {
       if (_chunkedBodyState == _EOF) {
         if (_buffer.size() >= 2) {
           pos = _buffer.find("\r\n");
-          if (pos == std::string::npos)
-            abort(); // wrong eof
+          if (pos == std::string::npos){
+            _parsingDone = true;
+            _statusCode = 405;
+            return ;
+          }
           _parsingDone = true;
           _statusCode = 200;
           _bytesRead += 2;
