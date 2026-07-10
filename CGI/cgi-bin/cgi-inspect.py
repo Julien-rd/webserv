@@ -3,7 +3,6 @@ import cgi
 import cgitb
 import html
 import os
-import sys
 
 cgitb.enable()
 

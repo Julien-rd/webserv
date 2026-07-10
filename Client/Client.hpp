@@ -23,7 +23,7 @@ private:
   const t_config&   _config;
   CGI               _CGI;
 
-  int closeConnection();
+  void closeConnection();
 
 public:
   Client(const t_config& config, const int _sid);
@@ -32,7 +32,7 @@ public:
   const Client& operator=(const Client& obj);
 
   int    loop(std::string input);
-  bool   doCGI();
+  void   doCGI();
   size_t getBytesRead();
   void   readCGIPipe(int pipeReadFd);
   void   reset();

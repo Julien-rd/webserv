@@ -70,13 +70,17 @@ UriResult HttpResponse::processURI(const std::string& uri,
                                    const t_server&    serverConfig) {
   UriResult   result;
   struct stat stats;
-
   result.httpCode = 200;
   result.autoindex = false;
   unsigned int index = getLocation(uri, serverConfig);
   t_location   location = serverConfig.locations.at(index);
   attachPrefix(uri, result.path, location);
   if (stat(result.path.c_str(), &stats) == -1) {
+      if (!location.redirect.second.empty()) {
+          result.httpCode = location.redirect.first;
+          result.path = location.redirect.second;
+          return result;
+      }
       result.httpCode = 404;
       std::cerr << "stat() failed with path:" << result.path << ". status code: " << result.httpCode << std::endl;
   } else if (S_ISDIR(stats.st_mode)) {

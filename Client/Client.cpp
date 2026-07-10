@@ -5,10 +5,8 @@
 #include "HttpResponse/HttpResponse.hpp"
 
 #include <cstdio>
-#include <exception>
 #include <iostream>
 #include <sstream>
-#include <stdexcept>
 
 #include <cerrno>
 #include <csignal>
@@ -72,13 +70,14 @@ void Client::reset() {
   _CGIResponse.reset();
 }
 
-int Client::closeConnection() {
+void Client::closeConnection() {
   _response.build(_request);
   const char* response = _response.getResponse();
   if (send(_fd, response, strlen(response), 0) ==
-      -1) // should we even protect? connection gets closed anyways
-    abort();
-  return 1;
+      -1) 
+          std::cerr << "read() failed in Client::handleCGIResponse(): " << strerror(errno) << "\n";
+          // NOTFINISHED: i have no idea whats open here and what this function is responsible for
+    return ;
 }
 
 void Client::readCGIPipe(int pipeReadFd) {
@@ -89,19 +88,22 @@ void Client::readCGIPipe(int pipeReadFd) {
   if (bytesRead == -1) {
     _CGIResponseLen = 0;
     _CGIResponseStream.clear();
-    throw std::runtime_error("read() failed in Client::handleCGIResponse");
+    std::cerr << "read() failed in Client::handleCGIResponse(): " << strerror(errno) << "\n";
+    return; // NOTFINISHED: i have no idea whats open here and what this function is responsible for
   }
   if (bytesRead == 0) {
     int res = waitpid(_CGIPid, NULL, WNOHANG);
     if (res == -1) {
-      throw std::runtime_error("waitpid() failed in handleCGIResponse()");
+      std::cerr << "waitpid() failed in handleCGIResponse(): " << strerror(errno) << "\n";
+      return; // NOTFINISHED: i have no idea whats open here and what this function is responsible for
     }
     if (res == 0) { // TODO this branch is untested
       kill(_CGIPid, SIGKILL);
       waitpid(_CGIPid, NULL, 0);
     }
     if (epoll_ctl(_epfd, EPOLL_CTL_DEL, pipeReadFd, NULL) == -1) {
-      throw std::runtime_error("couldn't remove CGI pipe from epoll");
+        std::cerr << "epoll_ctl() DEL failed in handleCGIResponse(): " << strerror(errno) << "\n";
+        return; // NOTFINISHED: i have no idea whats open here and what this function is responsible for
     }
     close(pipeReadFd);
     // std::cout << "\nbuilding HttpResponse from CGI Response:\n{\n"
@@ -115,16 +117,19 @@ void Client::readCGIPipe(int pipeReadFd) {
     }
     const char* response = _CGIResponse.getResponse();
     // std::cout << "\nHttpResponse Response:\n" << response << "]" <<std::endl;
-    if (send(_fd, response, strlen(response), 0) == //Fix: we are not allowed to use strlen right
-        -1) // how should we protect here? cut client/close server?
-      abort();
+    if (send(_fd, response, strlen(response), 0) == -1) {//Fix: we are not allowed to use strlen right
+        std::cerr << "send() failed in handleCGIResponse(): " << strerror(errno) << "\n";
+        return; // NOTFINISHED: i have no idea whats open here and what this function is responsible for
+    }
     std::vector<char> responseBody = _CGIResponse.getResponseBody();
     for (unsigned int i = 0; i < responseBody.size(); ++i) {
         std::cout << responseBody.at(i);
     }
     std::cout << std::endl;
-    if (send(_fd, &responseBody[0], responseBody.size(), 0) == -1)
-      abort();
+    if (send(_fd, &responseBody[0], responseBody.size(), 0) == -1) {
+        std::cerr << "epoll_ctl() DEL failed in handleCGIResponse(): " << strerror(errno) << "\n";
+        return; // NOTFINISHED: i have no idea whats open here and what this function is responsible for
+    }
     _request.reset();
     _CGIResponse.reset();
   } else {
@@ -137,29 +142,33 @@ void Client::readCGIPipe(int pipeReadFd) {
   }
 }
 
-bool Client::doCGI(void) {
-  try {
+void Client::doCGI(void) {
     // std::cout << " in doCGI() => _config.servers.at(_sid).ip: "
     //           << _config.servers.at(_sid).cgiConfigs.size() << "\n";
     // std::cout << " in doCGI() => _config.servers.at(_sid).port: "
     //           << _config.servers.at(_sid).port << "\n";
     if (!_CGI.scriptFileExists()) {
-      return closeConnection();
+        closeConnection();
+        return;
     }
-    _CGI.initCGI();
+    if (!_CGI.initCGI()) {
+        closeConnection();
+        return;
+    }
     // std::cout << "========= initCGI() succeeded\n";
-    _CGI.pipeIO();
+    if (!_CGI.pipeIO()) {
+        closeConnection();
+        return;
+    }
     // std::cout << "========= pipeIO() succeeded\n";
-    _CGI.spawnProcess();
+    if (!_CGI.spawnProcess() ) {
+        closeConnection();
+        return;
+    }
     _CGIPid = _CGI.getPid();
     // std::cout << "========= spawnProcess() succeeded\n";
     // writing to the pipe? std::cout << "========= wait() succeeded\n";
-  } catch (std::exception& e) {
-    std::cerr << "exception caught in doCGI(): " << e.what() << std::endl;
-    return closeConnection();
   }
-  return 0;
-}
 
 int Client::loop(std::string input) {
   _bytesRead = 0;
@@ -167,7 +176,8 @@ int Client::loop(std::string input) {
   int responseStatus;
   while (_bytesRead < input.length()) {
     if (_request.parseHttpRequest(input, _bytesRead) == 1) {
-      return closeConnection();
+      closeConnection();
+      return 1;
     }
     if (_request.parsingDone() == false) {
       return 0;
@@ -175,7 +185,8 @@ int Client::loop(std::string input) {
     _bytesRead += _request.getBytesRead();
     // _request.print();
     if (_request.parseURIContent() == 1) {
-      return closeConnection();
+      closeConnection();
+      return 1;
     }
     if (_CGI.isCGIRequest(_request)) {
       std::cout << "==> found a CGI request\n";

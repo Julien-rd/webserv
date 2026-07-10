@@ -1,6 +1,8 @@
 #include "Server.hpp"
 #include "../Error/Error.hpp"
+#include "../Utils/Macros.hpp"
 
+#include <exception>
 #include <iostream>
 
 #include <cerrno>
@@ -10,7 +12,6 @@
 #include <error.h>
 #include <fcntl.h>
 #include <netdb.h>
-#include <stdexcept>
 #include <string>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -72,20 +73,17 @@ void Server::closeConnection(int clientFd) {
             << clientFd << std::endl;
   if (epoll_ctl(_epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
     error_msg(ERR_EPOLL_CTL);
-    throw std::runtime_error("couldn't close connection");
+    return ;
+    
   }
-  if (close(clientFd) == -1) {
+  if (close(clientFd) == -1)
     error_msg(ERR_CLOSE);
-    throw std::runtime_error("couldn't close connection");
-  }
   return;
 }
 
 void Server::setToNonBlocking(int socketFd) {
-  if (fcntl(socketFd, F_SETFL, FD_CLOEXEC | O_NONBLOCK) == -1) {
-    error_msg(ERR_FCNTL);
-    throw std::runtime_error("couldn't set fd to nonblocking");
-  }
+  if (fcntl(socketFd, F_SETFL, FD_CLOEXEC | O_NONBLOCK) == -1)
+    error_msg(ERR_FCNTL); //Fix: file descriptor needs to be closed after this
 }
 
 void Server::initServerSocket(void) {
@@ -93,13 +91,13 @@ void Server::initServerSocket(void) {
       socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
   if (_serverSocket == -1) {
     error_msg(ERR_SOCKET);
-    throw std::runtime_error("couldn't init server socket");
+    throw std::exception();
   }
   int opt = 1;
   if (setsockopt(_serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) ==
       -1) {
     error_msg(ERR_SETSOCKOPT);
-    throw std::runtime_error("couldn't init server socket");
+    throw std::exception();
   }
 }
 
@@ -115,8 +113,9 @@ void Server::setServerSockAddr(void) {
   res = getaddrinfo(_config.servers[_sid].ip.c_str(),
                     _config.servers[_sid].port.c_str(), &hints, &_addrInfo);
   if (res) {
-    throw std::runtime_error(std::string("gettaddrinfo() failed: ") +
-                             gai_strerror(res));
+    // throw std::runtime_error(std::string("gettaddrinfo() failed: ") +
+    //                          gai_strerror(res));
+    throw std::exception();
   }
 }
 
@@ -127,18 +126,18 @@ void Server::addSocketToEpoll(int socketFd) {
   ev.data.fd = socketFd;
   if (epoll_ctl(_epfd, EPOLL_CTL_ADD, socketFd, &ev) == -1) {
     error_msg(ERR_EPOLL_CTL);
-    throw std::runtime_error("couldn't add socket to epoll");
+    throw std::exception();
   }
 }
 
 void Server::bindAndListen(void) {
   if (bind(_serverSocket, _addrInfo->ai_addr, _addrInfo->ai_addrlen) == -1) {
     error_msg(ERR_BIND);
-    throw std::runtime_error("couldn't bind server");
+    throw std::exception();
   }
   if (listen(_serverSocket, 20) == -1) { // TODO hardocded 20?
     error_msg(ERR_LISTEN);
-    throw std::runtime_error("couldn't listen from server");
+    throw std::exception();
   }
 }
 
@@ -150,11 +149,13 @@ int Server::start(void) {
   return _serverSocket;
 }
 
-void Server::checkClientCap(void) {
-  if (_clients.size() == _config.maxClients) { // TODO FIX
-    throw std::runtime_error(
-        "WARNING: client capacity reached. can't accept more connections");
+int Server::checkClientCap(void) {
+  if (_clients.size() >= _config.maxClients){ 
+      // TODO FIX
+        std::cerr << "client capacity reached. can't accept more connections\n";
+        return 1;
   }
+  return 0;
 }
 
 void Server::handleServerEvent(void) {
@@ -167,15 +168,14 @@ void Server::handleServerEvent(void) {
         return;
       } else {
         error_msg(ERR_ACCEPT);
-        throw std::exception();
+        return;
       }
     }
-    try {
-      checkClientCap();
-    } catch (std::exception& e) {
-      std::cout << e.what() << std::endl;
-      return;
+    if (checkClientCap() == ERR) {
+        close(clientFd);
+        return ;
     }
+        
     updateClientsMap(ADD, clientFd);
     setToNonBlocking(clientFd);
     addSocketToEpoll(clientFd);

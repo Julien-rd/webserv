@@ -49,7 +49,7 @@ public:
   Server(const Server& obj);
   ~Server(void);
 
-  void checkClientCap(void);
+  int checkClientCap(void);
   void handleServerEvent(void);
   void handleClientEvent(int clientFd);
 
