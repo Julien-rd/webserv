@@ -293,9 +293,15 @@ void HttpResponse::addRules() {
                              // layer
 }
 
-void HttpResponse::addMandatoryHeaders() {
-  _response += "Date: " + _timeStamp + "\r\n"; // apparently not mandatory
+void HttpResponse::addMandatoryHeaders() { //FIX: Will there be more mandatories? otherwise just remove
+    if (getTimeStamp() != 1)
+        _response += "Date: " + _timeStamp + "\r\n";
   // if get request -> Content length, or chunked header thingy
+}
+
+void HttpResponse::addRedirectHeaders(const std::string& path) {
+    _response += "Location: " + path + "\r\n";
+    _response += "Content-Length: 0\r\n\r\n";
 }
 
 void HttpResponse::buildStatusLine() {
@@ -368,39 +374,31 @@ void HttpResponse::serveSuccessPage(
 }
 
 int HttpResponse::build(HttpRequest request) {
-  // std::cout << "building response from request with:\n  " <<
-  // request.getMethod()
-  //           << "\n  " << request.getStatusCode()
-  //           << "\n  URI: " << request.getURI() << "\n";
-  _statusCode = request.getStatusCode();
-  _method = request.getMethod();
-  if (_statusCode >= 400) {
-    serveErrorPage();
-    return 1;
-  }
+    
   UriResult    result;
   std::fstream htmlPage;
   std::string  uri = request.getURI();
   std::string  autoindexHtml;
-  result = processURI(uri, _config.servers.at(_sid));
-  _statusCode = result.httpCode;
+  
+  _method = request.getMethod(); //FIX: Check for this with allowMethods
+  _statusCode = request.getStatusCode();
+  if (_statusCode < 400) {
+      result = processURI(uri, _config.servers.at(_sid));
+      _statusCode = result.httpCode;
+  }
+  
   buildStatusLine(); // only mandatory part
-  if (getTimeStamp() == 1)
-    return 1;
   addMandatoryHeaders();
-  if (_statusCode > 299 &&
-      _statusCode < 400) // EDIT: Put this somewhere where it makes sense
-    _response += "Location: " + result.path + "\r\n";
   addRules();
-  if (_statusCode < 300)
-    addBody(request, result);
+  
+  if (_statusCode > 299 && _statusCode < 400)
+      addRedirectHeaders(result.path);
   else if (_statusCode >= 400) {
     serveErrorPage();
-    return 1;
+    return 1; //FIX: What happens at 1? 400 is totally fine
   }
-  else {
-      _response += "Content-Length: 0\r\n\r\n"; //INFO: For redirects the client relies on content-length to assess if body exists
-  }
+  else
+      addBody(request, result);
   return 0;
 }
 

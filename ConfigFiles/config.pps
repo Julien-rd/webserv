@@ -25,6 +25,7 @@ server {
   }
 
 	location /fruits/ {
+	    index index.html;
 	  allow_methods POST DELETE;
 	}
 

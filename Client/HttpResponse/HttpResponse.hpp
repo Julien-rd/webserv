@@ -35,6 +35,7 @@ protected:
   void         serveErrorPage();
   virtual void addRules();
   void         addMandatoryHeaders();
+  void         addRedirectHeaders(const std::string& path);
   void         serveSuccessPage(HttpRequest request);
   virtual void addBody(HttpRequest request, const UriResult& result);
 
