@@ -1,0 +1,4 @@
+// in config file we should differentiate between paths that start with "/" and
+// those that don't (like how bash does it)
+// "/" means it's absolute path, so we shouldn't prefix it with anything
+// without "/" we should prefix it with server root maybe
