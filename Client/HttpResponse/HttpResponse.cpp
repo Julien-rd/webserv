@@ -255,10 +255,10 @@ void HttpResponse::addBody(HttpRequest request, const UriResult& result) {
 }
 
 void HttpResponse::addRules() {
-  if (_statusCode >= 300) {
-    _response += "Connection: close\r\n";
-    return;
-  }
+  // if (_statusCode >= 300) {
+  //   // _response += "Connection: close\r\n";
+  //   return;
+  // }
   _response += "Connection: keep-alive\r\n"; // or close, maybe also add timeout
   _response += "Cache-Control: max-age=3600\r\n";
   _response +=
@@ -398,8 +398,9 @@ int HttpResponse::build(HttpRequest request) {
     serveErrorPage();
     return 1;
   }
-  if (_statusCode > 299)
-      return 2;
+  else {
+      _response += "Content-Length: 0\r\n\r\n"; //INFO: For redirects the client relies on content-length to assess if body exists
+  }
   return 0;
 }
 

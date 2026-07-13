@@ -212,7 +212,5 @@ int Client::loop(std::string input) {
       return 1;
     // std::cout << "SUCCESS\n";
   }
-  if (responseStatus == 2) //Fix: Sry this is really ugly but we need to close the connection for redirects too not only for errors
-      return 2;
   return 0;
 }

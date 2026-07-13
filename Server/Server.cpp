@@ -135,7 +135,7 @@ void Server::bindAndListen(void) {
     error_msg(ERR_BIND);
     throw std::exception();
   }
-  if (listen(_serverSocket, 20) == -1) { // TODO hardocded 20?
+  if (listen(_serverSocket, SOMAXCONN) == -1) { // TODO hardocded 20?
     error_msg(ERR_LISTEN);
     throw std::exception();
   }
