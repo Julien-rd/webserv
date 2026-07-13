@@ -70,61 +70,59 @@ UriResult HttpResponse::processURI(const std::string& uri,
                                    const t_server&    serverConfig) {
   UriResult   result;
   struct stat stats;
-
   result.httpCode = 200;
   result.autoindex = false;
   unsigned int index = getLocation(uri, serverConfig);
   t_location   location = serverConfig.locations.at(index);
-  if (!location.redirect.second.empty()) {
-    result.httpCode = location.redirect.first;
-    result.path = location.redirect.second;
-    std::cerr << "redirect not empty. status code: " << result.httpCode
-              << std::endl;
-    return result;
-  }
   attachPrefix(uri, result.path, location);
-  // std::cout << "returned from attachPrefix(). path: " << result.path
-  //           << std::endl;
-  std::cout << result.path << "\n";
-  if (std::find(location.allowMethods.begin(), location.allowMethods.end(),
-                _method) == location.allowMethods.end()) {
-    result.httpCode = 405;
-    std::cerr << "couldn't find " << _method << " as allowed method"
-              << std::endl
-              << "status code: " << result.httpCode << std::endl;
-  } else if (stat(result.path.c_str(), &stats) == -1) {
-    result.httpCode = 404;
-    std::cerr << "stat() failed with path:" << result.path << ". status code: " << result.httpCode << std::endl;
-  } else if (S_ISDIR(stats.st_mode)) {
-    if (!uri.empty() && uri[uri.size() - 1] != '/') {
-      result.httpCode = 301;
-      result.path = uri + '/';
-    } else if (!location.tryFiles.empty()) {
-      std::string tmp;
-      for (size_t i = 0; i < location.tryFiles.size(); ++i) {
-        tmp = result.path + location.tryFiles.at(i);
-        if (access(tmp.c_str(), F_OK | R_OK) == 0) {
-          result.path = tmp;
+  if (stat(result.path.c_str(), &stats) == -1) {
+      if (!location.redirect.second.empty()) {
+          result.httpCode = location.redirect.first;
+          result.path = location.redirect.second;
           return result;
-        }
       }
       result.httpCode = 404;
-      std::cerr << "couldn't match (" << result.path
+      std::cerr << "stat() failed with path:" << result.path << ". status code: " << result.httpCode << std::endl;
+  } else if (S_ISDIR(stats.st_mode)) {
+      if (!uri.empty() && uri[uri.size() - 1] != '/') {
+          result.httpCode = 301;
+          result.path = uri + '/';
+      } else if (!location.redirect.second.empty()) {
+          result.httpCode = location.redirect.first;
+          result.path = location.redirect.second;
+          return result;
+      } else if (std::find(location.allowMethods.begin(), location.allowMethods.end(),
+          _method) == location.allowMethods.end()) {
+              result.httpCode = 405;
+              std::cerr << "couldn't find " << _method << " as allowed method"
+              << std::endl
+              << "status code: " << result.httpCode << std::endl;
+      } else if (!location.tryFiles.empty()) {
+              std::string tmp;
+              for (size_t i = 0; i < location.tryFiles.size(); ++i) {
+                  tmp = result.path + location.tryFiles.at(i);
+                  if (access(tmp.c_str(), F_OK | R_OK) == 0) {
+                      result.path = tmp;
+                      return result;
+                  }
+              }
+              result.httpCode = 404;
+              std::cerr << "couldn't match (" << result.path
                 << ") with tryFiles. status code: " << result.httpCode
                 << std::endl;
-    } else if (!location.index.empty()) {
-      result.path += location.index;
-    } else if (access((result.path + "index.html").c_str(), F_OK | R_OK) ==
-               0) {
-      result.path += "index.html";
-    } else if (location.autoindex) {
-      result.autoindex = true;
-    } else {
-      result.httpCode = 404;
-      std::cerr << "couldn't match (" << result.path
-                << ") with any configurations. status code: " << result.httpCode
-                << std::endl;
-    }
+      } else if (!location.index.empty()) {
+          result.path += location.index;
+      } else if (access((result.path + "index.html").c_str(), F_OK | R_OK) ==
+          0) {
+              result.path += "index.html";
+      } else if (location.autoindex) {
+              result.autoindex = true;
+      } else {
+              result.httpCode = 404;
+              std::cerr << "couldn't match (" << result.path
+              << ") with any configurations. status code: " << result.httpCode
+              << std::endl;
+      }
   }
   return result;
 }
@@ -288,8 +286,9 @@ void HttpResponse::addRules() {
   // _response += "Content Security Policy (CSP)\r\n"; useful against XSS (cross
   // site scripting) -> i dont think it is relevant if we only use static sites,
   // but we can still look into if it is neccessary
-  _response += "Content-Security-Policy: default-src 'self'; form-action "
-               "'self'\r\n"; // covers script injection and form injection + add
+  // 
+  _response += "Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline'; form-action 'self'\r\n";
+                            // covers script injection and form injection + add
                              // escaping in HTML BODY!!!!! as extra security
                              // layer
 }
@@ -393,12 +392,14 @@ int HttpResponse::build(HttpRequest request) {
       _statusCode < 400) // EDIT: Put this somewhere where it makes sense
     _response += "Location: " + result.path + "\r\n";
   addRules();
-  if (_statusCode < 400 && _statusCode != 301)
+  if (_statusCode < 300)
     addBody(request, result);
   else if (_statusCode >= 400) {
     serveErrorPage();
     return 1;
   }
+  if (_statusCode > 299)
+      return 2;
   return 0;
 }
 

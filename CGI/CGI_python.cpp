@@ -2,17 +2,16 @@
 #include <iostream>
 #include <sstream>
 
-void CGI::setScriptAttributesPython(void) {
+bool CGI::setScriptAttributesPython(void) {
   for (size_t i = 0; i < this->cgiConfigs.size(); i++) {
     if (this->cgiConfigs.at(i).extension == ".py") {
       this->executable = this->cgiConfigs.at(i).executablePath;
       this->argv.push_back(this->cgiConfigs.at(i).executablePath);
-      break;
-    } else if (i + 1 == this->cgiConfigs.size()) {
-      throw CGI::StandardException();
+      this->argv.push_back("Pages/PasswordManager" + this->request._uriData.path);//Fix: hardcoded, needs to be adaptable to serverConfig
+      return true;
     }
   }
-  this->argv.push_back("Pages/PasswordManager" + this->request._uriData.path);//Fix: hardcoded, needs to be adaptable to serverConfig
+  return false; //FIX: pls add error message here
 }
 
 void CGI::setGETVariablesPython(void) {
@@ -81,15 +80,17 @@ void CGI::initMetaPython(void) {
   // this->meta.x = "";
 }
 
-void CGI::initPythonScript(void) {
+bool CGI::initPythonScript(void) {
   this->initMetaPython();
-  this->setScriptAttributesPython();
+  if (!this->setScriptAttributesPython())
+      return false;
   if (request._method == "GET") {
     this->setGETVariablesPython();
   } else if (request._method == "POST") {
     this->setPOSTVariablesPython();
   } else {
     std::cerr << "Unknown method in CGI" << std::endl;
-    throw CGI::StandardException();
+    return false; //ERROR
   }
+  return true;
 }

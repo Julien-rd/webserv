@@ -18,7 +18,7 @@ std::string parsePathInfo(const std::string &_uri,
       std::cout << "DEBUG: found '?' before PATH_INFO in parsePathInfo(). "
                    "Avoid reaching here in execution"
                 << std::endl;
-      throw CGI::StandardException();
+        return std::string(); //ERROR: can we maybe just check if the string is empty and call it a day or can this happen
     }
   } else {
     queryStringPos = 0;

@@ -214,7 +214,7 @@ int HttpRequest::parse_body(std::string request_content) {
     } else {
       std::cout << "BIG W\n";
       _body.insert(_body.end(), start, start + bytes_needed);
-    std::cout << std::endl; 
+      std::cout << std::endl;
       _parsingDone = true;
       _statusCode = 200;
     }
@@ -288,25 +288,28 @@ int HttpRequest::parseURIContent(void) {
     return 1;
   }
   _uriData.query = (qmark != std::string::npos) ? _uri.substr(qmark + 1) : "";
-  
+
   size_t dot = path.rfind('.');
-  size_t lastSlash = path.rfind('/'); 
+  size_t lastSlash = path.rfind('/');
   if (lastSlash == 0) {
-    path.append("/"); //Fix: when does this make sense? /index.html will be /index.html/ for what reason
+    path.append("/"); // Fix: when does this make sense? /index.html will be
+                      // /index.html/ for what reason
     lastSlash = path.size() - 1;
   }
-  if (dot != std::string::npos && dot < lastSlash) { 
+  if (dot != std::string::npos && dot < lastSlash) {
     size_t extEnd = path.find('/', dot);
     _uriData.extension = path.substr(dot, extEnd - dot);
     _uriData.path = path.substr(0, extEnd);
     _uriData.pathInfo =
         (extEnd != std::string::npos) ? path.substr(extEnd) : "";
   } else {
-      if (dot != std::string::npos)
-        _uriData.extension = path.substr(dot);
+    if (dot != std::string::npos)
+      _uriData.extension = path.substr(dot);
     _uriData.path = path;
   }
-  _uriData.query = percentDecode(_uriData.query, true); //Fix: uriData.query passed and received
+  _uriData.query = percentDecode(
+      _uriData.query, true); // Fix: uriData.query passed and received
+  _uri = _uriData.path;
   // std::cout << "from URI: " << _uri << " parsed =>\n"
   //           << "path:   " << _uriData.path << "\next:  " <<
   //           _uriData.extension
@@ -314,4 +317,3 @@ int HttpRequest::parseURIContent(void) {
   //           << "\nquery: " << _uriData.query << "\n";
   return 0;
 }
-

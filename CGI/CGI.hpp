@@ -1,16 +1,9 @@
 #pragma once
 #include "../Client/HttpRequest/HttpRequest.hpp"
 #include "../ConfigParser/Structs.hpp"
-#include <exception>
 #include <string>
 
 #include <sys/types.h>
-
-#define FT_DEFINE_EXCEPTION(exception_name, message)                           \
-  class exception_name : public std::exception {                               \
-  public:                                                                      \
-    const char* what(void) const throw() { return message; }                   \
-  }
 
 #define KNOWN_EXTENSIONS_COUNT 2
 
@@ -58,15 +51,15 @@ private:
   // static const std::string _knownExtensions[2];
   std::vector<std::string> knownExtensions;
 
-  void initPythonScript(void);
+  bool initPythonScript(void);
   void initMetaPython(void);
-  void setScriptAttributesPython(void);
+  bool setScriptAttributesPython(void);
   void setGETVariablesPython(void);
   void setPOSTVariablesPython(void);
 
-  void initPhpScript(void);
+  bool initPhpScript(void);
   void initMetaPhp(void);
-  void setScriptAttributesPhp(void);
+  bool setScriptAttributesPhp(void);
   void setGETVariablesPhp(void);
   void setPOSTVariablesPhp(void);
 
@@ -87,11 +80,11 @@ public:
   int  postPipefd[2];
   bool validateRequest(void) const;
   bool scriptFileExists(void) const;
-  void initCGI(void);
-  void pipeIO(void);
-  void redirectIO(void);
-  void spawnProcess(void);
-  void addPipeToEpoll(void);
+  bool initCGI(void);
+  bool pipeIO(void);
+  bool redirectIO(void);
+  bool spawnProcess(void);
+  bool addPipeToEpoll(void);
   void wait(void) const;
 
   pid_t getPid(void) const;
@@ -104,8 +97,6 @@ public:
                    const std::vector<t_cgi_config>& cgiConfigs);
   void setClientFd(const int fd);
 
-  FT_DEFINE_EXCEPTION(StandardException, "ERROR: Standard Exception");
-  FT_DEFINE_EXCEPTION(WaitException, "EXCEPTION CAUGHT IN PARENT: waiting");
 };
 
 std::string parsePathInfo(const std::string& _uri,

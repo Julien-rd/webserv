@@ -11,7 +11,6 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <stdexcept>
 #include <stdio.h>
 #include <sys/epoll.h>
 #include <sys/stat.h>
@@ -100,68 +99,85 @@ bool CGI::scriptFileExists(void) const {
   if (data.st_mode & S_IXUSR) {
     return true;
   }
-  std::cout << "script is not executable\n";
+  std::cerr << "CGI script is not executable\n";
   return false;
 }
 
-void CGI::initCGI(void) {
+bool CGI::initCGI(void) {
   if (request._uriData.extension == ".py") {
-    initPythonScript();
+    if (!initPythonScript())
+        return false;
     // std::cout << "initialized python CGI" << std::endl;
   } else if (request._uriData.extension == ".php") {
-    initPhpScript();
+    if (!initPhpScript())
+        return false;
     // std::cout << "initialized php CGI" << std::endl;
   } else {
     // initUnkownExtension();
-    // std::cout << "initialized CGI with unknown extension" << std::endl;
+    std::cerr << "initialized CGI with unknown extension" << std::endl;
+    return false;
   }
+  return true;
 }
 
-void CGI::pipeIO(void) {
+bool CGI::pipeIO(void) { //Fix: This might leak. Make smart adjustments to if/else to execute functions that dont depend on each other
   if (pipe(this->pipefd) == -1) {
-    throw std::runtime_error("CGI pipe failed");
+      std::cerr << "CGI pipe failed\n";
+      return false;
   }
   if (fcntl(this->pipefd[0], F_SETFD, FD_CLOEXEC) == -1) {
-    throw std::runtime_error("CGI fcntl");
+      std::cerr << "CGI fcntl\n";
+      return false;
   }
   if (fcntl(this->pipefd[0], F_SETFL, O_NONBLOCK) == -1) {
-    throw std::runtime_error("CGI fcntl");
+      std::cerr << "CGI fcntl\n";
+      return false;
   }
   if (fcntl(this->pipefd[1], F_SETFD, FD_CLOEXEC) == -1) {
-    throw std::runtime_error("CGI fcntl");
+      std::cerr << "CGI fcntl\n";
+      return false;
   }
-  if (fcntl(this->pipefd[1], F_SETFL, O_NONBLOCK) == -1) {
-    throw std::runtime_error("CGI fcntl");
+  if (fcntl(this->pipefd[1], F_SETFL, O_NONBLOCK) == -1)  {
+      std::cerr << "CGI fcntl\n";
+      return false;
   }
   if (this->request._method == "POST") {
-    if (pipe(this->postPipefd) == -1) {
-      throw std::runtime_error("CGI post pipe failed");
+      if (pipe(this->postPipefd) == -1) {
+          std::cerr << "CGI post pipe failed\n";
+          return false;
+      }
+    if (fcntl(this->postPipefd[0], F_SETFD, FD_CLOEXEC) == -1)  {
+          std::cerr << "CGI fcntl\n";
+        return false;
     }
-    if (fcntl(this->postPipefd[0], F_SETFD, FD_CLOEXEC) == -1) {
-      throw std::runtime_error("CGI fcntl");
-    }
-    if (fcntl(this->postPipefd[0], F_SETFL, O_NONBLOCK) == -1) {
-      throw std::runtime_error("CGI fcntl");
-    }
+       if (fcntl(this->postPipefd[0], F_SETFL, O_NONBLOCK) == -1) {
+          std::cerr << "CGI fcntl\n";
+           return false;
+       }
     if (fcntl(this->postPipefd[1], F_SETFD, FD_CLOEXEC) == -1) {
-      throw std::runtime_error("CGI fcntl");
+          std::cerr << "CGI fcntl\n";
+          return false;
     }
     if (fcntl(this->postPipefd[1], F_SETFL, O_NONBLOCK) == -1) {
-      throw std::runtime_error("CGI fcntl");
-    }
+          std::cerr << "CGI fcntl\n";
+          return false;
+      }
   }
+  return true;
 }
 
-void CGI::spawnProcess(void) {
+bool CGI::spawnProcess(void) {
   // std::cout << "postpipe[0]: " << this->postPipefd[0] << "\n";
   if (this->request._method == "POST") {
-    if (dup2(this->postPipefd[0], STDIN_FILENO) == -1) {
-      throw std::runtime_error("dup2 failed for post pipe");
-    }
+      if (dup2(this->postPipefd[0], STDIN_FILENO) == -1) {
+          std::cerr << "dup2 failed for post pipe\n";
+          return false;
+      }
   }
   this->pid = fork();
   if (this->pid == -1) {
-    throw std::runtime_error("fork() failed in CGI");
+      std::cerr << "fork() failed in CGI\n";
+      return false;
   }
   if (this->pid == 0) {
     if (this->pipefd[0] != -1)
@@ -176,7 +192,8 @@ void CGI::spawnProcess(void) {
     if (this->pipefd[1] != -1) {
       close(this->pipefd[1]);
     }
-    this->addPipeToEpoll();
+    if (!this->addPipeToEpoll())
+        return false;
     if (this->request._method == "POST") {
       std::stringstream ss;
       for (size_t i = 0; i < this->request.getBody().size(); i++) {
@@ -188,9 +205,10 @@ void CGI::spawnProcess(void) {
       close(this->postPipefd[0]);
     }
   }
+  return true;
 }
 
-void CGI::addPipeToEpoll(void) {
+bool CGI::addPipeToEpoll(void) {
   struct epoll_event ev;
   ev.events = EPOLLIN;
   uint64_t u64;
@@ -200,16 +218,20 @@ void CGI::addPipeToEpoll(void) {
                       // clients disconnects?
   ev.data.u64 = u64;
   if (epoll_ctl(this->epfd, EPOLL_CTL_ADD, this->pipefd[0], &ev) == -1) {
-    throw std::runtime_error("addPipeToEpoll() failed in CGI");
+      std::cerr << "addPipeToEpoll() failed in CGI\n";
+      return false;
   }
+  return true;
 }
 
-void CGI::redirectIO(void) {
+bool CGI::redirectIO(void) {
 
   if (dup2(this->pipefd[1], STDOUT_FILENO) == -1) {
-    throw std::runtime_error("dup2() failed in CGI");
+      std::cerr << "dup2() failed in CGI\n";
+      return false;
   }
   close(this->pipefd[1]);
+  return true;
 }
 
 void CGI::wait(void) const {

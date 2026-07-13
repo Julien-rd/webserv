@@ -23,8 +23,8 @@ for user in data["users"]:
         break
 
 if found:   
-    print("Location: /dashboard/")
-    print()
+    print("Status: 302\r\n", end='')
+    print("Location: /dashboard/\r\n\r\n", end='')
 else:
-    print("Location: /error/")
-    print()
+    print("Status: 302\r\n", end='')
+    print("Location: /error/\r\n\r\n", end='')

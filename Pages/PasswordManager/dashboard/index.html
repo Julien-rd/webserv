@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,136 +9,57 @@
     body {
       font-family: sans-serif;
       background: #f5f5f5;
-      min-height: 100vh;
-    }
-    nav {
-      background: white;
-      border-bottom: 1px solid #e0e0e0;
-      padding: 0 2rem;
-      height: 56px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    nav .logo {
-      font-size: 1rem;
-      font-weight: 500;
-      color: #111;
-    }
-    nav .user {
-      font-size: 0.85rem;
-      color: #555;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    nav .user .avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: #111;
-      color: white;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.75rem;
-      font-weight: 500;
-    }
-    main {
-      max-width: 720px;
-      margin: 3rem auto;
-      padding: 0 1.5rem;
-    }
-    .welcome {
-      margin-bottom: 2rem;
-    }
-    .welcome h1 {
-      font-size: 1.4rem;
-      font-weight: 500;
-      color: #111;
-      margin-bottom: 0.3rem;
-    }
-    .welcome p {
-      font-size: 0.9rem;
-      color: #777;
-    }
-    .badge {
-      display: inline-block;
-      background: #e8f5e9;
-      color: #2e7d32;
-      font-size: 0.75rem;
-      padding: 3px 10px;
-      border-radius: 99px;
-      margin-bottom: 1rem;
-    }
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 12px;
+      min-height: 100vh;
     }
     .card {
       background: white;
       border: 1px solid #e0e0e0;
       border-radius: 12px;
-      padding: 1.25rem;
+      padding: 2.5rem 2rem;
+      max-width: 320px;
+      width: 100%;
     }
-    .card .label {
-      font-size: 0.8rem;
-      color: #888;
-      margin-bottom: 0.4rem;
+    .avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: #e8f0fe;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 500; color: #1a56db;
+      flex-shrink: 0;
     }
-    .card .value {
-      font-size: 1.4rem;
-      font-weight: 500;
-      color: #111;
-    }
-    .logout {
-      margin-top: 2.5rem;
-    }
-    .logout a {
-      font-size: 0.85rem;
-      color: #888;
-      text-decoration: none;
-      border: 1px solid #ddd;
-      padding: 0.4rem 1rem;
-      border-radius: 8px;
-    }
-    .logout a:hover {
-      background: #f0f0f0;
-    }
+    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem; }
+    .name { font-size: 15px; font-weight: 500; color: #111; }
+    .sub { font-size: 13px; color: #666; }
+    .rows { border-top: 1px solid #e0e0e0; padding-top: 1rem; display: grid; gap: 10px; }
+    .row { display: flex; justify-content: space-between; font-size: 13px; }
+    .row span:first-child { color: #666; }
+    .row span:last-child { font-weight: 500; color: #111; }
+    .active { color: #1a7f37 !important; }
+    .footer { border-top: 1px solid #e0e0e0; margin-top: 1rem; padding-top: 1rem; }
+    .footer a { font-size: 13px; color: #666; text-decoration: none; }
+    .footer a:hover { color: #111; }
   </style>
 </head>
 <body>
-  <nav>
-    <span class="logo">PasswordManager</span>
-    <div class="user">
-      <span>eric@gmail.com</span>
+  <div class="card">
+    <div class="header">
       <div class="avatar">E</div>
-    </div>
-  </nav>
-  <main>
-    <div class="welcome">
-      <span class="badge">&#10003; Logged in</span>
-      <h1>Welcome back, Eric.</h1>
-      <p>You are successfully authenticated.</p>
-    </div>
-    <div class="cards">
-      <div class="card">
-        <div class="label">Status</div>
-        <div class="value" style="font-size:1rem; color:#2e7d32;">Active</div>
-      </div>
-      <div class="card">
-        <div class="label">Session</div>
-        <div class="value" style="font-size:1rem;">Secure</div>
-      </div>
-      <div class="card">
-        <div class="label">Passwords stored</div>
-        <div class="value">—</div>
+      <div>
+        <p class="name">Welcome back, Eric.</p>
+        <p class="sub">Successfully authenticated.</p>
       </div>
     </div>
-    <div class="logout">
-      <a href="/PasswordManager/login/">Log out</a>
+    <div class="rows">
+      <div class="row"><span>Status</span><span class="active">Active</span></div>
+      <div class="row"><span>Session</span><span>Secure</span></div>
+      <div class="row"><span>Passwords stored</span><span>—</span></div>
     </div>
-  </main>
+    <div class="footer">
+      <a href="/login/">Log out</a>
+    </div>
+  </div>
 </body>
 </html>

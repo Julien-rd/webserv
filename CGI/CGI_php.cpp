@@ -2,17 +2,16 @@
 #include <iostream>
 #include <sstream>
 
-void CGI::setScriptAttributesPhp(void) {
+bool CGI::setScriptAttributesPhp(void) {
   for (size_t i = 0; i < this->cgiConfigs.size(); i++) {
     if (this->cgiConfigs.at(i).extension == ".php") {
       this->executable = this->cgiConfigs.at(i).executablePath;
       this->argv.push_back(this->cgiConfigs.at(i).executablePath);
-      break;
-    } else if (i + 1 == this->cgiConfigs.size()) {
-      throw CGI::StandardException();
+      this->argv.push_back("Path/PasswordManager" + this->request._uriData.path); //Fix: hardcoded, needs to be adaptable to serverConfig
+      return true;
     }
   }
-  this->argv.push_back("Path/PasswordManager" + this->request._uriData.path); //Fix: hardcoded, needs to be adaptable to serverConfig
+  return false; //ERROR here
 }
 
 void CGI::setGETVariablesPhp(void) {
@@ -92,15 +91,17 @@ void CGI::initMetaPhp(void) {
                                                 // ""; this->meta.x = "";
 }
 
-void CGI::initPhpScript(void) {
+bool CGI::initPhpScript(void) {
   this->initMetaPhp();
-  this->setScriptAttributesPhp();
+  if (!this->setScriptAttributesPhp())
+      return false;
   if (request._method == "GET") {
     this->setGETVariablesPhp();
   } else if (request._method == "POST") {
     this->setPOSTVariablesPhp();
   } else {
     std::cerr << "Unknown method in CGI" << std::endl;
-    throw CGI::StandardException();
+    return false; 
   }
+  return true;
 }
