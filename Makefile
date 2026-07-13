@@ -36,15 +36,15 @@ $(OBJ_DIR)%.o: %.cpp
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
 run: all
-	./$(NAME) ConfigFiles/config.pps
+	./$(NAME) Pages/PasswordManager/config.pps
 
 runval: CXXFLAGS:= -Wall -Wextra -Werror -std=c++98 -pedantic -g
 runval: re
-	valgrind --leak-check=full --show-leak-kinds=all --track-fds=all ./$(NAME) ConfigFiles/config.pps
+	valgrind --leak-check=full --show-leak-kinds=all --track-fds=all ./$(NAME) Pages/PasswordManager/config.pps
 	
 runsan: CXXFLAGS:= -std=c++98 -g -fsanitize=address,leak,undefined,bounds,float-divide-by-zero
 runsan: re
-	./$(NAME) ConfigFiles/config.pps
+	./$(NAME) Pages/PasswordManager/config.pps
 
 clean:
 	@rm -rf $(OBJ_DIR)
