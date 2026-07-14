@@ -29,6 +29,7 @@ public:
   int               getTimeStamp();
 
 protected:
+    bool        methodAllowed(unsigned int index, const std::vector<t_location>& locations);
   void         buildStatusLine();
   int          extractContentType(std::string path);
   void         extractContentLength();
@@ -49,7 +50,7 @@ protected:
   static unsigned int getLocation(const std::string& match, const t_server&    serverConfig);
   static void attachPrefix(const std::string& uri, std::string& path,
                     t_location& location);
-  UriResult processURI(const std::string& uri, const t_server&  serverConfig);
+  UriResult processURI(const std::string& uri);
 
   std::map<std::string, std::string>
       _mimeTypes; // should be extracted out of conf file

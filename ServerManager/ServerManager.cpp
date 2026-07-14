@@ -113,21 +113,9 @@ void ServerManager::loopReadyEvents(void) {
         } else if (_clientToServerMap.find(fd) != _clientToServerMap.end()) {
             _servers.at(_clientToServerMap[fd]).handleClientEvent(fd);
         } else {      /* is CGI's pipe fd */
-            int fds[2]; // fds[0] is the pipefd. fds[1]
-            // is the owning client's fd.
+            int fds[2]; // fds[0] is the pipefd. fds[1] is the owning client's fd.
             pp_memcpy(fds, &_triggeredEvents[i].data.u64, sizeof(uint64_t));
-            // std::cout << "caught CGI in epoll... client fd: " << fds[1]
-            //           << ". pipefd is: " << fds[0] << std::endl;
-            // try {
-            // std::cout << "in loopReadyEvents(): fds[0]:" << fds[0]
-            //           << " fds[1]:" << fds[1] << "\n";
             _clients.at(fds[1]).readCGIPipe(fds[0]);
-            // } catch (std::exception& e) {
-            // std::cout << "exception caught in loopReadyEvents():\nfds[1]:" <<
-            // fds[1]
-            //           << "\nfds[0]:" << fds[0] << "\n";
-            //   return;
-            // }
         }
     }
 }

@@ -49,13 +49,29 @@ unsigned int HttpResponse::getLocation(const std::string& match,
 
 void HttpResponse::attachPrefix(const std::string& uri, std::string& path,
                                 t_location& location) {
-  // TODO we can set "Pages/mySites" in config file
   if (!location.alias.empty())
     path = ROOT_FOLDER + location.alias + uri.substr(location.name.length());
   else if (!location.root.empty())
     path = ROOT_FOLDER + location.root + uri;
   else
     path = ROOT_FOLDER + uri;
+}
+
+bool HttpResponse::methodAllowed(unsigned int index, const std::vector<t_location>& locations) {
+    bool rootEmpty = !(*locations.begin()).allowMethods.size();
+    bool currentEmpty = !locations.at(index).allowMethods.size();
+    
+    if (!currentEmpty) {
+        const t_location& current = locations.at(index);
+        return std::find(current.allowMethods.begin(), current.allowMethods.end(),
+            _method) != current.allowMethods.end() ? 1 : 0;
+    }
+    if (!rootEmpty) {
+        const t_location& root = *locations.begin();
+        return std::find(root.allowMethods.begin(), root.allowMethods.end(),
+            _method) != root.allowMethods.end() ? 1 : 0;
+    }
+    return true;
 }
 
 /**
@@ -66,66 +82,55 @@ void HttpResponse::attachPrefix(const std::string& uri, std::string& path,
  * @return UriResult - httpCode to determine action, path to execute action
  * with, bool for autoindex.
  */
-UriResult HttpResponse::processURI(const std::string& uri,
-                                   const t_server&    serverConfig) {
-  UriResult   result;
-  struct stat stats;
-  result.httpCode = 200;
-  result.autoindex = false;
-  unsigned int index = getLocation(uri, serverConfig);
-  t_location   location = serverConfig.locations.at(index);
-  attachPrefix(uri, result.path, location);
-  if (stat(result.path.c_str(), &stats) == -1) {
-      if (!location.redirect.second.empty()) {
-          result.httpCode = location.redirect.first;
-          result.path = location.redirect.second;
-          return result;
-      }
-      result.httpCode = 404;
-      std::cerr << "stat() failed with path:" << result.path << ". status code: " << result.httpCode << std::endl;
-  } else if (S_ISDIR(stats.st_mode)) {
-      if (!uri.empty() && uri[uri.size() - 1] != '/') {
-          result.httpCode = 301;
-          result.path = uri + '/';
-      } else if (!location.redirect.second.empty()) {
-          result.httpCode = location.redirect.first;
-          result.path = location.redirect.second;
-          return result;
-      } else if (std::find(location.allowMethods.begin(), location.allowMethods.end(),
-          _method) == location.allowMethods.end()) {
-              result.httpCode = 405;
-              std::cerr << "couldn't find " << _method << " as allowed method"
-              << std::endl
-              << "status code: " << result.httpCode << std::endl;
-      } else if (!location.tryFiles.empty()) {
-              std::string tmp;
-              for (size_t i = 0; i < location.tryFiles.size(); ++i) {
-                  tmp = result.path + location.tryFiles.at(i);
-                  if (access(tmp.c_str(), F_OK | R_OK) == 0) {
-                      result.path = tmp;
-                      return result;
-                  }
-              }
-              result.httpCode = 404;
-              std::cerr << "couldn't match (" << result.path
-                << ") with tryFiles. status code: " << result.httpCode
-                << std::endl;
-      } else if (!location.index.empty()) {
-          result.path += location.index;
-      } else if (access((result.path + "index.html").c_str(), F_OK | R_OK) ==
-          0) {
-              result.path += "index.html";
-      } else if (location.autoindex) {
-              result.autoindex = true;
-      } else {
-              result.httpCode = 404;
-              std::cerr << "couldn't match (" << result.path
-              << ") with any configurations. status code: " << result.httpCode
-              << std::endl;
-      }
-  }
-  return result;
-}
+UriResult HttpResponse::processURI(const std::string& uri) {
+        UriResult   result;
+        struct stat stats;
+        result.httpCode = 200;
+        result.autoindex = false;
+        const t_server& serverConfig = _config.servers.at(_sid);
+        unsigned int index = getLocation(uri, serverConfig);
+        t_location   location = serverConfig.locations.at(index);
+        attachPrefix(uri, result.path, location);
+        if (stat(result.path.c_str(), &stats) == -1) {
+            if (!location.redirect.second.empty()) {
+                result.httpCode = location.redirect.first;
+                result.path = location.redirect.second;
+                return result;
+            }
+            result.httpCode = 404;
+        } else if (S_ISDIR(stats.st_mode)) {
+            if (!uri.empty() && uri[uri.size() - 1] != '/') {
+                result.httpCode = 301;
+                result.path = uri + '/';
+            } else if (!location.redirect.second.empty()) {
+                result.httpCode = location.redirect.first;
+                result.path = location.redirect.second;
+                return result;
+            } else if (!methodAllowed(index, serverConfig.locations)) {
+                result.httpCode = 405;
+            } else if (!location.tryFiles.empty()) {
+                std::string tmp;
+                for (size_t i = 0; i < location.tryFiles.size(); ++i) {
+                    tmp = result.path + location.tryFiles.at(i);
+                    if (access(tmp.c_str(), F_OK | R_OK) == 0) {
+                        result.path = tmp;
+                        return result;
+                    }
+                }
+                result.httpCode = 404;
+            } else if (!location.index.empty())
+                result.path += location.index;
+            else if (access((result.path + "index.html").c_str(), F_OK | R_OK) == 0)
+                result.path += "index.html";
+            else if (location.autoindex)
+                result.autoindex = true;
+            else 
+                result.httpCode = 404;
+        }
+        std::cout << result.path << "\n";
+        std::cout << result.httpCode << "\n";
+        return result;
+    }
 
 const std::string HttpResponse::_httpVersion = "HTTP/1.1";
 
@@ -383,7 +388,7 @@ int HttpResponse::build(HttpRequest request) {
   _statusCode = request.getStatusCode();
   if (_statusCode < 400) {
       _method = request.getMethod(); //FIX: Maybe add request to the response class so we can check for this elsewhere
-      result = processURI(uri, _config.servers.at(_sid));
+      result = processURI(uri);
       _statusCode = result.httpCode;
   }
   
