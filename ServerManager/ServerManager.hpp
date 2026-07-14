@@ -18,6 +18,7 @@ private:
   /* Attributes shared from Poller */
   int                       _epfd;
   const int&                _readyEventsCount;
+  time_t                    _lastChecked;
   std::vector<epoll_event>& _triggeredEvents;
 
   /* ServerManager's own attributes */
@@ -38,6 +39,7 @@ public:
   ~ServerManager(void);
 
   bool init(void);
+  void    timeoutClients(void);
   void loopReadyEvents(void);
   int  matchClientToServer(int fd);
 };

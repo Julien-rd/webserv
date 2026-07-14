@@ -41,7 +41,6 @@ private:
   void bindAndListen(void);
   void setToNonBlocking(int socketFd);
 
-  void closeConnection(int clientFd);
   void updateClientsMap(e_mapOperation op, const int clientFd);
 
 public:
@@ -50,6 +49,7 @@ public:
   ~Server(void);
 
   int checkClientCap(void);
+  void closeConnection(int clientFd);
   void handleServerEvent(void);
   void handleClientEvent(int clientFd);
 

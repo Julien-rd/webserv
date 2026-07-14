@@ -4,6 +4,7 @@
 #include "../Error/Error.hpp"
 #include "HttpRequest/HttpRequest.hpp"
 #include "HttpResponse/HttpResponse.hpp"
+#include <ctime>
 #include <sstream>
 #include <string>
 
@@ -15,6 +16,7 @@ private:
   HttpRequest  _request;
   HttpResponse _response;
   size_t       _bytesRead;
+  time_t       _lastActivity;
 
   std::stringstream _CGIResponseStream;
   ssize_t           _CGIResponseLen;
@@ -37,6 +39,8 @@ public:
   void   readCGIPipe(int pipeReadFd);
   void   reset();
   void   setFd(int fd);
+  void  setLastActivity();
+  time_t  getLastActivity();
   int    getFd() const;
 };
 

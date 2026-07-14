@@ -5,6 +5,7 @@
 #include "HttpResponse/HttpResponse.hpp"
 
 #include <cstdio>
+#include <ctime>
 #include <iostream>
 #include <sstream>
 
@@ -28,7 +29,7 @@ Client::Client(const t_config& config, const int sid)
       _CGIResponseLen(0), _CGIPid(-1),
       _CGIResponse(_CGIResponseStream, _CGIResponseLen, config, sid),
       _config(config), _CGI(_request, _fd, _epfd, _config.servers.at(_sid),
-                            _config.servers.at(_sid).cgiConfigs) {}
+                            _config.servers.at(_sid).cgiConfigs){}
 
 Client::Client(int epfd, const t_config& config, const int sid)
     : _fd(-1), _sid(sid), _epfd(epfd), _request(), _response(config, sid),
@@ -59,6 +60,14 @@ const Client& Client::operator=(const Client& obj) {
 void Client::setFd(int fd) {
   _fd = fd;
   _CGI.setClientFd(fd);
+}
+
+void  Client::setLastActivity() {
+    time(&_lastActivity);
+}
+
+time_t  Client::getLastActivity() {
+    return _lastActivity;
 }
 
 int Client::getFd() const { return _fd; }

@@ -23,14 +23,14 @@ bool Poller::createEpoll(void) {
 }
 
 int Poller::epollWait(void) {
-  _readyEventsCount =
-      epoll_wait(_epfd, _triggeredEvents.data(), MAX_EVENTS, -1);
-  if (_readyEventsCount == -1) {
-    error_msg(ERR_EPOLL_WAIT);
-    // perror(strerror(errno));
-    return -1;
-  }
-  return _readyEventsCount;
+    _readyEventsCount =
+        epoll_wait(_epfd, _triggeredEvents.data(), MAX_EVENTS, 1000); //NEXT TODO: 1000ms timeout and check for client last activity over 10 difference to time()
+    if (_readyEventsCount == -1) {
+        error_msg(ERR_EPOLL_WAIT);
+        // perror(strerror(errno));
+        return -1;
+    }
+    return _readyEventsCount;
 }
 
 std::vector<epoll_event>& Poller::getTriggeredEventsRef(void) {

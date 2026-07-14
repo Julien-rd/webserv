@@ -380,9 +380,9 @@ int HttpResponse::build(HttpRequest request) {
   std::string  uri = request.getURI();
   std::string  autoindexHtml;
   
-  _method = request.getMethod(); //FIX: Check for this with allowMethods
   _statusCode = request.getStatusCode();
   if (_statusCode < 400) {
+      _method = request.getMethod(); //FIX: Maybe add request to the response class so we can check for this elsewhere
       result = processURI(uri, _config.servers.at(_sid));
       _statusCode = result.httpCode;
   }

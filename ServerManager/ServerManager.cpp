@@ -1,8 +1,12 @@
 #include "ServerManager.hpp"
 #include "../Utils/structs/ServerStructs.hpp"
+#include "../Utils/Macros.hpp"
 
+#include <cstddef>
+#include <ctime>
 #include <exception>
 #include <iostream>
+#include <map>
 #include <vector>
 
 #include <cerrno>
@@ -18,8 +22,8 @@
 #include <unistd.h>
 
 ServerManager::ServerManager(const t_serverManagerContext& context)
-    : _config(context.config), _epfd(context.epfd),
-      _readyEventsCount(context.readyEventsCount),
+    : _config(context.config), _epfd(context.epfd), 
+      _readyEventsCount(context.readyEventsCount),_lastChecked(0),
       _triggeredEvents(context.triggeredEvents) {}
 
 ServerManager::~ServerManager(void) {
@@ -72,34 +76,58 @@ void pp_memcpy(void* dst, void* src, size_t len) {
   }
 }
 
-void ServerManager::loopReadyEvents(void) {
-  for (int i = 0; i < _readyEventsCount; ++i) {
-    int fd = _triggeredEvents[i]
-                 .data.fd; // if it's Server or Client event, data union
-                           // will have Server or Client fd in fd. if its a
-                           // CGI event, data union will save two ints
-                           // (pipefd & clientFd) in u64 (or ptr)
-    // std::cout << "fd in loop is: " << fd << std::endl;
-    if (_servers.find(fd) != _servers.end()) {
-      _servers.at(fd).handleServerEvent();
-    } else if (_clientToServerMap.find(fd) != _clientToServerMap.end()) {
-      _servers.at(_clientToServerMap[fd]).handleClientEvent(fd);
-    } else {      /* is CGI's pipe fd */
-      int fds[2]; // fds[0] is the pipefd. fds[1]
-                  // is the owning client's fd.
-      pp_memcpy(fds, &_triggeredEvents[i].data.u64, sizeof(uint64_t));
-      // std::cout << "caught CGI in epoll... client fd: " << fds[1]
-      //           << ". pipefd is: " << fds[0] << std::endl;
-      // try {
-      // std::cout << "in loopReadyEvents(): fds[0]:" << fds[0]
-      //           << " fds[1]:" << fds[1] << "\n";
-      _clients.at(fds[1]).readCGIPipe(fds[0]);
-      // } catch (std::exception& e) {
-      // std::cout << "exception caught in loopReadyEvents():\nfds[1]:" <<
-      // fds[1]
-      //           << "\nfds[0]:" << fds[0] << "\n";
-      //   return;
-      // }
+/**
+ * @brief Disconnects clients that have been idle longer than TIMEOUT (in s).
+ *
+ * To avoid checking every client on every event, timeout checks are performed
+ * at most once every TIMEOUT seconds. Timed-out client file descriptors are
+ * collected first, then disconnected afterward.
+ */
+void    ServerManager::timeoutClients() {
+    time_t now = time(NULL);
+    if (_lastChecked + TIMEOUT < now) {
+        _lastChecked = now;
+        IntSet toErase;
+        for(std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+            Client& client = it->second;
+            int fd = client.getFd();
+            if (fd != -1 && client.getLastActivity() + TIMEOUT < now)
+                toErase.insert(fd);
+        }
+        for (IntSet::iterator it = toErase.begin(); it != toErase.end(); ++it)
+            _servers.at(_clientToServerMap.at(*it)).closeConnection(*it);
     }
-  }
+}
+
+void ServerManager::loopReadyEvents(void) {
+    timeoutClients();
+    for (int i = 0; i < _readyEventsCount; ++i) {
+        int fd = _triggeredEvents[i]
+            .data.fd; // if it's Server or Client event, data union
+        // will have Server or Client fd in fd. if its a
+        // CGI event, data union will save two ints
+        // (pipefd & clientFd) in u64 (or ptr)
+        // std::cout << "fd in loop is: " << fd << std::endl;
+        if (_servers.find(fd) != _servers.end()) {
+            _servers.at(fd).handleServerEvent();
+        } else if (_clientToServerMap.find(fd) != _clientToServerMap.end()) {
+            _servers.at(_clientToServerMap[fd]).handleClientEvent(fd);
+        } else {      /* is CGI's pipe fd */
+            int fds[2]; // fds[0] is the pipefd. fds[1]
+            // is the owning client's fd.
+            pp_memcpy(fds, &_triggeredEvents[i].data.u64, sizeof(uint64_t));
+            // std::cout << "caught CGI in epoll... client fd: " << fds[1]
+            //           << ". pipefd is: " << fds[0] << std::endl;
+            // try {
+            // std::cout << "in loopReadyEvents(): fds[0]:" << fds[0]
+            //           << " fds[1]:" << fds[1] << "\n";
+            _clients.at(fds[1]).readCGIPipe(fds[0]);
+            // } catch (std::exception& e) {
+            // std::cout << "exception caught in loopReadyEvents():\nfds[1]:" <<
+            // fds[1]
+            //           << "\nfds[0]:" << fds[0] << "\n";
+            //   return;
+            // }
+        }
+    }
 }

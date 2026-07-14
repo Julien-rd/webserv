@@ -57,6 +57,7 @@ void Server::updateClientsMap(e_mapOperation op, const int clientFd) {
     // assignment operator? this basically constructs 2
     // client instances, can we make it only one?
     _clients.at(clientFd).setFd(clientFd);
+    _clients.at(clientFd).setLastActivity();
     _serverToClientsMap.at(_serverSocket).insert(clientFd);
     break;
   case REMOVE:
@@ -74,7 +75,6 @@ void Server::closeConnection(int clientFd) {
   if (epoll_ctl(_epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
     error_msg(ERR_EPOLL_CTL);
     return ;
-    
   }
   if (close(clientFd) == -1)
     error_msg(ERR_CLOSE);
@@ -187,7 +187,7 @@ void Server::handleServerEvent(void) {
 void Server::handleClientEvent(const int clientFd) {
   char    buffer[BUFFER_SIZE + 1];
   ssize_t bytesRead = 0;
-
+  _clients.at(clientFd).setLastActivity();
   bytesRead = recv(clientFd, buffer, BUFFER_SIZE, 0);
   if (bytesRead == 0) {
     closeConnection(clientFd);
