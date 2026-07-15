@@ -127,8 +127,6 @@ UriResult HttpResponse::processURI(const std::string& uri) {
             else 
                 result.httpCode = 404;
         }
-        std::cout << result.path << "\n";
-        std::cout << result.httpCode << "\n";
         return result;
     }
 
