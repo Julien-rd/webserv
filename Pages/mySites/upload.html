@@ -1,20 +1,20 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <title>My site</title>
-    <link rel="stylesheet" href="/styles.css">
+<meta charset="UTF-8">
+<title>Upload Test</title>
+<style>
+  body { font-family: sans-serif; max-width: 500px; margin: 60px auto; }
+  form { border: 1px solid #ccc; padding: 20px; border-radius: 8px; }
+  input[type="submit"] { margin-top: 10px; padding: 6px 16px; }
+</style>
 </head>
-
 <body>
-    <form method="post" enctype="multipart/form-data">
-        <label>choose a picture (.png) from your computer: 
-            <input name="file" type="file" size="153525" accept="image/png">
-            <br>
-        </label>
-        <button>… upload!</button>
-    </form>
+  <h2>Upload a file</h2>
+  <form action="/upload" method="POST" enctype="multipart/form-data">
+    <input type="file" name="file" required>
+    <br>
+    <input type="submit" value="Upload">
+  </form>
 </body>
-
 </html>
