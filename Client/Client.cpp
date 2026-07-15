@@ -212,6 +212,9 @@ int Client::loop(std::string input) {
       continue;
     }
     _request.print();
+    // if (_request._headers["Content-Type"] == "")
+    // std::cout << ">>>>>>_request._headers['Content-Type']: "
+    //           << _request._headers["content-type"] << std::endl;
     responseStatus = _response.build(_request);
     if (responseStatus == 1)
       err = true;

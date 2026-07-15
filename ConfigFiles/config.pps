@@ -10,22 +10,20 @@ server {
   cgi_config .php /usr/bin/php-cgi;
   cgi_config .bla Tester/cgi_tester POST;
 
-  try_files ronaldo.png index.html
+  root /mySites;
 
-  index index.html;
+  location /upload {
+    index upload.html;
+    root /mySites;
+  }
 
   location /vegetables/ {
     return 301 /fruits/;
 	  autoindex on;
 	}
 
-  location / {
-    allow_methods GET;
-    autoindex on;
-  }
-
 	location /fruits/ {
-	    index index.html;
+    index index.html;
 	  allow_methods POST DELETE;
 	}
 
