@@ -223,6 +223,11 @@ int HttpRequest::parse_body(std::string request_content) {
     std::cout << "end - start : " << end - start << "\n";
     std::cout << "contentLength: " << _contentLength << "\n";
     std::cout << "bogySize: " << _body.size() << "\n";
+    std::cout << "read:\n[\n";
+    for (size_t i = 0; i < _body.size(); i++) {
+      _body[i];
+    }
+    std::cout << "\n]\n";
   }
   if (_currentState == BODY_CHUNKED) {
     // implement code for chunked_uri
@@ -261,59 +266,59 @@ int HttpRequest::parseHttpRequest(std::string request_content,
 }
 
 std::string percentDecode(const std::string& encoded, bool isQuery) {
-    std::string result;
-    for (size_t i = 0; i < encoded.size(); ++i) {
-        if (encoded[i] == '%' && i + 2 < encoded.size()) {
-            int                val;
-            std::istringstream hex(encoded.substr(i + 1, 2));
-            hex >> std::hex >> val;
-            result += static_cast<char>(val);
-            i += 2;
-        } else if (isQuery && encoded[i] == '+') {
-            result += ' '; // only in query strings, not paths
-        } else {
+  std::string result;
+  for (size_t i = 0; i < encoded.size(); ++i) {
+    if (encoded[i] == '%' && i + 2 < encoded.size()) {
+      int                val;
+      std::istringstream hex(encoded.substr(i + 1, 2));
+      hex >> std::hex >> val;
+      result += static_cast<char>(val);
+      i += 2;
+    } else if (isQuery && encoded[i] == '+') {
+      result += ' '; // only in query strings, not paths
+    } else {
 
-            result += encoded[i];
-        }
+      result += encoded[i];
     }
-    return result;
+  }
+  return result;
 }
 
 int HttpRequest::parseURIContent(void) {
-    size_t      qmark = _uri.find('?');
-    std::string path = _uri.substr(0, qmark);
-    path = percentDecode(path, false);
-    if (validateURIPath(path) == false) {
-        std::cerr << "invalid path in URI" << std::endl;
-        return 1;
-    }
-    _uriData.query = (qmark != std::string::npos) ? _uri.substr(qmark + 1) : "";
+  size_t      qmark = _uri.find('?');
+  std::string path = _uri.substr(0, qmark);
+  path = percentDecode(path, false);
+  if (validateURIPath(path) == false) {
+    std::cerr << "invalid path in URI" << std::endl;
+    return 1;
+  }
+  _uriData.query = (qmark != std::string::npos) ? _uri.substr(qmark + 1) : "";
 
-    size_t dot = path.rfind('.');
-    size_t lastSlash = path.rfind('/');
-    if (lastSlash == 0) {
-        path.append("/"); // Fix: when does this make sense? /index.html will be
-        // /index.html/ for what reason
-        lastSlash = path.size() - 1;
-    }
-    if (dot != std::string::npos && dot < lastSlash) {
-        size_t extEnd = path.find('/', dot);
-        _uriData.extension = path.substr(dot, extEnd - dot);
-        _uriData.path = path.substr(0, extEnd);
-        _uriData.pathInfo =
-            (extEnd != std::string::npos) ? path.substr(extEnd) : "";
-    } else {
-        if (dot != std::string::npos)
-            _uriData.extension = path.substr(dot);
-        _uriData.path = path;
-    }
-    _uriData.query = percentDecode(
-        _uriData.query, true); // Fix: uriData.query passed and received
-    _uri = _uriData.path;
-    // std::cout << "from URI: " << _uri << " parsed =>\n"
-    //           << "path:   " << _uriData.path << "\next:  " <<
-    //           _uriData.extension
-    //           << "\npathInfo: " << _uriData.pathInfo
-    //           << "\nquery: " << _uriData.query << "\n";
-    return 0;
+  size_t dot = path.rfind('.');
+  size_t lastSlash = path.rfind('/');
+  if (lastSlash == 0) {
+    path.append("/"); // Fix: when does this make sense? /index.html will be
+    // /index.html/ for what reason
+    lastSlash = path.size() - 1;
+  }
+  if (dot != std::string::npos && dot < lastSlash) {
+    size_t extEnd = path.find('/', dot);
+    _uriData.extension = path.substr(dot, extEnd - dot);
+    _uriData.path = path.substr(0, extEnd);
+    _uriData.pathInfo =
+        (extEnd != std::string::npos) ? path.substr(extEnd) : "";
+  } else {
+    if (dot != std::string::npos)
+      _uriData.extension = path.substr(dot);
+    _uriData.path = path;
+  }
+  _uriData.query = percentDecode(
+      _uriData.query, true); // Fix: uriData.query passed and received
+  _uri = _uriData.path;
+  // std::cout << "from URI: " << _uri << " parsed =>\n"
+  //           << "path:   " << _uriData.path << "\next:  " <<
+  //           _uriData.extension
+  //           << "\npathInfo: " << _uriData.pathInfo
+  //           << "\nquery: " << _uriData.query << "\n";
+  return 0;
 }

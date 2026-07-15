@@ -3,7 +3,6 @@ server {
   
   cgi_config .py /usr/bin/python3;
   allow_methods GET POST DELETE;
-  return 301 /login/;
   root /PasswordManager;
   location /login/ {
   root /PasswordManager;
