@@ -97,6 +97,8 @@ void initDefaults(void) {
   d.push_back(std::pair<std::string, int>("index", INDEX));
   d.push_back(std::pair<std::string, int>("client_max_body_size",
                                           CLIENT_MAX_BODY_SIZE));
+  d.push_back(std::pair<std::string, int>("client_timeout",
+      CLIENT_TIMEOUT));
   d.push_back(std::pair<std::string, int>("root", ROOT));
   d.push_back(std::pair<std::string, int>("listen", LISTEN));
   d.push_back(std::pair<std::string, int>("autoindex", AUTOINDEX));

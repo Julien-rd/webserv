@@ -172,6 +172,7 @@ int HttpRequest::parseHeaders(std::string& request_content) {
       pos = request_content.find("\r", _bytesRead);
       if (pos == std::string::npos) {
         _fieldValue += request_content.substr(_bytesRead);
+        // FIX: claude said it needs this here: _bytesRead = request_content.size();
         return 0;
       }
       exctractContent(request_content, pos);

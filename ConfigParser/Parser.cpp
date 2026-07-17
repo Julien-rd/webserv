@@ -16,6 +16,7 @@ void setDefault(t_config& config) {
   config.locationFlag = false;
   config.clientsPerServer = 1024;
   config.maxClients = 1024;
+  config.clientTimeout = 50;
 }
 
 bool parseConfigFile(t_config& config, const char* fileName) {

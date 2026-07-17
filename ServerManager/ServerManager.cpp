@@ -85,13 +85,14 @@ void pp_memcpy(void* dst, void* src, size_t len) {
  */
 void    ServerManager::timeoutClients() {
     time_t now = time(NULL);
-    if (_lastChecked + TIMEOUT < now) {
+    std::cout << _config.clientTimeout << "\n";
+    if (_lastChecked + _config.clientTimeout < now) {
         _lastChecked = now;
         IntSet toErase;
         for(std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
             Client& client = it->second;
             int fd = client.getFd();
-            if (fd != -1 && client.getLastActivity() + TIMEOUT < now)
+            if (fd != -1 && client.getLastActivity() + _config.clientTimeout < now)
                 toErase.insert(fd);
         }
         for (IntSet::iterator it = toErase.begin(); it != toErase.end(); ++it)

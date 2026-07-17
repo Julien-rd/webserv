@@ -24,7 +24,8 @@ enum d_tags {
   MAX_CLIENTS,
   CLIENTS_PER_SERVER,
   LOCALHOST,
-  CGI_CONFIG
+  CGI_CONFIG,
+  CLIENT_TIMEOUT
 };
 
 enum c_tags { SERVER, LOCATION, MAIN };
@@ -50,7 +51,7 @@ typedef struct s_server {
   // std::string server_name;
   std::string               ip;
   std::string               port;
-  int                       client_max_body;
+  unsigned int              client_max_body;
   std::vector<t_location>   locations;
   std::vector<t_cgi_config> cgiConfigs;
 } t_server;
@@ -58,6 +59,7 @@ typedef struct s_server {
 typedef struct s_config {
   bool         serverFlag, locationFlag;
   unsigned int maxClients;
+  unsigned int              clientTimeout;
   // int errorLog;
   // int errorlvl;
   unsigned int clientsPerServer;

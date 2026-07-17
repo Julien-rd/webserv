@@ -8,6 +8,9 @@ void evalDirective(Node* tree, t_config& evalData) {
     case MAX_CLIENTS:
       parseNumberGlobal(tree->args, &evalData.maxClients);
       return;
+    case CLIENT_TIMEOUT:
+        parseNumberGlobal(tree->args, &evalData.clientTimeout);
+        return;
     case CLIENTS_PER_SERVER:
       parseNumberGlobal(tree->args, &evalData.clientsPerServer);
       return;

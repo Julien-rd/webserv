@@ -26,7 +26,7 @@ void parseNumberGlobal(const std::vector<std::string>& args,
   char* end;
   long  val = strtol(args.at(0).c_str(), &end, 10);
   if (*end != 0 || val < 0 || val > 5000 || args.size() != 1)
-    throw std::runtime_error("maxclients directive invalid");
+    throw std::runtime_error("Global directive invalid");
   *number = (int)val;
 }
 
@@ -35,7 +35,7 @@ void parseMaxBody(const std::vector<std::string>& args, t_server& server) {
   long  val = strtol(args.at(0).c_str(), &end, 10);
   if (*end != 0 || val < 0 || val > 100 || args.size() != 1)
     throw std::runtime_error("client_max_body directive invalid");
-  server.client_max_body = (int)val;
+  server.client_max_body = (unsigned int)val;
 }
 
 void parseListen(const std::vector<std::string>& args, t_server& server) {

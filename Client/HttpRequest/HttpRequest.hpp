@@ -84,7 +84,7 @@ private:
   std::string _httpVersion;
   std::string _fieldName;
   std::string _fieldValue;
-  size_t      _bytesRead;
+  size_t      _bytesRead; //FIX: this this needs a better name what bytes, does it accumulate
   int         _statusCode;
   bool        _parsingDone;
   // size_t _bytes_read implent bytes_read!!! erase is to inefficient;
