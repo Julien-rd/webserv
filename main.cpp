@@ -54,6 +54,7 @@ bool validConfigFile(char* fileName) {
 
 int main(int argc, char** argv) {
   signal(SIGINT, signalHandler);
+  signal(SIGPIPE, SIG_IGN);
   t_config config;
   if (argc != 2) {
     std::cerr << "ERROR: provide exactly one argument ./webserv FILENAME.pps "

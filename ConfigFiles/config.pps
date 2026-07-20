@@ -40,5 +40,6 @@ server {
     try_files youpi.bad_extension not_happy.bad_extension;
   }
 
+    listen 8080;
   listen 127.0.0.4:7070;
 }

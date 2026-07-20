@@ -33,7 +33,7 @@ public:
   Client(const Client& obj);
   const Client& operator=(const Client& obj);
 
-  int    loop(std::string input);
+  int    loop(std::string recvBuffer);
   void   doCGI();
   size_t getBytesRead();
   void   readCGIPipe(int pipeReadFd);
