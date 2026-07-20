@@ -27,24 +27,24 @@ void HttpRequest::trim() {
     _fieldValue.erase(pos + 1);
 }
 
-void HttpRequest::exctractContent(std::string& request_content, size_t pos) {
+void HttpRequest::exctractContent(std::string& recvBuffer, size_t pos) {
   size_t skip = 1;
   switch (_currentState) {
   case METHOD:
-    _method += request_content.substr(_bytesRead, pos - _bytesRead);
+    _method += recvBuffer.substr(_bytesRead, pos - _bytesRead);
     break;
   case URI:
-    _uri += request_content.substr(_bytesRead, pos - _bytesRead);
+    _uri += recvBuffer.substr(_bytesRead, pos - _bytesRead);
     break;
   case HTTP_VERSION:
-    _httpVersion += request_content.substr(_bytesRead, pos - _bytesRead);
+    _httpVersion += recvBuffer.substr(_bytesRead, pos - _bytesRead);
     // skip = 2;
     break;
   case FIELD_NAME:
-    _fieldName += request_content.substr(_bytesRead, pos - _bytesRead);
+    _fieldName += recvBuffer.substr(_bytesRead, pos - _bytesRead);
     break;
   case FIELD_VALUE:
-    _fieldValue += request_content.substr(_bytesRead, pos - _bytesRead);
+    _fieldValue += recvBuffer.substr(_bytesRead, pos - _bytesRead);
     // skip = 2;
     break;
   case CR:
@@ -62,10 +62,10 @@ bool HttpRequest::brokenSyntax(size_t pos, size_t max_pos) {
   return 0;
 }
 
-void HttpRequest::findSeperator(std::string& request_content, char seperator,
+void HttpRequest::findSeperator(std::string& recvBuffer, char seperator,
                                 size_t& pos, size_t& max_pos) {
-  max_pos = request_content.find("\r", _bytesRead);
-  pos = request_content.find(seperator, _bytesRead);
+  max_pos = recvBuffer.find("\r", _bytesRead);
+  pos = recvBuffer.find(seperator, _bytesRead);
 }
 
 bool HttpRequest::validMethod() {

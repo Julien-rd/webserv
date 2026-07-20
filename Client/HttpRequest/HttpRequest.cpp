@@ -1,14 +1,15 @@
 #include "HttpRequest.hpp"
 #include <iostream>
+#include <iterator>
 #include <sstream>
 #include <string>
 
 HttpRequest::HttpRequest(size_t client_max_body_size)
-    : _currentState(METHOD), _contentLength(0), _parsingDone(false),
-      _client_max_body_size(client_max_body_size) {}
+    : _currentState(METHOD), _contentLength(0), _statusCode(0), _parsingDone(false),
+      _client_max_body_size(client_max_body_size){}
 
 HttpRequest::HttpRequest()
-    : _currentState(METHOD), _contentLength(0), _parsingDone(false),
+    : _currentState(METHOD), _contentLength(0), _statusCode(0), _parsingDone(false),
       _client_max_body_size(300000) {} // TODO hardcoded fix accordingly
 
 std::vector<char> HttpRequest::getBody() const { return _body; }
@@ -65,8 +66,8 @@ void HttpRequest::print() {
 }
 bool HttpRequest::parsingDone() { return _parsingDone; }
 
-bool HttpRequest::validNewLine(std::string request_content) {
-  if (!request_content.empty() && request_content[_bytesRead] == '\n')
+bool HttpRequest::validNewLine(std::string& recvBuffer) {
+  if (!recvBuffer.empty() && recvBuffer[_bytesRead] == '\n')
     return 0;
   else {
     _statusCode = 400;
@@ -75,54 +76,54 @@ bool HttpRequest::validNewLine(std::string request_content) {
 }
 
 #include <cstdlib>
-int HttpRequest::parseRequestLine(std::string& request_content) {
+int HttpRequest::parseRequestLine(std::string& recvBuffer) {
   size_t pos;
   size_t max_pos;
   switch (_currentState) {
   case METHOD:
-    findSeperator(request_content, ' ', pos, max_pos);
+    findSeperator(recvBuffer, ' ', pos, max_pos);
     if (brokenSyntax(pos, max_pos))
       return 1;
     if (pos == std::string::npos) {
-      _method += request_content.substr(_bytesRead);
+      _method += recvBuffer.substr(_bytesRead);
       break;
     }
-    exctractContent(request_content, pos);
+    exctractContent(recvBuffer, pos);
     if (validMethod() == false)
       return 1;
     _currentState = URI;
     /* fall through */
   case URI:
-    findSeperator(request_content, ' ', pos, max_pos);
+    findSeperator(recvBuffer, ' ', pos, max_pos);
     if (brokenSyntax(pos, max_pos))
       return 1;
     if (pos == std::string::npos) {
-      _uri += request_content.substr(_bytesRead);
+      _uri += recvBuffer.substr(_bytesRead);
       break;
     }
-    exctractContent(request_content, pos);
+    exctractContent(recvBuffer, pos);
     if (validUri() == false)
       return 1;
     _currentState = HTTP_VERSION;
     /* fall through */
   case HTTP_VERSION:
-    pos = request_content.find("\r", _bytesRead);
+    pos = recvBuffer.find("\r", _bytesRead);
     if (pos == std::string::npos) {
-      _httpVersion += request_content.substr(_bytesRead);
+      _httpVersion += recvBuffer.substr(_bytesRead);
       break;
     }
-    exctractContent(request_content, pos);
+    exctractContent(recvBuffer, pos);
     if (validHttpsVersion() == false)
       return 1;
     _currentState = CR;
     /* fall through */
   case CR:
-    pos = request_content.find("\n", _bytesRead);
-    if (_bytesRead >= request_content.size())
+    pos = recvBuffer.find("\n", _bytesRead);
+    if (_bytesRead >= recvBuffer.size())
       return 0;
-    if (validNewLine(request_content) == 1)
+    if (validNewLine(recvBuffer) == 1)
       return 1;
-    exctractContent(request_content, pos);
+    exctractContent(recvBuffer, pos);
     _currentState = FIELD_NAME;
   default:;
   }
@@ -144,13 +145,13 @@ bool HttpRequest::containsWhiteSpaces() {
   return false;
 }
 
-int HttpRequest::parseHeaders(std::string& request_content) {
+int HttpRequest::parseHeaders(std::string& recvBuffer) {
   size_t pos;
   size_t max_pos;
-  while (_bytesRead < request_content.length()) {
+  while (_bytesRead < recvBuffer.length()) {
     switch (_currentState) {
     case FIELD_NAME:
-      findSeperator(request_content, ':', pos, max_pos);
+      findSeperator(recvBuffer, ':', pos, max_pos);
       if (pos > max_pos) {
         // TODO add safguard to check if it is really last line so \r\n
         _bytesRead += 1;
@@ -158,10 +159,10 @@ int HttpRequest::parseHeaders(std::string& request_content) {
         break;
       }
       if (pos == std::string::npos) {
-        _fieldName += request_content.substr(_bytesRead);
+        _fieldName += recvBuffer.substr(_bytesRead);
         return 0;
       }
-      exctractContent(request_content, pos);
+      exctractContent(recvBuffer, pos);
       if (containsWhiteSpaces() == true) {
         // print();
         return 1;
@@ -169,30 +170,30 @@ int HttpRequest::parseHeaders(std::string& request_content) {
       _currentState = FIELD_VALUE;
       /* fall through */
     case FIELD_VALUE:
-      pos = request_content.find("\r", _bytesRead);
+      pos = recvBuffer.find("\r", _bytesRead);
       if (pos == std::string::npos) {
-        _fieldValue += request_content.substr(_bytesRead);
-        // FIX: claude said it needs this here: _bytesRead = request_content.size();
+        _fieldValue += recvBuffer.substr(_bytesRead);
+        // FIX: claude said it needs this here: _bytesRead = recvBuffer.size();
         return 0;
       }
-      exctractContent(request_content, pos);
+      exctractContent(recvBuffer, pos);
       trim();
       addHeader();
       _currentState = CR;
       /* fall through */
     case CR:
-      pos = request_content.find("\n", _bytesRead);
-      if (_bytesRead >= request_content.size())
+      pos = recvBuffer.find("\n", _bytesRead);
+      if (_bytesRead >= recvBuffer.size())
         return 0;
-      if (validNewLine(request_content) == 1)
+      if (validNewLine(recvBuffer) == 1)
         return 1;
-      exctractContent(request_content, pos);
+      exctractContent(recvBuffer, pos);
       _currentState = FIELD_NAME;
       break;
     case EOH: // TODO what if \r \n are sent seperatly
-      if (_bytesRead >= request_content.size())
+      if (_bytesRead >= recvBuffer.size())
         return 0;
-      if (validNewLine(request_content) == 1)
+      if (validNewLine(recvBuffer) == 1)
         return 1;
       ++_bytesRead;
       _currentState = BODY;
@@ -204,12 +205,12 @@ int HttpRequest::parseHeaders(std::string& request_content) {
   return 0;
 }
 
-int HttpRequest::parse_body(std::string request_content) {
+int HttpRequest::parseBody(std::string& recvBuffer) {
   if (_currentState == BODY) {
-    size_t                bytes_needed = _contentLength - _body.size();
-    std::string::iterator start = request_content.begin() + _bytesRead;
-    std::string::iterator end = request_content.end();
-    if (start + bytes_needed > end) {
+    long int                bytes_needed = _contentLength - _body.size();
+    std::string::iterator start = recvBuffer.begin() + _bytesRead;
+    std::string::iterator end = recvBuffer.end();
+    if (std::distance(start, end) < bytes_needed) {
       std::cout << "BIG L\n";
       _body.insert(_body.end(), start, end);
     } else {
@@ -231,15 +232,15 @@ int HttpRequest::parse_body(std::string request_content) {
   return 0;
 }
 
-int HttpRequest::parseHttpRequest(std::string request_content,
+int HttpRequest::parseHttpRequest(std::string& recvBuffer,
                                   size_t      bytes_read) {
   _bytesRead = bytes_read;
   _parsingDone = false;
-  if (parseRequestLine(request_content) == 1) {
+  if (parseRequestLine(recvBuffer) == 1) {
     std::cout << "RequestLine Issue\n";
     return 1;
   }
-  if (parseHeaders(request_content) == 1) {
+  if (parseHeaders(recvBuffer) == 1) {
     std::cout << "Header Issue\n";
     return 1;
   }
@@ -253,7 +254,7 @@ int HttpRequest::parseHttpRequest(std::string request_content,
       _statusCode = 200;
       return 0;
     }
-    if (parse_body(request_content) == 1) {
+    if (parseBody(recvBuffer) == 1) {
       std::cout << "body issue\n";
       return 1;
     }

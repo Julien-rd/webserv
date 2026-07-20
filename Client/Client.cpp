@@ -179,12 +179,13 @@ void Client::doCGI(void) {
     // writing to the pipe? std::cout << "========= wait() succeeded\n";
   }
 
-int Client::loop(std::string input) {
+int Client::loop(std::string recvBuffer) {
   _bytesRead = 0;
   bool err = false;
   int responseStatus;
-  while (_bytesRead < input.length()) {
-    if (_request.parseHttpRequest(input, _bytesRead) == 1) {
+  unsigned int bufferLen = recvBuffer.length();
+  while (_bytesRead < bufferLen) {
+    if (_request.parseHttpRequest(recvBuffer, _bytesRead) == 1) {
       closeConnection();
       return 1;
     }
@@ -211,10 +212,10 @@ int Client::loop(std::string input) {
     // std::cout << "response:\n" << response << std::endl;
     if (send(_fd, response, strlen(response), 0) ==
         -1) // TODO how should we protect here? cut client/close server?
-      abort();
+        return 1;
     std::vector<char> responseBody = _response.getResponseBody();
     if (send(_fd, &responseBody[0], responseBody.size(), 0) == -1)
-      abort();
+        return 1;
     _request.reset();
     _response.reset();
     if (err == true)

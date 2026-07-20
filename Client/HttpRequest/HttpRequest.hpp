@@ -32,7 +32,7 @@ typedef struct s_uri {
 class HttpRequest {
 
 public:
-  int  parseHttpRequest(std::string request_content, size_t bytes_read);
+  int  parseHttpRequest(std::string& recvBuffer, size_t bytes_read);
   int  parseURIContent(void);
   void print();
   HttpRequest(size_t client_max_body_size);
@@ -66,18 +66,18 @@ private:
   bool hasHostHeader();
   bool hasContentLength();
   void isChunked();
-  bool validNewLine(std::string request_content);
+  bool validNewLine(std::string& recvBuffer);
   bool containsWhiteSpaces();
 
-  int  parseHeaders(std::string& request_content);
-  int  parseRequestLine(std::string& request_content);
-  int  parse_body(std::string request_content);
+  int  parseHeaders(std::string& recvBuffer);
+  int  parseRequestLine(std::string& recvBuffer);
+  int  parseBody(std::string& recvBuffer);
   bool validateMandatoryHeaders();
 
   void trim();
-  void findSeperator(std::string& request_content, char seperator, size_t& pos,
+  void findSeperator(std::string& recvBuffer, char seperator, size_t& pos,
                      size_t& max_pos);
-  void exctractContent(std::string& request_content, size_t pos);
+  void exctractContent(std::string& recvBuffer, size_t pos);
   bool brokenSyntax(size_t pos, size_t max_pos);
   void addHeader();
 

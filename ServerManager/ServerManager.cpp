@@ -85,7 +85,6 @@ void pp_memcpy(void* dst, void* src, size_t len) {
  */
 void    ServerManager::timeoutClients() {
     time_t now = time(NULL);
-    std::cout << _config.clientTimeout << "\n";
     if (_lastChecked + _config.clientTimeout < now) {
         _lastChecked = now;
         IntSet toErase;
