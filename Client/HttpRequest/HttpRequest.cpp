@@ -263,7 +263,7 @@ void HttpRequest::parseBody(std::string recvBuffer) {
   _bytesNeeded = _contentLength - _body.size();
   std::string::iterator start = recvBuffer.begin() + _bytesRead;
   std::string::iterator end = recvBuffer.end();
-  if (start + _bytesNeeded > end) {
+  if (end - start < _bytesNeeded) {
     _body.insert(_body.end(), start, end);
     _bytesRead += end - start;
   } else {
@@ -292,6 +292,7 @@ void HttpRequest::parseChunkedBody(std::string recvBuffer) {
       _bytesRead += pos + 2;
       if (_bytesRead >= recvBuffer.length())
         return _buffer.clear();
+      /* fall through */
     case _EOF:
       if (_chunkedBodyState == _EOF) {
         if (_buffer.size() >= 2) {
@@ -308,6 +309,7 @@ void HttpRequest::parseChunkedBody(std::string recvBuffer) {
         }
         return;
       }
+      /* fall through */
     case LINE:
       _buffer += recvBuffer.substr(_bytesRead);
       if (_buffer.size() < _bytesNeeded)
@@ -317,6 +319,7 @@ void HttpRequest::parseChunkedBody(std::string recvBuffer) {
       _buffer.erase(0, _bytesNeeded + 2);
       _bytesRead += _bytesNeeded + 2;
       _chunkedBodyState = BYTES;
+      /* fall through */
     }
   }
 }

@@ -16,8 +16,6 @@ enum state {
   BODY_CHUNKED
 };
 
-enum chunkedBodyState { BYTES, LINE, _EOF };
-
 typedef struct s_uri {
   std::string path;      //  "/python.py"
   std::string pathInfo;  //  "/extra/info"
@@ -34,7 +32,7 @@ typedef struct s_uri {
 class HttpRequest {
 
 public:
-  int  parseHttpRequest(std::string& recvBuffer, size_t bytes_read);
+  int  parseHttpRequest(std::string request_content, size_t bytes_read);
   int  parseURIContent(void);
   void print();
   HttpRequest(size_t client_max_body_size);
@@ -56,10 +54,6 @@ public:
   size_t                             _contentLength;
   t_uri                              _uriData;
 
-  std::string      _buffer;
-  chunkedBodyState _chunkedBodyState;
-  size_t           _bytesNeeded;
-
   // getters
   std::string getURI() const;
 
@@ -72,32 +66,27 @@ private:
   bool hasHostHeader();
   bool hasContentLength();
   void isChunked();
-  bool validNewLine(std::string& recvBuffer);
+  bool validNewLine(std::string request_content);
   bool containsWhiteSpaces();
 
-  int parseHeaders(std::string& recvBuffer);
-  int parseRequestLine(std::string& recvBuffer);
-
-  int  bodyMode(std::string recvBuffer);
-  void  parseBody(std::string recvBuffer);
-  void parseChunkedBody(std::string recvBuffer);
-  bool saveData();
+  int  parseHeaders(std::string& request_content);
+  int  parseRequestLine(std::string& request_content);
+  int  parse_body(std::string request_content);
   bool validateMandatoryHeaders();
 
   void trim();
-  void findSeperator(std::string& recvBuffer, char seperator, size_t& pos,
+  void findSeperator(std::string& request_content, char seperator, size_t& pos,
                      size_t& max_pos);
-  void exctractContent(std::string& recvBuffer, size_t pos);
+  void exctractContent(std::string& request_content, size_t pos);
   bool brokenSyntax(size_t pos, size_t max_pos);
   void addHeader();
 
   std::string _httpVersion;
   std::string _fieldName;
   std::string _fieldValue;
-  size_t _bytesRead; // FIX: this this needs a better name what bytes, does it
-                     // accumulate
-  int  _statusCode;
-  bool _parsingDone;
+  size_t      _bytesRead; //FIX: this this needs a better name what bytes, does it accumulate
+  int         _statusCode;
+  bool        _parsingDone;
   // size_t _bytes_read implent bytes_read!!! erase is to inefficient;
 
   // containers
@@ -106,3 +95,4 @@ private:
   // from .conf file
   size_t _client_max_body_size;
 };
+
