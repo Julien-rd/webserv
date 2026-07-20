@@ -16,6 +16,8 @@ enum state {
   BODY_CHUNKED
 };
 
+enum chunkedBodyState { BYTES, LINE, _EOF };
+
 typedef struct s_uri {
   std::string path;      //  "/python.py"
   std::string pathInfo;  //  "/extra/info"
@@ -54,6 +56,10 @@ public:
   size_t                             _contentLength;
   t_uri                              _uriData;
 
+  std::string      _buffer;
+  chunkedBodyState _chunkedBodyState;
+  size_t           _bytesNeeded;
+
   // getters
   std::string getURI() const;
 
@@ -69,9 +75,13 @@ private:
   bool validNewLine(std::string request_content);
   bool containsWhiteSpaces();
 
-  int  parseHeaders(std::string& request_content);
-  int  parseRequestLine(std::string& request_content);
-  int  parse_body(std::string request_content);
+  int parseHeaders(std::string& request_content);
+  int parseRequestLine(std::string& request_content);
+
+  int  bodyMode(std::string request_content);
+  void  parseBody(std::string request_content);
+  void parseChunkedBody(std::string request_content);
+  bool saveData();
   bool validateMandatoryHeaders();
 
   void trim();
@@ -84,9 +94,10 @@ private:
   std::string _httpVersion;
   std::string _fieldName;
   std::string _fieldValue;
-  size_t      _bytesRead; //FIX: this this needs a better name what bytes, does it accumulate
-  int         _statusCode;
-  bool        _parsingDone;
+  size_t _bytesRead; // FIX: this this needs a better name what bytes, does it
+                     // accumulate
+  int  _statusCode;
+  bool _parsingDone;
   // size_t _bytes_read implent bytes_read!!! erase is to inefficient;
 
   // containers
@@ -95,4 +106,3 @@ private:
   // from .conf file
   size_t _client_max_body_size;
 };
-
