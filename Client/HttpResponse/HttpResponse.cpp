@@ -176,7 +176,6 @@ int HttpResponse::extractContentType(std::string path) {
   size_t pos = path.find_last_of('.');
   if (pos == std::string::npos || pos == 0 || path[pos - 1] == '/')
     return 1;
-  // TODO lookup mimetype in map or something like that
   std::string contentType = path.substr(pos + 1);
   std::map<std::string, std::string>::iterator it =
       _mimeTypes.find(contentType);
@@ -290,7 +289,7 @@ void HttpResponse::addRules() {
   // site scripting) -> i dont think it is relevant if we only use static sites,
   // but we can still look into if it is neccessary
   // 
-  _response += "Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline'; form-action 'self'\r\n";
+  _response += "Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline'; form-action 'self'; img-src 'self' data:;\r\n";
                             // covers script injection and form injection + add
                              // escaping in HTML BODY!!!!! as extra security
                              // layer

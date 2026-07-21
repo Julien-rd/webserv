@@ -71,7 +71,7 @@ void HttpRequest::findSeperator(std::string& recvBuffer, char seperator,
 bool HttpRequest::validMethod() {
   if (!(_method == "GET" || _method == "POST" || _method == "DELETE")) {
     std::cout << "invalid Method\n";
-    _statusCode = 404; // 501 for not implemented, but existing method
+    _statusCode = 405; // 501 for not implemented, but existing method
     return false;
   }
   return true;

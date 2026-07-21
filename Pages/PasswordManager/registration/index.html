@@ -1,239 +1,228 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registrieren</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: sans-serif;
-      background: #f5f5f5;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 2rem 1rem;
-    }
-    .card {
-      background: white;
-      border: 1px solid #e0e0e0;
-      border-radius: 12px;
-      padding: 2.5rem 2rem;
-      max-width: 320px;
-      width: 100%;
-    }
-    h1 { font-size: 1.1rem; font-weight: 500; color: #111; margin-bottom: 0.25rem; }
-    .subtitle { font-size: 0.85rem; color: #666; margin-bottom: 1.5rem; }
-    .field { display: grid; gap: 4px; margin-bottom: 12px; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    label { font-size: 12px; color: #666; }
-    input {
-      width: 100%;
-      padding: 0.55rem 0.75rem;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      outline: none;
-      font-family: inherit;
-    }
-    input:focus { border-color: #aaa; }
-    input[type="file"] {
-      padding: 0.4rem 0.5rem;
-      font-size: 0.8rem;
-      cursor: pointer;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registrieren</title>
 
-    .avatar-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-    .avatar-preview {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: #f0f0f0;
-      border: 1px solid #e0e0e0;
-      flex-shrink: 0;
-      background-size: cover;
-      background-position: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
-      color: #999;
-      overflow: hidden;
-    }
-    .avatar-field { flex: 1; display: grid; gap: 4px; }
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
 
-    button {
-      width: 100%;
-      padding: 0.65rem;
-      background: #111;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      margin-top: 4px;
-    }
-    button:hover { background: #333; }
-    button:disabled { background: #999; cursor: not-allowed; }
+body{
+    font-family:sans-serif;
+    background:#f5f5f5;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    padding:2rem 1rem;
+}
 
-    .footer-link {
-      text-align: center;
-      font-size: 0.82rem;
-      color: #666;
-      margin-top: 1.25rem;
-    }
-    .footer-link a {
-      color: #111;
-      font-weight: 500;
-      text-decoration: none;
-    }
-    .footer-link a:hover { text-decoration: underline; }
+.card{
+    background:white;
+    border:1px solid #e0e0e0;
+    border-radius:12px;
+    padding:2.5rem 2rem;
+    width:100%;
+    max-width:340px;
+}
 
-    .status {
-      font-size: 0.78rem;
-      margin-top: 10px;
-      text-align: center;
-      min-height: 14px;
-    }
-    .status.ok { color: #1a7f37; }
-    .status.error { color: #c0392b; }
-  </style>
+h1{
+    font-size:1.1rem;
+    font-weight:500;
+    color:#111;
+    margin-bottom:.25rem;
+}
+
+.subtitle{
+    color:#666;
+    font-size:.85rem;
+    margin-bottom:1.5rem;
+}
+
+.field{
+    display:grid;
+    gap:4px;
+    margin-bottom:12px;
+}
+
+.row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+}
+
+label{
+    font-size:12px;
+    color:#666;
+}
+
+input{
+    width:100%;
+    padding:.55rem .75rem;
+    border:1px solid #ddd;
+    border-radius:8px;
+    font-size:.9rem;
+    outline:none;
+    font-family:inherit;
+}
+
+input:focus{
+    border-color:#888;
+}
+
+input[type=file]{
+    cursor:pointer;
+    padding:.4rem;
+}
+
+.avatar-row{
+    display:flex;
+    gap:12px;
+    align-items:center;
+    margin-bottom:12px;
+}
+
+.avatar-preview{
+    width:48px;
+    height:48px;
+    border-radius:50%;
+    border:1px solid #ddd;
+    background:#eee;
+    background-size:cover;
+    background-position:center;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:10px;
+    color:#888;
+    overflow:hidden;
+}
+
+.avatar-field{
+    flex:1;
+}
+
+button{
+    width:100%;
+    padding:.65rem;
+    border:none;
+    border-radius:8px;
+    background:#111;
+    color:white;
+    cursor:pointer;
+    font-size:.9rem;
+}
+
+button:hover{
+    background:#333;
+}
+
+button:disabled{
+    background:#888;
+}
+
+.status{
+    margin-top:10px;
+    text-align:center;
+    font-size:.8rem;
+    min-height:18px;
+}
+
+.ok{
+    color:#198754;
+}
+
+.error{
+    color:#dc3545;
+}
+
+.footer-link{
+    margin-top:18px;
+    text-align:center;
+    font-size:.82rem;
+}
+
+.footer-link a{
+    color:#111;
+    text-decoration:none;
+}
+
+.footer-link a:hover{
+    text-decoration:underline;
+}
+</style>
+
 </head>
 <body>
-  <div class="card">
-    <h1>Konto erstellen</h1>
-    <p class="subtitle">Fülle das Formular aus, um dich zu registrieren.</p>
 
-    <form id="registerForm" novalidate>
-      <div class="row">
-        <div class="field">
-          <label for="firstName">Vorname</label>
-          <input type="text" id="firstName" name="firstName" placeholder="Alice" required />
-        </div>
-        <div class="field">
-          <label for="lastName">Nachname</label>
-          <input type="text" id="lastName" name="lastName" placeholder="Muster" required />
-        </div>
-      </div>
+<div class="card">
 
-      <div class="field">
-        <label for="email">E-Mail</label>
-        <input type="email" id="email" name="email" placeholder="alice@example.com" required />
-      </div>
+<h1>Konto erstellen</h1>
+<p class="subtitle">
+Fülle das Formular aus, um dich zu registrieren.
+</p>
 
-      <div class="field">
-        <label for="password">Passwort</label>
-        <input type="password" id="password" name="password" placeholder="••••••••" required minlength="6" />
-      </div>
+<form action="/registration/register.py" method="POST" id="registerForm">
 
-      <div class="avatar-row">
-        <div class="avatar-preview" id="avatarPreview">Kein Bild</div>
-        <div class="avatar-field">
-          <label for="profilePicture">Profilbild</label>
-          <input type="file" id="profilePicture" name="profilePicture" accept="image/*" />
-        </div>
-      </div>
+<div class="row">
+<div class="field">
+<label>Vorname</label>
+<input type="text" id="firstName" name="firstName" required/>
+</div>
 
-      <button type="submit" id="submitBtn">Registrieren</button>
-      <p class="status" id="status"></p>
-    </form>
+<div class="field">
+<label>Nachname</label>
+<input type="text" id="lastName" name="lastName" required/>
+</div>
+</div>
 
-    <p class="footer-link">Bereits ein Konto? <a href="../index.html">Anmelden</a></p>
-  </div>
+<div class="field">
+<label>E-Mail</label>
+<input type="email" id="email" name="email" required />
+</div>
 
-  <script>
-    const form = document.getElementById('registerForm');
-    const fileInput = document.getElementById('profilePicture');
-    const preview = document.getElementById('avatarPreview');
-    const statusEl = document.getElementById('status');
-    const submitBtn = document.getElementById('submitBtn');
+<div class="field">
+<label>Passwort</label>
+<input type="password" id="password" name="password" minlength="6" required>
+</div>
 
-    // Live preview of the chosen profile picture
-    fileInput.addEventListener('change', () => {
-      const file = fileInput.files[0];
-      if (!file) {
-        preview.style.backgroundImage = '';
-        preview.textContent = 'Kein Bild';
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        preview.style.backgroundImage = `url(${e.target.result})`;
-        preview.textContent = '';
-      };
-      reader.readAsDataURL(file);
-    });
+<div class="avatar-row">
 
-    // Reads the selected file as a base64 data URL (or resolves null if none chosen)
-    function readFileAsDataURL(file) {
-      return new Promise((resolve, reject) => {
-        if (!file) { resolve(null); return; }
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(new Error('Datei konnte nicht gelesen werden.'));
-        reader.readAsDataURL(file);
-      });
-    }
+<div class="avatar-preview" id="preview">
+Kein Bild
+</div>
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      statusEl.textContent = '';
-      statusEl.className = 'status';
+<div class="avatar-field">
+<label>Profilbild</label>
+<input
+type="file"
+id="profilePicture" name ="profilePicture"
+accept="image/*">
+</div>
 
-      if (!form.checkValidity()) {
-        form.reportValidity();
-        return;
-      }
+</div>
 
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Wird gespeichert...';
+<button id="submitBtn">
+Registrieren
+</button>
 
-      try {
-        const file = fileInput.files[0] || null;
-        const profilePictureDataUrl = await readFileAsDataURL(file);
+<div class="status" id="status"></div>
 
-        const data = {
-          firstName: document.getElementById('firstName').value.trim(),
-          lastName: document.getElementById('lastName').value.trim(),
-          email: document.getElementById('email').value.trim(),
-          password: document.getElementById('password').value,
-          profilePicture: profilePictureDataUrl, // base64 data URL, or null if no image chosen
-          profilePictureName: file ? file.name : null,
-          createdAt: new Date().toISOString()
-        };
+</form>
 
-        // Build and download a JSON file with the collected data
-        const json = JSON.stringify(data, null, 2);
-        const blob = new Blob([json], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const safeName = (data.email || 'registrierung').replace(/[^a-z0-9@._-]/gi, '_');
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${safeName}.json`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
+<div class="footer-link">
+Bereits ein Konto?
+<a href="../login/">Anmelden</a>
+</div>
 
-        statusEl.textContent = 'Registrierung erfolgreich – JSON-Datei wurde heruntergeladen.';
-        statusEl.classList.add('ok');
-        form.reset();
-        preview.style.backgroundImage = '';
-        preview.textContent = 'Kein Bild';
-      } catch (err) {
-        statusEl.textContent = err.message || 'Ein Fehler ist aufgetreten.';
-        statusEl.classList.add('error');
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Registrieren';
-      }
-    });
-  </script>
+</div>
+
+<script src=/registration/registration.js></script>
+
 </body>
 </html>

@@ -269,8 +269,8 @@ bool CGI::isCGIRequest(const HttpRequest& request) {
 
   // Extract the extension including the dot (e.g. ".py", ".pl")
   for (size_t i = 0; i < this->knownExtensions.size(); i++) {
-    // std::cout << "comparing " << request._uriData.extension << " with "
-    //           << this->knownExtensions[i] << "\n";
+    std::cout << "comparing " << request._uriData.extension << " with "
+              << this->knownExtensions[i] << "\n";
     if (request._uriData.extension == this->knownExtensions[i]) {
       this->request = request;
       return true;

@@ -93,7 +93,7 @@ void CGIResponse::addRules() {
   // site scripting) -> i dont think it is relevant if we only use static sites,
   // but we can still look into if it is neccessary
   _response += "Content-Security-Policy: default-src 'self'; form-action "
-               "'self'\r\n"; // covers script injection and form injection + add
+               "'self';img-src 'self' data:;\r\n"; // covers script injection and form injection + add
                              // escaping in HTML BODY!!!!! as extra security
                              // layer
 }

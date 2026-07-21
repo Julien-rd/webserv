@@ -179,25 +179,30 @@ void Client::doCGI(void) {
     // writing to the pipe? std::cout << "========= wait() succeeded\n";
   }
 
-int Client::loop(std::string recvBuffer) {
+int Client::loop(std::string& recvBuffer) {
   _bytesRead = 0;
   bool err = false;
   int responseStatus;
   unsigned int bufferLen = recvBuffer.length();
   while (_bytesRead < bufferLen) {
+      std::cout << "reached 1" << std::endl;
     if (_request.parseHttpRequest(recvBuffer, _bytesRead) == 1) {
       closeConnection();
       return 1;
     }
     if (_request.parsingDone() == false) {
+        std::cout << "reached parsingDone" << std::endl;
       return 0;
     }
+    
+    std::cout << "reached 2" << std::endl;
     _bytesRead += _request.getBytesRead();
     // _request.print();
     if (_request.parseURIContent() == 1) {
       closeConnection();
       return 1;
     }
+    std::cout << "reached 3" << std::endl;
     if (_CGI.isCGIRequest(_request)) {
       std::cout << "==> found a CGI request\n";
       doCGI();

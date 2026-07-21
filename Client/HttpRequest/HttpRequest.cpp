@@ -12,7 +12,7 @@ HttpRequest::HttpRequest(size_t client_max_body_size)
 HttpRequest::HttpRequest()
     : _currentState(METHOD), _contentLength(0), _buffer(""),
       _chunkedBodyState(BYTES), _bytesNeeded(0), _bytesRead(0), _statusCode(0),
-      _parsingDone(false), _client_max_body_size(300000) {
+      _parsingDone(false), _client_max_body_size(500000) {
 } // TODO hardcoded fix accordingly
 
 std::vector<char> HttpRequest::getBody() const { return _body; }
@@ -263,7 +263,8 @@ void HttpRequest::parseBody(std::string recvBuffer) {
   _bytesNeeded = _contentLength - _body.size();
   std::string::iterator start = recvBuffer.begin() + _bytesRead;
   std::string::iterator end = recvBuffer.end();
-  if (end - start < _bytesNeeded) {
+  if (recvBuffer.length() - _bytesRead < _bytesNeeded) {
+      std::cout << "never stops: " << recvBuffer.length() << ", bytesRead: " << _bytesRead << ", bytesneeded: " << _bytesNeeded << ", bodysize: " << _body.size() << std::endl;
     _body.insert(_body.end(), start, end);
     _bytesRead += end - start;
   } else {
@@ -271,6 +272,7 @@ void HttpRequest::parseBody(std::string recvBuffer) {
     _parsingDone = true;
     _statusCode = 200;
     _bytesRead += _bytesNeeded;
+    saveData();
   }
 }
 
@@ -327,8 +329,11 @@ void HttpRequest::parseChunkedBody(std::string recvBuffer) {
 int HttpRequest::bodyMode(std::string recvBuffer) {
   if (_currentState == BODY)
     parseBody(recvBuffer);
-  if (_currentState == BODY_CHUNKED)
+  if (_currentState == BODY_CHUNKED) {
+      std::cout << "current state body\n";
     parseChunkedBody(recvBuffer);
+      
+  }
   return 0;
 }
 

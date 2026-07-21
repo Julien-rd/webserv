@@ -185,10 +185,11 @@ void Server::handleServerEvent(void) {
 }
 
 void Server::handleClientEvent(const int clientFd) {
-  char    recvBuffer[BUFFER_SIZE + 1];
+    std::string recvBuffer;
+    recvBuffer.resize(BUFFER_SIZE);
   ssize_t bytesRead = 0;
   _clients.at(clientFd).setLastActivity();
-  bytesRead = recv(clientFd, recvBuffer, BUFFER_SIZE, 0);
+  bytesRead = recv(clientFd, &recvBuffer[0], BUFFER_SIZE, 0);
   if (bytesRead == 0) {
     closeConnection(clientFd);
     return;
@@ -199,6 +200,7 @@ void Server::handleClientEvent(const int clientFd) {
     return;
   }
   recvBuffer[bytesRead] = 0;
+  std::cout << recvBuffer << std::endl;
   int responseStatus = _clients.at(clientFd).loop(recvBuffer);
   if (responseStatus >= 1) {
     closeConnection(clientFd);
