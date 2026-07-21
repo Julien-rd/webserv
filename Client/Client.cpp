@@ -72,8 +72,10 @@ time_t  Client::getLastActivity() {
 
 int Client::getFd() const { return _fd; }
 
-void Client::reset() {
+void Client::reset() { //Fix: maybe even add _cgi.reset? why is responsestream and cgiresponselen taken to client??
   setFd(-1);
+  _CGIResponseStream.clear(); //Fix: find a better way to reset the cgi
+  _CGIResponseLen = 0;
   _request.reset();
   _response.reset();
   _CGIResponse.reset();
@@ -131,10 +133,10 @@ void Client::readCGIPipe(int pipeReadFd) {
         return; // NOTFINISHED: i have no idea whats open here and what this function is responsible for
     }
     std::vector<char> responseBody = _CGIResponse.getResponseBody();
-    for (unsigned int i = 0; i < responseBody.size(); ++i) {
-        std::cout << responseBody.at(i);
-    }
-    std::cout << std::endl;
+    // for (unsigned int i = 0; i < responseBody.size(); ++i) {
+    //     std::cout << responseBody.at(i);
+    // }
+    // std::cout << std::endl;
     if (send(_fd, &responseBody[0], responseBody.size(), 0) == -1) {
         std::cerr << "epoll_ctl() DEL failed in handleCGIResponse(): " << strerror(errno) << "\n";
         return; // NOTFINISHED: i have no idea whats open here and what this function is responsible for
@@ -185,29 +187,31 @@ int Client::loop(std::string& recvBuffer) {
   int responseStatus;
   unsigned int bufferLen = recvBuffer.length();
   while (_bytesRead < bufferLen) {
-      std::cout << "reached 1" << std::endl;
     if (_request.parseHttpRequest(recvBuffer, _bytesRead) == 1) {
+        _request.setStatusCode(400);
       closeConnection();
       return 1;
     }
     if (_request.parsingDone() == false) {
-        std::cout << "reached parsingDone" << std::endl;
       return 0;
     }
     
-    std::cout << "reached 2" << std::endl;
     _bytesRead += _request.getBytesRead();
     // _request.print();
     if (_request.parseURIContent() == 1) {
       closeConnection();
       return 1;
     }
-    std::cout << "reached 3" << std::endl;
     if (_CGI.isCGIRequest(_request)) {
       std::cout << "==> found a CGI request\n";
       doCGI();
       _request.reset();
       _response.reset();
+      _CGIResponseStream.str("");
+      _CGIResponseStream.clear();
+      _CGIResponseLen = 0;
+      _CGIResponse.reset();
+      _CGI.reset();
       continue;
     }
     responseStatus = _response.build(_request);

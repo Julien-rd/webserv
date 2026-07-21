@@ -25,7 +25,7 @@ public:
   void              getReasonPhrase();
   const char*       getResponse();
   std::vector<char> getResponseBody();
-  void              reset();
+  virtual void              reset();
   int               getTimeStamp();
 
 protected:

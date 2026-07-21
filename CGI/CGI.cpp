@@ -199,8 +199,24 @@ bool CGI::spawnProcess(void) {
       for (size_t i = 0; i < this->request.getBody().size(); i++) {
         ss << this->request.getBody()[i];
       }
-      write(this->postPipefd[1], ss.str().c_str(),
-            this->request._contentLength);
+      size_t totalWritten = 0;
+      
+      while (totalWritten < this->request._contentLength)
+      {
+          ssize_t written = write(
+              this->postPipefd[1],
+              ss.str().data() + totalWritten,
+              this->request._contentLength - totalWritten
+          );
+      
+          if (written <= 0)
+          {
+              // Fix: handle error
+              break;
+          }
+      
+          totalWritten += written;
+      }
       close(this->postPipefd[1]);
       close(this->postPipefd[0]);
     }
@@ -236,7 +252,7 @@ bool CGI::redirectIO(void) {
 
 void CGI::wait(void) const {
   if (waitpid(this->pid, NULL, 0) == -1) {
-    std::cout << "ERROR: waitpid(): " << strerror(errno)
+    std::cerr << "ERROR: waitpid(): " << strerror(errno)
               << std::endl; // TODO Handle real errors and success waits
   }
 }
@@ -269,8 +285,8 @@ bool CGI::isCGIRequest(const HttpRequest& request) {
 
   // Extract the extension including the dot (e.g. ".py", ".pl")
   for (size_t i = 0; i < this->knownExtensions.size(); i++) {
-    std::cout << "comparing " << request._uriData.extension << " with "
-              << this->knownExtensions[i] << "\n";
+    // std::cout << "comparing " << request._uriData.extension << " with "
+    //           << this->knownExtensions[i] << "\n";
     if (request._uriData.extension == this->knownExtensions[i]) {
       this->request = request;
       return true;
@@ -281,6 +297,10 @@ bool CGI::isCGIRequest(const HttpRequest& request) {
 
 void CGI::setClientFd(const int fd) { this->clientFd = fd; }
 
-void CGI::reset(void) { ; }
+void CGI::reset(void) { 
+    scriptName.erase();
+    executable.erase();
+    argv.clear();
+    ; }
 
 pid_t CGI::getPid(void) const { return this->pid; }

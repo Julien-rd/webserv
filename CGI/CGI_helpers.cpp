@@ -15,7 +15,7 @@ std::string parsePathInfo(const std::string &_uri,
   // }
   if (queryStringPos != std::string::npos) {
     if (queryStringPos < pathInfoPos) {
-      std::cout << "DEBUG: found '?' before PATH_INFO in parsePathInfo(). "
+      std::cerr << "DEBUG: found '?' before PATH_INFO in parsePathInfo(). "
                    "Avoid reaching here in execution"
                 << std::endl;
         return std::string(); //ERROR: can we maybe just check if the string is empty and call it a day or can this happen

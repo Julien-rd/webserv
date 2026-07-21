@@ -36,7 +36,7 @@ ext = ext_map.get(content_type, '.bin')
 filename = f"{int(time.time() * 1000)}-{os.urandom(4).hex()}{ext}"
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-uploads_dir = os.path.join(script_dir, 'uploads')
+uploads_dir = os.path.join(script_dir, '..', 'database', 'uploads')
 os.makedirs(uploads_dir, exist_ok=True)
 
 with open(os.path.join(uploads_dir, filename), 'wb') as f:

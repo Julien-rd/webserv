@@ -3,6 +3,7 @@
 #include <iterator>
 #include <sstream>
 #include <string>
+#include <vector>
 
 HttpRequest::HttpRequest(size_t client_max_body_size)
     : _currentState(METHOD), _contentLength(0), _buffer(""),
@@ -272,7 +273,7 @@ void HttpRequest::parseBody(std::string recvBuffer) {
     _parsingDone = true;
     _statusCode = 200;
     _bytesRead += _bytesNeeded;
-    saveData();
+    // saveData();
   }
 }
 
@@ -326,13 +327,13 @@ void HttpRequest::parseChunkedBody(std::string recvBuffer) {
   }
 }
 
-int HttpRequest::bodyMode(std::string recvBuffer) {
+int HttpRequest::bodyMode(std::string recvBuffer) { //Fix: add fail reasons parsechunked
   if (_currentState == BODY)
     parseBody(recvBuffer);
   if (_currentState == BODY_CHUNKED) {
       std::cout << "current state body\n";
     parseChunkedBody(recvBuffer);
-      
+
   }
   return 0;
 }
@@ -346,8 +347,9 @@ int HttpRequest::parseHttpRequest(std::string& recvBuffer,
   if (parseHeaders(recvBuffer) == 1)
     return 1;
   if (_currentState == BODY) {
-    if (validateMandatoryHeaders() == false)
+    if (validateMandatoryHeaders() == false) {
       return 1;
+    }
     if (_currentState != BODY && _currentState != BODY_CHUNKED) {
       _parsingDone = true;
       _statusCode = 200;

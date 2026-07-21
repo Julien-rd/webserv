@@ -62,6 +62,7 @@ public:
 
   // getters
   std::string getURI() const;
+  void  setStatusCode(int status);
 
 private:
   bool validateURIPath(std::string& path);

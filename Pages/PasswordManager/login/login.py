@@ -13,8 +13,22 @@ password = fields.get('password', [''])[0]
 
 # check again
 script_dir = os.path.dirname(os.path.abspath(__file__))
-with open(os.path.join(script_dir, 'data.json'), 'r') as f:
-    data = json.load(f)
+json_path = os.path.normpath(os.path.join(script_dir, "..", "database", "data.json"))
+
+if os.path.exists(json_path):
+    try:
+        with open(json_path, "r") as f:
+            content = f.read().strip()
+
+            if content:
+                data = json.loads(content)
+            else:
+                data = {"users": []}
+
+    except json.JSONDecodeError:
+        data = {"users": []}
+else:
+    data = {"users": []}
     
 found = False 
 for user in data["users"]:

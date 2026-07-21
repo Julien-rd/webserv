@@ -17,6 +17,10 @@ void HttpRequest::addHeader() {
   _fieldValue.clear();
 }
 
+void  HttpRequest::setStatusCode(int status) {
+ _statusCode = status;
+}
+
 void HttpRequest::trim() {
   size_t pos;
   pos = _fieldValue.find_first_not_of(" \t\r\n");
@@ -69,12 +73,17 @@ void HttpRequest::findSeperator(std::string& recvBuffer, char seperator,
 }
 
 bool HttpRequest::validMethod() {
-  if (!(_method == "GET" || _method == "POST" || _method == "DELETE")) {
-    std::cout << "invalid Method\n";
-    _statusCode = 405; // 501 for not implemented, but existing method
-    return false;
-  }
-  return true;
+    // for (size_t i = 0; i < _method.size(); i++)
+    // {
+    //     printf("%02x ", (unsigned char)_method[i]);
+    // }
+    // printf("\n");
+    if (!(_method == "GET" || _method == "POST" || _method == "DELETE")) {
+        std::cout << "invalid Method\n";
+        _statusCode = 501; 
+        return false;
+    }
+    return true;
 }
 
 bool HttpRequest::validUri() {

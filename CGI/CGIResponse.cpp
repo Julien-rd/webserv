@@ -5,6 +5,15 @@
 #include <cstring>
 #include <sstream>
 
+void CGIResponse::reset() {
+    _CGIResponseLen = 0;
+    _CGIResponseStr.clear();
+}
+
+const std::string& CGIResponse::getCGIResponseStr() {
+    return _CGIResponseStr;
+}
+
 void CGIResponse::extractStatus(void)
 {
     std::istringstream stream(_CGIResponseStr);
@@ -38,6 +47,7 @@ CGIResponse::CGIResponse(std::stringstream& CGIResponseStream,
 
 void CGIResponse::addCGIBody(HttpRequest request) {
   (void)request;
+  std::cout << std::endl << "[" << _CGIResponseStr << "] " << std::endl << std::endl;
   // std::string str = _CGIResponseStream.str();
   // size_t      bodyPos = str.find("\r\n\r\n");
   // str.erase(0, bodyPos + 4);
@@ -56,7 +66,8 @@ void CGIResponse::addCGIBody(HttpRequest request) {
   // _response += "Content-Type: text/html\r\n";
   _response += "Content-Length: " + ss.str() + "\r\n";
   _response += _CGIResponseStr.substr(0, separatorPos + 4);
-  // _response += "\r\n";
+  _response.append(&_responseBody[0], _CGIResponseLen - 4 - separatorPos);
+  std::cout << std::endl << "[" << _response << "] " << std::endl << std::endl;
 }
 
 void CGIResponse::addRules() {
