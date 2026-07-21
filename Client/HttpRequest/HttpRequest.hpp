@@ -46,7 +46,7 @@ public:
   bool               parsingDone();
   void               reset();
   size_t             getBytesRead() const;
-  std::vector<char>  getBody() const;
+  const std::vector<char>&  getBody() const;
 
   // these have to be private, please implement getters in script functions
   std::string                        _method;

@@ -13,10 +13,10 @@ HttpRequest::HttpRequest(size_t client_max_body_size)
 HttpRequest::HttpRequest()
     : _currentState(METHOD), _contentLength(0), _buffer(""),
       _chunkedBodyState(BYTES), _bytesNeeded(0), _bytesRead(0), _statusCode(0),
-      _parsingDone(false), _client_max_body_size(500000) {
+      _parsingDone(false), _client_max_body_size(2000000) {
 } // TODO hardcoded fix accordingly
 
-std::vector<char> HttpRequest::getBody() const { return _body; }
+const std::vector<char>& HttpRequest::getBody() const { return _body; }
 
 HttpRequest::HttpRequest(const HttpRequest& obj) {
   _method = obj._method;

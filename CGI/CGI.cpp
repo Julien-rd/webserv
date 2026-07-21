@@ -195,17 +195,16 @@ bool CGI::spawnProcess(void) {
     if (!this->addPipeToEpoll())
         return false;
     if (this->request._method == "POST") {
-      std::stringstream ss;
-      for (size_t i = 0; i < this->request.getBody().size(); i++) {
-        ss << this->request.getBody()[i];
-      }
+        const std::vector<char>& body = this->request.getBody();
+      std::string bodyStr(body.begin(), 
+                           body.end());
       size_t totalWritten = 0;
       
       while (totalWritten < this->request._contentLength)
       {
           ssize_t written = write(
               this->postPipefd[1],
-              ss.str().data() + totalWritten,
+              bodyStr.data() + totalWritten,
               this->request._contentLength - totalWritten
           );
       
