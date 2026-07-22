@@ -48,8 +48,8 @@ protected:
   
   static bool isDirectory(std::string& path);
   static unsigned int getLocation(const std::string& match, const t_server&    serverConfig);
-  static void attachPrefix(const std::string& uri, std::string& path,
-                    t_location& location);
+  void attachPrefix(const std::string& uri, std::string& path,
+      const t_server& location, unsigned int index);
   UriResult processURI(const std::string& uri);
 
   std::map<std::string, std::string>

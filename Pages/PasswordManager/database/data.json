@@ -1,0 +1,11 @@
+{
+    "users": [
+        {
+            "firstName": "Eric",
+            "lastName": "Prottung",
+            "email": "ericprottung@gmail.com",
+            "password": "hello1111",
+            "profilePicture": "1784720649614-668737d6.png"
+        }
+    ]
+}

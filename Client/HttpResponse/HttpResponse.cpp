@@ -47,14 +47,16 @@ unsigned int HttpResponse::getLocation(const std::string& match,
   return ret;
 }
 
-void HttpResponse::attachPrefix(const std::string& uri, std::string& path,
-                                t_location& location) {
-  if (!location.alias.empty())
-    path = ROOT_FOLDER + location.alias + uri.substr(location.name.length());
-  else if (!location.root.empty())
-    path = ROOT_FOLDER + location.root + uri;
-  else
-    path = ROOT_FOLDER + uri;
+void HttpResponse::attachPrefix(const std::string& uri, std::string& path, const t_server& serverConfig, unsigned int index) {
+    const t_location& location = serverConfig.locations.at(index);
+    if (!location.alias.empty())
+        path = ROOT_FOLDER + location.alias + uri.substr(location.name.length());
+    else if (!location.root.empty())
+        path = ROOT_FOLDER + location.root + uri;
+    else if (!serverConfig.locations.at(0).root.empty())
+        path = ROOT_FOLDER + serverConfig.locations.at(0).root + uri;
+    else
+        path = ROOT_FOLDER + uri;
 }
 
 bool HttpResponse::methodAllowed(unsigned int index, const std::vector<t_location>& locations) {
@@ -90,7 +92,7 @@ UriResult HttpResponse::processURI(const std::string& uri) {
         const t_server& serverConfig = _config.servers.at(_sid);
         unsigned int index = getLocation(uri, serverConfig);
         t_location   location = serverConfig.locations.at(index);
-        attachPrefix(uri, result.path, location);
+        attachPrefix(uri, result.path, serverConfig, index);
         if (stat(result.path.c_str(), &stats) == -1) {
             if (!location.redirect.second.empty()) {
                 result.httpCode = location.redirect.first;
@@ -144,6 +146,7 @@ HttpResponse::HttpResponse(const t_config& config, const int sid)
   _mimeTypes["jpeg"] = "image/jpeg";
   _mimeTypes["ico"] = "image/x-icon";
   _mimeTypes["txt"] = "text/plain";
+  _mimeTypes["json"] = "text/plain";
 }
 
 std::vector<char> HttpResponse::getResponseBody() { return _responseBody; }
@@ -254,6 +257,7 @@ void HttpResponse::addBody(HttpRequest request, const UriResult& result) {
   }
   extractContentLength();
   _response += "\r\n";
+  std::cout << std::endl << "[" << _response << "] " << std::endl << std::endl;
 }
 
 void HttpResponse::addRules() {

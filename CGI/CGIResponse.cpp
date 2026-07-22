@@ -47,7 +47,7 @@ CGIResponse::CGIResponse(std::stringstream& CGIResponseStream,
 
 void CGIResponse::addCGIBody(HttpRequest request) {
   (void)request;
-  std::cout << std::endl << "[" << _CGIResponseStr << "] " << std::endl << std::endl;
+  // std::cout << std::endl << "[" << _CGIResponseStr << "] " << std::endl << std::endl;
   // std::string str = _CGIResponseStream.str();
   // size_t      bodyPos = str.find("\r\n\r\n");
   // str.erase(0, bodyPos + 4);

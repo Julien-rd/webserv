@@ -89,7 +89,7 @@ const CGI& CGI::operator=(const CGI& obj) {
 bool CGI::scriptFileExists(void) const {
     std::string scriptPath(ROOT_FOLDER);
     scriptPath += "/PasswordManager" + request._uriData.path; //Fix: This is hardcoded, pls add something like locationfind here we want our server adaptable so the config setup matters
-   std::cout << scriptPath << "\n"; 
+   // std::cout << scriptPath << "\n"; 
   struct stat data;
   if (stat(scriptPath.c_str(), &data) == -1) {
     std::cerr << "couldn't access CGI script file"
@@ -199,7 +199,6 @@ bool CGI::spawnProcess(void) {
       std::string bodyStr(body.begin(), 
                            body.end());
       size_t totalWritten = 0;
-      
       while (totalWritten < this->request._contentLength)
       {
           ssize_t written = write(
