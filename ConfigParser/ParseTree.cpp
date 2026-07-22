@@ -1,8 +1,8 @@
 #include "Parser.hpp"
 #include "Structs.hpp"
 
-static std::vector<std::pair<std::string, int>> d;
-static std::vector<std::pair<std::string, int>> c;
+static std::vector<std::pair<std::string, int> > d;
+static std::vector<std::pair<std::string, int> > c;
 
 Node *context(Tokenizer &stream, std::vector<std::string> &args);
 Node *directive(std::vector<std::string> &args);

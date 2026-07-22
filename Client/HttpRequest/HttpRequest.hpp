@@ -42,7 +42,6 @@ class HttpRequest {
     int                                       getStatusCode() const;
     size_t                                    getBytesRead() const;
     const std::vector<char>                  &getBody() const;
-    std::string                               getURI() const;
     const std::string                        &getMethod() const;
     const std::string                        &getUri() const;
     const std::map<std::string, std::string> &getHeaders() const;

@@ -223,7 +223,7 @@ std::string autoindex(const std::string &path, const std::string &uri) {
 void HttpResponse::addBody(HttpRequest request, const UriResult &result) {
 
     std::fstream htmlPage;
-    std::string  uri = request.getURI();
+    std::string  uri = request.getUri();
     std::string  autoindexHtml;
     if (result.autoindex == true) {
         autoindexHtml = autoindex(result.path, uri);
@@ -377,7 +377,7 @@ int HttpResponse::build(HttpRequest request) {
 
     UriResult    result;
     std::fstream htmlPage;
-    std::string  uri = request.getURI();
+    std::string  uri = request.getUri();
     std::string  autoindexHtml;
 
     _statusCode = request.getStatusCode();
