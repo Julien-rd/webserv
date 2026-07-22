@@ -3,11 +3,11 @@
 #include <sstream>
 
 bool CGI::setScriptAttributesPython(void) {
-  for (size_t i = 0; i < this->cgiConfigs.size(); i++) {
-    if (this->cgiConfigs.at(i).extension == ".py") {
-      this->executable = this->cgiConfigs.at(i).executablePath;
-      this->argv.push_back(this->cgiConfigs.at(i).executablePath);
-      this->argv.push_back("Pages/PasswordManager" + this->request._uriData.path);//Fix: hardcoded, needs to be adaptable to serverConfig
+  for (size_t i = 0; i < this->_cgiConfigs.size(); i++) {
+    if (this->_cgiConfigs.at(i).extension == ".py") {
+      this->_executable = this->_cgiConfigs.at(i).executablePath;
+      this->_argv.push_back(this->_cgiConfigs.at(i).executablePath);
+      this->_argv.push_back("Pages/PasswordManager" + this->_request._uriData.path);//Fix: hardcoded, needs to be adaptable to serverConfig
       return true;
     }
   }
@@ -15,78 +15,78 @@ bool CGI::setScriptAttributesPython(void) {
 }
 
 void CGI::setGETVariablesPython(void) {
-  this->envp[0] = this->meta.request_method.c_str();
-  this->envp[1] = this->meta.query_string.c_str();
-  this->envp[2] = this->meta.script_name.c_str();
-  this->envp[3] = this->meta.path_info.c_str();
-  this->envp[4] = this->meta.server_name.c_str();
-  this->envp[5] = this->meta.server_port.c_str();
-  this->envp[6] = this->meta.server_protocol.c_str();
-  this->envp[7] = NULL;
+  this->_envp[0] = this->_meta.request_method.c_str();
+  this->_envp[1] = this->_meta.query_string.c_str();
+  this->_envp[2] = this->_meta.script_name.c_str();
+  this->_envp[3] = this->_meta.path_info.c_str();
+  this->_envp[4] = this->_meta.server_name.c_str();
+  this->_envp[5] = this->_meta.server_port.c_str();
+  this->_envp[6] = this->_meta.server_protocol.c_str();
+  this->_envp[7] = NULL;
 }
 
 void CGI::setPOSTVariablesPython(void) {
-  this->envp[0] = this->meta.request_method.c_str();
-  this->envp[1] = this->meta.content_length.c_str();
-  this->envp[2] = this->meta.content_type.c_str();
-  this->envp[3] = this->meta.script_name.c_str();
-  this->envp[4] = this->meta.path_info.c_str();
-  this->envp[5] = this->meta.server_name.c_str();
-  this->envp[6] = this->meta.server_port.c_str();
-  this->envp[7] = this->meta.server_protocol.c_str();
-  this->envp[8] = NULL;
+  this->_envp[0] = this->_meta.request_method.c_str();
+  this->_envp[1] = this->_meta.content_length.c_str();
+  this->_envp[2] = this->_meta.content_type.c_str();
+  this->_envp[3] = this->_meta.script_name.c_str();
+  this->_envp[4] = this->_meta.path_info.c_str();
+  this->_envp[5] = this->_meta.server_name.c_str();
+  this->_envp[6] = this->_meta.server_port.c_str();
+  this->_envp[7] = this->_meta.server_protocol.c_str();
+  this->_envp[8] = NULL;
 }
 
 void CGI::initMetaPython(void) {
-  // this->meta.auth_type = ""; // RFC 3875 - 4.1.1 // Implement?
+  // this->_meta.auth_type = ""; // RFC 3875 - 4.1.1 // Implement?
   std::stringstream ss;
-  ss << request._contentLength;
+  ss << _request._contentLength;
 
-  if (this->request._method == "POST") {
-    this->meta.content_length = std::string("CONTENT_LENGTH=").append(ss.str());
+  if (this->_request._method == "POST") {
+    this->_meta.content_length = std::string("CONTENT_LENGTH=").append(ss.str());
   } else {
-    this->meta.content_length = std::string("CONTENT_LENGTH=").append("0");
+    this->_meta.content_length = std::string("CONTENT_LENGTH=").append("0");
   }
-  this->meta.content_type = std::string("CONTENT_TYPE=")
-                                .append(this->request._headers["content-type"]);
-  // this->meta.gateway_interface = "CGI/1.1";
-  this->meta.path_info =
-      std::string("PATH_INFO=").append(this->request._uriData.pathInfo);
-  // this->meta.path_translated = this->meta.path_translated;
-  this->meta.query_string =
-      std::string("QUERY_STRING=").append(parseQueryString(request._uri));
-  // this->meta.remote_addr =
+  this->_meta.content_type = std::string("CONTENT_TYPE=")
+                                .append(this->_request._headers["content-type"]);
+  // this->_meta.gateway_interface = "CGI/1.1";
+  this->_meta.path_info =
+      std::string("PATH_INFO=").append(this->_request._uriData.pathInfo);
+  // this->_meta.path_translated = this->_meta.path_translated;
+  this->_meta.query_string =
+      std::string("QUERY_STRING=").append(parseQueryString(_request._uri));
+  // this->_meta.remote_addr =
   //     std::string("REMOTE_ADDR=").append("1.1.1.1"); // TODO change this
-  // this->meta.remote_host = "";
-  // this->meta.remote_ident = "";
-  // this->meta.remote_user = "";
-  this->meta.request_method =
-      std::string("REQUEST_METHOD=").append(request._method);
-  this->meta.script_name = std::string("SCRIPT_NAME=").append(this->scriptName);
-  // this->meta.server_name =
-  // std::string("SERVER_NAME=").append(request._headers.at("host")); // TODO
+  // this->_meta.remote_host = "";
+  // this->_meta.remote_ident = "";
+  // this->_meta.remote_user = "";
+  this->_meta.request_method =
+      std::string("REQUEST_METHOD=").append(_request._method);
+  this->_meta.script_name = std::string("SCRIPT_NAME=").append(this->_scriptName);
+  // this->_meta.server_name =
+  // std::string("SERVER_NAME=").append(_request._headers.at("host")); // TODO
   // get this from result of config_parser instead std::cout <<
-  // "request._headers.at(host) is: " << request._headers.at("host") <<
+  // "_request._headers.at(host) is: " << _request._headers.at("host") <<
   // std::endl; std::cout <<
-  // "request._headers.at(host).substr(request._headers).at(host) is: " <<
-  // request._headers.at("host") << std::endl; std::cout <<
-  // "request._headers.at(host).substr(request._headers).at(host).find(:) + 1
-  // is: " << request._headers.at("host").find(':') + 1 << std::endl;
-  this->meta.server_port =
-      std::string("SERVER_PORT=").append(this->serverConfig.port);
-  this->meta.server_protocol =
+  // "_request._headers.at(host).substr(_request._headers).at(host) is: " <<
+  // _request._headers.at("host") << std::endl; std::cout <<
+  // "_request._headers.at(host).substr(_request._headers).at(host).find(:) + 1
+  // is: " << _request._headers.at("host").find(':') + 1 << std::endl;
+  this->_meta.server_port =
+      std::string("SERVER_PORT=").append(this->_serverConfig.port);
+  this->_meta.server_protocol =
       std::string("SERVER_PROTOCOL=").append("HTTP/1.1");
-  // this->meta.server_software = "";
-  // this->meta.x = "";
+  // this->_meta.server_software = "";
+  // this->_meta.x = "";
 }
 
 bool CGI::initPythonScript(void) {
   this->initMetaPython();
   if (!this->setScriptAttributesPython())
       return false;
-  if (request._method == "GET") {
+  if (_request._method == "GET") {
     this->setGETVariablesPython();
-  } else if (request._method == "POST") {
+  } else if (_request._method == "POST") {
     this->setPOSTVariablesPython();
   } else {
     std::cerr << "Unknown method in CGI" << std::endl;

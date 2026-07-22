@@ -91,7 +91,7 @@ void Client::closeConnection() {
     return ;
 }
 
-void Client::readCGIPipe(int pipeReadFd) {
+void Client::readCGIPipe(int pipeReadFd) {   //ALL OF THE ERRORS HERE CAUSE INFINITE LOADING AND CRASH THE SERVER
   char    buf[BUFFER_SIZE];
   ssize_t bytesRead;
 
@@ -104,7 +104,7 @@ void Client::readCGIPipe(int pipeReadFd) {
   }
   if (bytesRead == 0) {
     int res = waitpid(_CGIPid, NULL, WNOHANG);
-    if (res == -1) {
+    if (res == -1 || 1) {
       std::cerr << "waitpid() failed in handleCGIResponse(): " << strerror(errno) << "\n";
       return; // NOTFINISHED: i have no idea whats open here and what this function is responsible for
     }
@@ -159,20 +159,24 @@ void Client::doCGI(void) {
     // std::cout << " in doCGI() => _config.servers.at(_sid).port: "
     //           << _config.servers.at(_sid).port << "\n";
     if (!_CGI.scriptFileExists()) {
+        _request.setStatusCode(500);
         closeConnection();
         return;
     }
     if (!_CGI.initCGI()) {
+        _request.setStatusCode(500);
         closeConnection();
         return;
     }
     // std::cout << "========= initCGI() succeeded\n";
     if (!_CGI.pipeIO()) {
+        _request.setStatusCode(500);
         closeConnection();
         return;
     }
     // std::cout << "========= pipeIO() succeeded\n";
     if (!_CGI.spawnProcess() ) {
+        _request.setStatusCode(500);
         closeConnection();
         return;
     }
