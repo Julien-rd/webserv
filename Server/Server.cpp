@@ -1,16 +1,15 @@
 #include "Server.hpp"
+
 #include "../Error/Error.hpp"
 #include "../Utils/Macros.hpp"
 
-#include <exception>
-#include <iostream>
-
-#include <cerrno>
-
 #include <arpa/inet.h>
+#include <cerrno>
 #include <errno.h>
 #include <error.h>
+#include <exception>
 #include <fcntl.h>
+#include <iostream>
 #include <netdb.h>
 #include <string>
 #include <sys/socket.h>
@@ -18,193 +17,196 @@
 #include <unistd.h>
 
 Server::Server(t_serverContext context)
-    : _config(context.config), _epfd(context.epfd), _sid(context.sid),
-      _serverToClientsMap(context.serverToClientsMap),
-      _clientToServerMap(context.clientToServerMap), _clients(context.clients),
-      _serverSocket(-1), _addrInfo(NULL) {}
+        : _config(context.config)
+        , _epfd(context.epfd)
+        , _sid(context.sid)
+        , _serverToClientsMap(context.serverToClientsMap)
+        , _clientToServerMap(context.clientToServerMap)
+        , _clients(context.clients)
+        , _serverSocket(-1)
+        , _addrInfo(NULL) {}
 
-Server::Server(const Server& obj)
-    : _config(obj._config), _epfd(obj._epfd), _sid(obj._sid),
-      _serverToClientsMap(obj._serverToClientsMap),
-      _clientToServerMap(obj._clientToServerMap), _clients(obj._clients),
-      _serverSocket(obj._serverSocket), _addrInfo(NULL) {}
+Server::Server(const Server &obj)
+        : _config(obj._config)
+        , _epfd(obj._epfd)
+        , _sid(obj._sid)
+        , _serverToClientsMap(obj._serverToClientsMap)
+        , _clientToServerMap(obj._clientToServerMap)
+        , _clients(obj._clients)
+        , _serverSocket(obj._serverSocket)
+        , _addrInfo(NULL) {}
 
 Server::~Server(void) {
-  if (_addrInfo) {
-    freeaddrinfo(_addrInfo);
-  }
+    if (_addrInfo) {
+        freeaddrinfo(_addrInfo);
+    }
 }
 
 void Server::closeClientFds(void) {
-  int fd;
+    int fd;
 
-  for (std::map<int, Client>::iterator it = _clients.begin();
-       it != _clients.end(); it++) {
-    fd = it->second.getFd();
-    if (fd != -1)
-      close(fd);
-  }
+    for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); it++) {
+        fd = it->second.getFd();
+        if (fd != -1)
+            close(fd);
+    }
 }
 
 void Server::updateClientsMap(e_mapOperation op, const int clientFd) {
-  switch (op) {
-  case ADD:
-    _clientToServerMap.insert(std::pair<int, int>(clientFd, _serverSocket));
-    _clients.insert(
-        std::pair<int, Client>(clientFd, Client(_epfd, _config, _sid)));
-    // TODO can we construct an entry in the map in a better
-    // way than constructing and then calling copy
-    // assignment operator? this basically constructs 2
-    // client instances, can we make it only one?
-    _clients.at(clientFd).setFd(clientFd);
-    _clients.at(clientFd).setLastActivity();
-    _serverToClientsMap.at(_serverSocket).insert(clientFd);
-    break;
-  case REMOVE:
-    _clientToServerMap.erase(clientFd);
-    _clients.at(clientFd).reset();
-    _clients.erase(clientFd);
-    _serverToClientsMap.at(_serverSocket).erase(clientFd);
-  }
+    switch (op) {
+    case ADD:
+        _clientToServerMap.insert(std::pair<int, int>(clientFd, _serverSocket));
+        _clients.insert(std::pair<int, Client>(clientFd, Client(_epfd, _config, _sid)));
+        // TODO can we construct an entry in the map in a better
+        // way than constructing and then calling copy
+        // assignment operator? this basically constructs 2
+        // client instances, can we make it only one?
+        _clients.at(clientFd).setFd(clientFd);
+        _clients.at(clientFd).setLastActivity();
+        _serverToClientsMap.at(_serverSocket).insert(clientFd);
+        break;
+    case REMOVE:
+        _clientToServerMap.erase(clientFd);
+        _clients.at(clientFd).reset();
+        _clients.erase(clientFd);
+        _serverToClientsMap.at(_serverSocket).erase(clientFd);
+    }
 }
 
 void Server::closeConnection(int clientFd) {
-  updateClientsMap(REMOVE, clientFd);
-  std::cout << "Server __" << _sid << "__ closed connection with Client "
-            << clientFd << std::endl;
-  if (epoll_ctl(_epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
-    error_msg(ERR_EPOLL_CTL);
-    return ;
-  }
-  if (close(clientFd) == -1)
-    error_msg(ERR_CLOSE);
-  return;
+    updateClientsMap(REMOVE, clientFd);
+    std::cout << "Server __" << _sid << "__ closed connection with Client " << clientFd
+              << std::endl;
+    if (epoll_ctl(_epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
+        error_msg(ERR_EPOLL_CTL);
+        return;
+    }
+    if (close(clientFd) == -1)
+        error_msg(ERR_CLOSE);
+    return;
 }
 
 void Server::setToNonBlocking(int socketFd) {
-  if (fcntl(socketFd, F_SETFL, FD_CLOEXEC | O_NONBLOCK) == -1)
-    error_msg(ERR_FCNTL); //Fix: file descriptor needs to be closed after this
+    if (fcntl(socketFd, F_SETFL, FD_CLOEXEC | O_NONBLOCK) == -1)
+        error_msg(ERR_FCNTL);  // Fix: file descriptor needs to be closed after this
 }
 
 void Server::initServerSocket(void) {
-  _serverSocket =
-      socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
-  if (_serverSocket == -1) {
-    error_msg(ERR_SOCKET);
-    throw std::exception();
-  }
-  int opt = 1;
-  if (setsockopt(_serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) ==
-      -1) {
-    error_msg(ERR_SETSOCKOPT);
-    throw std::exception();
-  }
+    _serverSocket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+    if (_serverSocket == -1) {
+        error_msg(ERR_SOCKET);
+        throw std::exception();
+    }
+    int opt = 1;
+    if (setsockopt(_serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
+        error_msg(ERR_SETSOCKOPT);
+        throw std::exception();
+    }
 }
 
 void Server::setServerSockAddr(void) {
-  addrinfo hints = {0, 0, 0, 0, 0, 0, 0, 0};
-  int      res;
+    addrinfo hints = {0, 0, 0, 0, 0, 0, 0, 0};
+    int      res;
 
-  hints.ai_socktype = SOCK_STREAM;
-  hints.ai_family = AF_UNSPEC;
-  hints.ai_flags = AI_NUMERICHOST;
-  std::cout << "ip: " << _config.servers[_sid].ip.c_str() << " == ";
-  std::cout << "port: " << _config.servers[_sid].port.c_str() << " == ";
-  res = getaddrinfo(_config.servers[_sid].ip.c_str(),
-                    _config.servers[_sid].port.c_str(), &hints, &_addrInfo);
-  if (res) {
-    // throw std::runtime_error(std::string("gettaddrinfo() failed: ") +
-    //                          gai_strerror(res));
-    throw std::exception();
-  }
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_flags = AI_NUMERICHOST;
+    std::cout << "ip: " << _config.servers[_sid].ip.c_str() << " == ";
+    std::cout << "port: " << _config.servers[_sid].port.c_str() << " == ";
+    res = getaddrinfo(
+        _config.servers[_sid].ip.c_str(), _config.servers[_sid].port.c_str(), &hints, &_addrInfo);
+    if (res) {
+        // throw std::runtime_error(std::string("gettaddrinfo() failed: ") +
+        //                          gai_strerror(res));
+        throw std::exception();
+    }
 }
 
 void Server::addSocketToEpoll(int socketFd) {
-  struct epoll_event ev;
-  ev.events = EPOLLIN;
-  // ev.data.ptr = 0;
-  ev.data.fd = socketFd;
-  if (epoll_ctl(_epfd, EPOLL_CTL_ADD, socketFd, &ev) == -1) {
-    error_msg(ERR_EPOLL_CTL);
-    throw std::exception();
-  }
+    struct epoll_event ev;
+    ev.events = EPOLLIN;
+    // ev.data.ptr = 0;
+    ev.data.fd = socketFd;
+    if (epoll_ctl(_epfd, EPOLL_CTL_ADD, socketFd, &ev) == -1) {
+        error_msg(ERR_EPOLL_CTL);
+        throw std::exception();
+    }
 }
 
 void Server::bindAndListen(void) {
-  if (bind(_serverSocket, _addrInfo->ai_addr, _addrInfo->ai_addrlen) == -1) {
-    error_msg(ERR_BIND);
-    throw std::exception();
-  }
-  if (listen(_serverSocket, SOMAXCONN) == -1) { // TODO hardocded 20?
-    error_msg(ERR_LISTEN);
-    throw std::exception();
-  }
+    if (bind(_serverSocket, _addrInfo->ai_addr, _addrInfo->ai_addrlen) == -1) {
+        error_msg(ERR_BIND);
+        throw std::exception();
+    }
+    if (listen(_serverSocket, SOMAXCONN) == -1) {  // TODO hardocded 20?
+        error_msg(ERR_LISTEN);
+        throw std::exception();
+    }
 }
 
 int Server::start(void) {
-  initServerSocket();
-  setServerSockAddr();
-  addSocketToEpoll(_serverSocket);
-  bindAndListen();
-  return _serverSocket;
+    initServerSocket();
+    setServerSockAddr();
+    addSocketToEpoll(_serverSocket);
+    bindAndListen();
+    return _serverSocket;
 }
 
 int Server::checkClientCap(void) {
-  if (_clients.size() >= _config.maxClients){ 
-      // TODO FIX
+    if (_clients.size() >= _config.maxClients) {
+        // TODO FIX
         std::cerr << "client capacity reached. can't accept more connections\n";
         return 1;
-  }
-  return 0;
+    }
+    return 0;
 }
 
 void Server::handleServerEvent(void) {
-  int clientFd;
+    int clientFd;
 
-  while (true) {
-    clientFd = accept(_serverSocket, NULL, NULL);
-    if (clientFd == -1) {
-      if (errno == EAGAIN || errno == EWOULDBLOCK) {
-        return;
-      } else {
-        error_msg(ERR_ACCEPT);
-        return;
-      }
+    while (true) {
+        clientFd = accept(_serverSocket, NULL, NULL);
+        if (clientFd == -1) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                return;
+            } else {
+                error_msg(ERR_ACCEPT);
+                return;
+            }
+        }
+        if (checkClientCap() == ERR) {
+            close(clientFd);
+            return;
+        }
+
+        updateClientsMap(ADD, clientFd);
+        setToNonBlocking(clientFd);
+        addSocketToEpoll(clientFd);
+        std::cout << "Server __" << _sid << "__ accepted Client: " << clientFd << std::endl;
     }
-    if (checkClientCap() == ERR) {
-        close(clientFd);
-        return ;
-    }
-        
-    updateClientsMap(ADD, clientFd);
-    setToNonBlocking(clientFd);
-    addSocketToEpoll(clientFd);
-    std::cout << "Server __" << _sid << "__ accepted Client: " << clientFd
-              << std::endl;
-  }
 }
 
 void Server::handleClientEvent(const int clientFd) {
     std::string recvBuffer(BUFFER_SIZE, '\0');
-  ssize_t bytesRead = 0;
-  _clients.at(clientFd).setLastActivity();
-  bytesRead = recv(clientFd, &recvBuffer[0], BUFFER_SIZE, 0);
-  if (bytesRead == 0) {
-    closeConnection(clientFd);
-    return;
-  }
-  if (bytesRead == -1) {
-    error_msg(ERR_RECV);
-    closeConnection(clientFd);
-    return;
-  }
-  recvBuffer.resize(bytesRead);
-  std::cout << recvBuffer << std::endl;
-  int responseStatus = _clients.at(clientFd).loop(recvBuffer);
-  if (responseStatus >= 1) {
-    closeConnection(clientFd);
-    return;
-  }
+    ssize_t     bytesRead = 0;
+    _clients.at(clientFd).setLastActivity();
+    bytesRead = recv(clientFd, &recvBuffer[0], BUFFER_SIZE, 0);
+    if (bytesRead == 0) {
+        closeConnection(clientFd);
+        return;
+    }
+    if (bytesRead == -1) {
+        error_msg(ERR_RECV);
+        closeConnection(clientFd);
+        return;
+    }
+    recvBuffer.resize(bytesRead);
+    std::cout << recvBuffer << std::endl;
+    int responseStatus = _clients.at(clientFd).loop(recvBuffer);
+    if (responseStatus >= 1) {
+        closeConnection(clientFd);
+        return;
+    }
 }
 
 int Server::getIdentifier(void) const { return _sid; }
