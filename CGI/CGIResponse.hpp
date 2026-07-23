@@ -1,15 +1,9 @@
 #pragma once
 #include "../Client/HttpResponse/HttpResponse.hpp"
 
-#include <sstream>
-
 class CGIResponse : public HttpResponse {
   public:
     CGIResponse();
-    CGIResponse(std::stringstream &CGIResponseStream,
-                size_t             CGIResponseLen,
-                const t_config    &config,
-                const int          sid);
     // ~CGIResponse();
 
     void init(size_t CGIResponseLen, const t_config *config, const int sid);

@@ -108,7 +108,7 @@ int Client::getFd() const { return _fd; }
 void Client::reset() {  // Fix: maybe even add _cgi.reset? why is responsestream and cgiresponselen
                         // taken to client??
     _fd = -1;
-    _CGIResponseStream.clear();  // Fix: find a better way to reset the cgi
+    _CGIResponseStream.erase();  // Fix: find a better way to reset the cgi
     _CGIResponseLen = 0;
     _request.reset();
     _response.reset();
@@ -135,7 +135,7 @@ void Client::readCGIPipe(
     bytesRead = read(pipeReadFd, &buf[0], BUFFER_SIZE - 1);
     if (bytesRead == -1) {
         _CGIResponseLen = 0;
-        _CGIResponseStream.clear();
+        _CGIResponseStream.erase();
         std::cerr << "read() failed in Client::handleCGIResponse(): " << strerror(errno) << "\n";
         return;  // NOTFINISHED: i have no idea whats open here and what this function is
                  // responsible for
@@ -183,7 +183,7 @@ void Client::readCGIPipe(
         _request.reset();
         _CGIResponse.reset();
         _CGI.reset();
-        _CGIResponseStream.clear();
+        _CGIResponseStream.erase();
         _CGIResponseLen = 0;
     } else {
         // std::cout << "adding (( " << buf << " )) to _CGIResponseStream\n";
@@ -250,7 +250,7 @@ int Client::loop(std::string &recvBuffer) {
             doCGI();
             _request.reset();
             _response.reset();
-            _CGIResponseStream.clear();
+            _CGIResponseStream.erase();
             _CGIResponseLen = 0;
             // _CGIResponse.reset(); //fix: those were the issues now pls check what needs to be reset
             // _CGI.reset();

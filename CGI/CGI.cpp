@@ -190,12 +190,21 @@ bool CGI::spawnProcess(void) {
             const std::vector<char> &body = _request->getBody();
             std::string              bodyStr(body.begin(), body.end());
             size_t                   totalWritten = 0;
+            std::cout << "[[[[[[[[[[\n"
+                      << "bodysize: " << body.size()
+                      << "\n_contentlength: " << _request->getContentLength() << "\n[[[[[[[[[[\n";
             while (totalWritten < _request->getContentLength()) {
                 ssize_t written = write(_postPipeFd[1],
                                         bodyStr.data() + totalWritten,
                                         _request->getContentLength() - totalWritten);
-                if (written <= 0) {
-                    // Fix: handle error
+                if (written == -1) {
+                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                        continue;
+                    }
+                    if (errno == EINTR) {
+                        continue;
+                    }
+                    std::cerr << "write() failed in CGI post pipe: " << strerror(errno) << "\n";
                     break;
                 }
                 totalWritten += written;
@@ -276,11 +285,7 @@ bool CGI::isCGIRequest(const HttpRequest &request) {
     return false;
 }
 
-void CGI::init(HttpRequest                     *request,
-               int                              clientFd,
-               int                              epfd,
-               const t_server                  *serverConfig
-) {
+void CGI::init(HttpRequest *request, int clientFd, int epfd, const t_server *serverConfig) {
 
     _request = request;
     _epfd = epfd;
@@ -294,7 +299,8 @@ void CGI::init(HttpRequest                     *request,
 }
 
 void CGI::reset(void) {
-    // _clientFd = -1; //fix: was buggy but where does this happen instead or does it just get overwritten anyways
+    // _clientFd = -1; //fix: was buggy but where does this happen instead or does it just get
+    // overwritten anyways
     _scriptName.erase();
     _executable.erase();
     _argv.clear();

@@ -10,7 +10,7 @@ void CGIResponse::init(size_t CGIResponseLen, const t_config *config, const int 
 }
 void CGIResponse::reset() {
     _CGIResponseLen = 0;
-    _CGIResponseStr.clear();
+    _CGIResponseStr.erase();
 }
 
 const std::string &CGIResponse::getCGIResponseStr() { return _CGIResponseStr; }
