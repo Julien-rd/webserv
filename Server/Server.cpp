@@ -57,7 +57,10 @@ void Server::updateClientsMap(e_mapOperation op, const int clientFd) {
     case ADD: {
         _clientToServerMap.insert(std::pair<int, int>(clientFd, _serverSocket));
         Client &client = _clients[clientFd];
-        // client.init(_epfd, &_config, _sid, clientFd);
+        (void) client;
+        // std::cout << "here1\n";
+        // _clients.at(clientFd).init(_epfd, &_config, _sid, clientFd);
+        // std::cout << "here2\n";
         _serverToClientsMap.at(_serverSocket).insert(clientFd);
         break;
     }
@@ -174,7 +177,6 @@ void Server::handleServerEvent(void) {
             close(clientFd);
             return;
         }
-
         updateClientsMap(ADD, clientFd);
         setToNonBlocking(clientFd);
         addSocketToEpoll(clientFd);
@@ -185,6 +187,7 @@ void Server::handleServerEvent(void) {
 void Server::handleClientEvent(const int clientFd) {
     std::string recvBuffer(BUFFER_SIZE, '\0');
     ssize_t     bytesRead = 0;
+    std::cout << "here1, _clients.size(): " << _clients.size() << "\n";
     _clients.at(clientFd).setLastActivity();
     bytesRead = recv(clientFd, &recvBuffer[0], BUFFER_SIZE, 0);
     if (bytesRead == 0) {
