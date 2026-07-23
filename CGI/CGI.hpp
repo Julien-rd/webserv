@@ -35,11 +35,12 @@ typedef struct s_metaVariables {
 
 class CGI {
   public:
-    CGI(HttpRequest                     &request,
-        int                              clientFd,
-        int                              epfd,
-        const t_server                  &serverConfig,
-        const std::vector<t_cgi_config> &cgiConfigs);
+    CGI();
+    // CGI(HttpRequest                     *request,
+    //     int                              clientFd,
+    //     int                              epfd,
+    //     const t_server                  &serverConfig,
+    //     const std::vector<t_cgi_config> &cgiConfigs);
     CGI(const CGI &obj);
     const CGI &operator=(const CGI &obj);
     ~CGI(void);
@@ -53,6 +54,11 @@ class CGI {
     bool addPipeToEpoll(void);
     void wait(void) const;
     bool isCGIRequest(const HttpRequest &request);
+    void init(HttpRequest                     *request,
+              int                              clientFd,
+              int                              epfd,
+              const t_server                  *serverConfig,
+              const std::vector<t_cgi_config> *cgiConfigs);
     void reset();
     void reconstruct(const HttpRequest               &request,
                      int                              clientFd,
@@ -63,19 +69,15 @@ class CGI {
     // getters
     pid_t getPid(void) const;
 
-    // setters //Fix: maybe my mistake, but isnt clientfd always there already on client
-    // initialization? isnt there a better way to do this
-    void setClientFd(const int fd);
-
   private:
-    HttpRequest                     &_request;
+    const HttpRequest               *_request;
     std::string                      _scriptName;
     t_metaVariables                  _meta;
     pid_t                            _pid;
     int                              _epfd;
     int                              _clientFd;
-    const std::vector<t_cgi_config> &_cgiConfigs;
-    const t_server                  &_serverConfig;
+    const std::vector<t_cgi_config> *_cgiConfigs;
+    const t_server                  *_serverConfig;
     std::string                      _executable;
     std::vector<std::string>         _argv;
     const char                      *_envp[20];

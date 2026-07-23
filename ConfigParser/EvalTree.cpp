@@ -68,7 +68,7 @@ void evalDirective(Node *tree, t_config &evalData) {
 }
 
 void setServer(t_server &server) {
-    server.client_max_body = 4;
+    server.clientMaxBody = 2;
     server.ip = "0.0.0.0";
     server.port = "8080";
     server.localhost = false;

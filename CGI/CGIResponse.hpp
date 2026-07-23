@@ -5,13 +5,14 @@
 
 class CGIResponse : public HttpResponse {
   public:
+    CGIResponse();
     CGIResponse(std::stringstream &CGIResponseStream,
                 size_t             CGIResponseLen,
                 const t_config    &config,
                 const int          sid);
-    // CGIResponse();
     // ~CGIResponse();
 
+    void init(size_t CGIResponseLen, const t_config *config, const int sid);
     void reset();
     int  build(HttpRequest request);
     void extractStatus(void);

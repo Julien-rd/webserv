@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-HttpRequest::HttpRequest(size_t client_max_body_size)
+HttpRequest::HttpRequest(size_t clientMaxBody)
         : _currentState(METHOD)
         , _contentLength(0)
         , _buffer("")
@@ -14,7 +14,7 @@ HttpRequest::HttpRequest(size_t client_max_body_size)
         , _bytesRead(0)
         , _statusCode(0)
         , _parsingDone(false)
-        , _client_max_body_size(client_max_body_size) {}
+        , _clientMaxBody(clientMaxBody) {}
 
 HttpRequest::HttpRequest()
         : _currentState(METHOD)
@@ -25,7 +25,7 @@ HttpRequest::HttpRequest()
         , _bytesRead(0)
         , _statusCode(0)
         , _parsingDone(false)
-        , _client_max_body_size(2000000) {}  // TODO hardcoded fix accordingly
+        , _clientMaxBody(2) {}
 
 const std::vector<char> &HttpRequest::getBody() const { return _body; }
 
@@ -44,7 +44,7 @@ HttpRequest::HttpRequest(const HttpRequest &obj) {
     _statusCode = obj._statusCode;
     _parsingDone = obj._parsingDone;
     _body = obj._body;
-    _client_max_body_size = obj._client_max_body_size;
+    _clientMaxBody = obj._clientMaxBody;
     _buffer = obj._buffer;
     _bytesNeeded = obj._bytesNeeded;
 }
@@ -67,7 +67,7 @@ const HttpRequest &HttpRequest::operator=(const HttpRequest &obj) {
     _statusCode = obj._statusCode;
     _parsingDone = obj._parsingDone;
     _body = obj._body;
-    _client_max_body_size = obj._client_max_body_size;
+    _clientMaxBody = obj._clientMaxBody;
     _buffer = obj._buffer;
     _bytesNeeded = obj._bytesNeeded;
     return *this;

@@ -4,3 +4,4 @@
 #define ERR 1
 #define SUCCESS 0
 #define TIMEOUT 20
+#define MEGABYTE 1048576

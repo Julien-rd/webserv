@@ -12,15 +12,17 @@ class Client {  // Fix: This has too many responsibilities: extract everything f
                 // existing cgi classes or a cgi handler even the resetting.
                 // also the request/response workflow can be outsources to HTTP handling
   public:
-    Client(const t_config &config, const int _sid);
-    Client(int epfd, const t_config &config, const int _sid);
-    Client(const Client &obj);
-    Client &operator=(const Client &obj);
+    Client();
+    // Client(const t_config &config, const int _sid);
+    // Client(int epfd, const t_config &config, const int _sid);
+    // Client(const Client &obj);
+    // Client &operator=(const Client &obj);
 
     int    loop(std::string &recvBuffer);
     void   doCGI();
     size_t getBytesRead();
     void   readCGIPipe(int pipeReadFd);
+    void   init(int epfd, const t_config *config, const int sid, const int clientFd);
     void   reset();
 
     // getters
@@ -28,7 +30,6 @@ class Client {  // Fix: This has too many responsibilities: extract everything f
     int    getFd() const;
 
     // setters
-    void setFd(int fd);
     void setLastActivity();
 
   private:
@@ -44,7 +45,7 @@ class Client {  // Fix: This has too many responsibilities: extract everything f
     ssize_t           _CGIResponseLen;
     pid_t             _CGIPid;
     CGIResponse       _CGIResponse;
-    const t_config   &_config;
+    const t_config   *_config;
     CGI               _CGI;
 
     void closeConnection();

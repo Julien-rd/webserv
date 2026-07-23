@@ -24,18 +24,17 @@ typedef struct s_uri {
 class HttpRequest {
 
   public:
-    HttpRequest(size_t client_max_body_size);
+    HttpRequest(size_t clientMaxBody);
     HttpRequest(const HttpRequest &obj);
     HttpRequest();
     const HttpRequest &operator=(const HttpRequest &obj);
-
-    // Fix: these have to be private, please implement getters in script functions
 
     int  parseHttpRequest(std::string &recvBuffer, size_t bytes_read);
     int  parseURIContent(void);
     bool parsingDone();
 
     void print();
+    void init(unsigned int clientMaxBody);
     void reset();
 
     // getters
@@ -72,7 +71,7 @@ class HttpRequest {
     int                                _statusCode;
     bool                               _parsingDone;
     std::vector<char>                  _body;
-    size_t                             _client_max_body_size;
+    size_t                             _clientMaxBody;
 
     // size_t _bytes_read implent bytes_read!!! erase is to inefficient
 

@@ -36,7 +36,7 @@ static void printServer(const t_server &srv, size_t idx) {
     std::cout << "    localhost:       " << (srv.localhost ? "true" : "false") << "\n";
     std::cout << "    ip:              " << srv.ip << "\n";
     std::cout << "    port:            " << srv.port << "\n";
-    std::cout << "    client_max_body: " << srv.client_max_body << "\n";
+    std::cout << "    client_max_body: " << srv.clientMaxBody << "\n";
 
     if (!srv.cgiConfigs.empty()) {
         std::cout << "    cgiConfigs (" << srv.cgiConfigs.size() << "):\n";

@@ -51,7 +51,7 @@ typedef struct s_server {
     // std::string server_name;
     std::string               ip;
     std::string               port;
-    unsigned int              client_max_body;
+    unsigned int              clientMaxBody;
     std::vector<t_location>   locations;
     std::vector<t_cgi_config> cgiConfigs;
 } t_server;

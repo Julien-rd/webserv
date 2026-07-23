@@ -1,3 +1,4 @@
+#include "../../Utils/Macros.hpp"
 #include "HttpRequest.hpp"
 
 #include <cctype>
@@ -165,7 +166,7 @@ bool HttpRequest::hasContentLength() {
             std::cerr << "Invalid Content-Length\n";
             return false;
         }
-        if (_contentLength > _client_max_body_size) {
+        if (_contentLength > _clientMaxBody * MEGABYTE) {
             std::cerr << "Request Entity Too Large\n<";
             return false;
         }
@@ -190,6 +191,8 @@ bool HttpRequest::validateMandatoryHeaders() {
     _currentState = METHOD;
     return (hasHostHeader());
 }
+
+void HttpRequest::init(unsigned int clientMaxBody) { _clientMaxBody = clientMaxBody; }
 
 void HttpRequest::reset() {
     _currentState = METHOD;

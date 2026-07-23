@@ -1,16 +1,16 @@
+#include "../Utils/Macros.hpp"
 #include "CGI.hpp"
 
 #include <iostream>
 #include <sstream>
 
 bool CGI::setScriptAttributesPhp(void) {
-    for (size_t i = 0; i < _cgiConfigs.size(); i++) {
-        if (_cgiConfigs.at(i).extension == ".php") {
-            _executable = _cgiConfigs.at(i).executablePath;
-            _argv.push_back(_cgiConfigs.at(i).executablePath);
-            _argv.push_back("Path/PasswordManager" +
-                            _request.getUriData()
-                                .path);  // Fix: hardcoded, needs to be adaptable to serverConfig
+    for (size_t i = 0; i < _cgiConfigs->size(); i++) {
+        if (_cgiConfigs->at(i).extension == ".php") {
+            _executable = _cgiConfigs->at(i).executablePath;
+            _argv.push_back(_cgiConfigs->at(i).executablePath);
+            _argv.push_back(ROOT_FOLDER + _serverConfig->locations.at(0).root +
+                            _request->getUriData().path);
             return true;
         }
     }
@@ -98,9 +98,9 @@ bool CGI::initPhpScript(void) {
     initMetaPhp();
     if (!setScriptAttributesPhp())
         return false;
-    if (_request.getMethod() == "GET") {
+    if (_request->getMethod() == "GET") {
         setGETVariablesPhp();
-    } else if (_request.getMethod() == "POST") {
+    } else if (_request->getMethod() == "POST") {
         setPOSTVariablesPhp();
     } else {
         std::cerr << "Unknown method in CGI" << std::endl;

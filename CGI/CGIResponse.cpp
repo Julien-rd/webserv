@@ -4,6 +4,10 @@
 #include <iostream>
 #include <sstream>
 
+void CGIResponse::init(size_t CGIResponseLen, const t_config *config, const int sid) {
+    _CGIResponseLen = CGIResponseLen;
+    HttpResponse::init(config, sid);
+}
 void CGIResponse::reset() {
     _CGIResponseLen = 0;
     _CGIResponseStr.clear();
@@ -28,17 +32,7 @@ void CGIResponse::extractStatus(void) {
     return;
 }
 
-CGIResponse::CGIResponse(std::stringstream &CGIResponseStream,
-                         size_t             CGIResponseLen,
-                         const t_config    &config,
-                         const int          sid)
-        : HttpResponse(config, sid), _CGIResponseLen(CGIResponseLen) {
-    (void) CGIResponseLen;
-    (void) CGIResponseStream;
-    // std::cout << "CGIResponse Constructor called, CGIResponseStream: (("
-    //           << CGIResponseStream.str() << "))\n_CGIResponseStream: (("
-    //           << _CGIResponseStr << "))\n";
-}
+CGIResponse::CGIResponse() {}
 
 void CGIResponse::addCGIBody(HttpRequest request) {
     (void) request;
