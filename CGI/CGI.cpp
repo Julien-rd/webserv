@@ -100,7 +100,7 @@ bool CGI::scriptFileExists(void) const {
                                      // config setup matters std::cout << scriptPath << "\n";
     struct stat data;
     if (stat(scriptPath.c_str(), &data) == -1) {
-        std::cerr << "couldn't access CGI script file"
+        std::cerr << "couldn't access CGI script file (" << scriptPath.c_str() << ")"
                   << std::endl;  // TODO handle error pages here too???
         return false;
     }

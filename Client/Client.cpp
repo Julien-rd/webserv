@@ -122,7 +122,7 @@ void Client::readCGIPipe(
     }
     if (bytesRead == 0) {
         int res = waitpid(_CGIPid, NULL, WNOHANG);
-        if (res == -1 || 1) {
+        if (res == -1) {
             std::cerr << "waitpid() failed in handleCGIResponse(): " << strerror(errno) << "\n";
             return;  // NOTFINISHED: i have no idea whats open here and what this function is
                      // responsible for
