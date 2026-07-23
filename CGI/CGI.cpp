@@ -83,7 +83,8 @@ bool CGI::scriptFileExists(void) const {
     scriptPath += _serverConfig->locations.at(0).root + _request->getUriData().path;
     struct stat data;
     if (stat(scriptPath.c_str(), &data) == -1) {
-        std::cerr << "couldn't access CGI script file" << std::endl;
+        std::cerr << "couldn't access CGI script file (" << scriptPath.c_str() << ")"
+                  << std::endl;  // TODO handle error pages here too???
         return false;
     }
     if (data.st_mode & S_IXUSR) {

@@ -75,17 +75,18 @@ void Client::init(int epfd, const t_config *config, const int sid, const int cli
 //               _config.servers.at(_sid).cgiConfigs) {
 // }
 
-// Client::Client(const Client &obj)
-//         : _fd(obj._fd)
-//         , _sid(obj._sid)
-//         , _epfd(obj._epfd)
-//         , _request(obj._request)
-//         , _response(obj._response)
-//         , _CGIResponseLen(obj._CGIResponseLen)
-//         , _CGIPid(obj._CGIPid)
-//         , _CGIResponse(obj._CGIResponse)
-//         , _config(obj._config)
-//         , _CGI(obj._CGI) {}
+Client::Client(const Client &obj)
+        : _fd(obj._fd)
+        , _sid(obj._sid)
+        , _epfd(obj._epfd)
+        , _request(obj._request)
+        , _response(obj._response)
+        , _CGIResponseStr(obj._CGIResponseStr)
+        , _CGIResponseLen(obj._CGIResponseLen)
+        , _CGIPid(obj._CGIPid)
+        , _CGIResponse(obj._CGIResponse)
+        , _config(obj._config)
+        , _CGI(obj._CGI) {}
 
 // Client &Client::operator=(const Client &obj) {
 //     if (&obj == this) {
@@ -109,7 +110,8 @@ int Client::getFd() const { return _fd; }
 void Client::reset() {  // Fix: maybe even add _cgi.reset? why is responsestream and cgiresponselen
                         // taken to client??
     _fd = -1;
-    _CGIResponseStream.clear();  // Fix: find a better way to reset the cgi
+    // _CGIResponseStream.clear();  // Fix: find a better way to reset the cgi
+    _CGIResponseStr.clear();
     _CGIResponseLen = 0;
     _request.reset();
     _response.reset();
@@ -135,7 +137,8 @@ void Client::readCGIPipe(
     bytesRead = read(pipeReadFd, buf, BUFFER_SIZE - 1);
     if (bytesRead == -1) {
         _CGIResponseLen = 0;
-        _CGIResponseStream.clear();
+        // _CGIResponseStream.clear();
+        _CGIResponseStr.clear();
         std::cerr << "read() failed in Client::handleCGIResponse(): " << strerror(errno) << "\n";
         return;  // NOTFINISHED: i have no idea whats open here and what this function is
                  // responsible for
@@ -160,7 +163,7 @@ void Client::readCGIPipe(
         close(pipeReadFd);
         // std::cout << "\nbuilding HttpResponse from CGI Response:\n{\n"
         //           << _CGIResponseStream.str() << "\n}\n";
-        _CGIResponse.setCGIResponseStr(_CGIResponseStream.str());
+        _CGIResponse.setCGIResponseStr(_CGIResponseStr);
         _CGIResponse.setCGIResponseLen(_CGIResponseLen);
         _CGIResponse.build(_request);
         const char *response = _CGIResponse.getResponse();
@@ -187,7 +190,7 @@ void Client::readCGIPipe(
         buf[bytesRead] = '\0';
         // std::cout << "adding (( " << buf << " )) to _CGIResponseStream\n";
         _CGIResponseLen += bytesRead;
-        _CGIResponseStream.write(buf, bytesRead + 1);
+        _CGIResponseStr.append(buf, bytesRead);
         // std::cout << "_CGIResponseStream becamse: ((" << _CGIResponseStream.str()
         //           << " ))" << std::endl;
     }
@@ -250,8 +253,9 @@ int Client::loop(std::string &recvBuffer) {
             doCGI();
             _request.reset();
             _response.reset();
-            _CGIResponseStream.str("");
-            _CGIResponseStream.clear();
+            // _CGIResponseStream.str("");
+            // _CGIResponseStream.clear();
+            _CGIResponseStr.clear();
             _CGIResponseLen = 0;
             _CGIResponse.reset();
             _CGI.reset();

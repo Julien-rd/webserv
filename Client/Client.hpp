@@ -15,7 +15,7 @@ class Client {  // Fix: This has too many responsibilities: extract everything f
     Client();
     // Client(const t_config &config, const int _sid);
     // Client(int epfd, const t_config &config, const int _sid);
-    // Client(const Client &obj);
+    Client(const Client &obj);
     // Client &operator=(const Client &obj);
 
     int    loop(std::string &recvBuffer);
@@ -41,12 +41,13 @@ class Client {  // Fix: This has too many responsibilities: extract everything f
     size_t       _bytesRead;
     time_t       _lastActivity;
 
-    std::stringstream _CGIResponseStream;
-    ssize_t           _CGIResponseLen;
-    pid_t             _CGIPid;
-    CGIResponse       _CGIResponse;
-    const t_config   *_config;
-    CGI               _CGI;
+    // std::stringstream _CGIResponseStream;
+    std::string     _CGIResponseStr;
+    ssize_t         _CGIResponseLen;
+    pid_t           _CGIPid;
+    CGIResponse     _CGIResponse;
+    const t_config *_config;
+    CGI             _CGI;
 
     void closeConnection(int reason);
 };

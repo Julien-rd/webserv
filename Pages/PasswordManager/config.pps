@@ -2,28 +2,34 @@
 client_timeout 50;
 server {
   client_max_body_size        1;
-  
+
   cgi_config .py /usr/bin/python3;
   allow_methods GET POST DELETE;
+
   location /login/ {
-  index index.html;
+    index index.html;
   }
+
   location /error/ {
-  index index.html;
+    index index.html;
   }
+
   location /registration/ {
-  index index.html;
-  allow_methods GET POST DELETE;
+    index index.html;
+    allow_methods GET POST DELETE;
   }
+
   location /database/ {
-  allow_methods GET POST DELETE;
+    allow_methods GET POST DELETE;
   }
+
   location /dashboard/ {
-  index index.html;
-  allow_methods GET POST DELETE;
+    index index.html;
+    allow_methods GET POST DELETE;
   }
+
   location /processing/ {
-  index index.html;
+    index index.html;
   }
   
   root /PasswordManager;

@@ -21,7 +21,7 @@ class HttpResponse {
     const char       *getResponse();
     std::vector<char> getResponseBody();
 
-    virtual void init(const t_config *config, const int sid);
+    void         init(const t_config *config, const int sid);
     virtual void reset();
     int          getTimeStamp();
 
