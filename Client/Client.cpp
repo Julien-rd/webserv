@@ -24,63 +24,79 @@
 
 #define BUFFER_SIZE 4096
 
-Client::Client(const t_config &config, const int sid)
-        : _fd(-1)
-        , _sid(sid)
-        , _epfd(-1)
-        , _request()
-        , _response(config, sid)
-        , _CGIResponseLen(0)
-        , _CGIPid(-1)
-        , _CGIResponse(_CGIResponseStream, _CGIResponseLen, config, sid)
-        , _config(config)
-        , _CGI(
-              _request, _fd, _epfd, _config.servers.at(_sid), _config.servers.at(_sid).cgiConfigs) {
+Client::Client() {
+    _fd = -1;
+    _CGIResponseLen = 0;
+    _CGIPid = -1;
 }
 
-Client::Client(int epfd, const t_config &config, const int sid)
-        : _fd(-1)
-        , _sid(sid)
-        , _epfd(epfd)
-        , _request()
-        , _response(config, sid)
-        , _CGIResponseLen(0)
-        , _CGIPid(-1)
-        , _CGIResponse(_CGIResponseStream, _CGIResponseLen, config, sid)
-        , _config(config)
-        , _CGI(
-              _request, _fd, _epfd, _config.servers.at(_sid), _config.servers.at(_sid).cgiConfigs) {
+void Client::init(int epfd, const t_config *config, const int sid, const int clientFd) {
+    _config = config;
+    _epfd = epfd;
+    _sid = sid;
+    _fd = clientFd;
+    _request.init(config->servers.at(sid).clientMaxBody);
+    _response.init(config, sid);
+    _CGIResponse.init(_CGIResponseLen, config, sid);
+    _CGI.init(
+        &_request, _fd, _epfd, &_config->servers.at(_sid), &_config->servers.at(_sid).cgiConfigs);
+    setLastActivity();
 }
 
-Client::Client(const Client &obj)
-        : _fd(obj._fd)
-        , _sid(obj._sid)
-        , _epfd(obj._epfd)
-        , _request(obj._request)
-        , _response(obj._response)
-        , _CGIResponseLen(obj._CGIResponseLen)
-        , _CGIPid(obj._CGIPid)
-        , _CGIResponse(obj._CGIResponse)
-        , _config(obj._config)
-        , _CGI(obj._CGI) {}
+// Client::Client(const t_config &config, const int sid)
+//         : _fd(-1)
+//         , _sid(sid)
+//         , _epfd(-1)
+//         , _request(config.servers.at(sid).clientMaxBody)
+//         , _response(config, sid)
+//         , _CGIResponseLen(0)
+//         , _CGIPid(-1)
+//         , _CGIResponse(_CGIResponseStream, _CGIResponseLen, config, sid)
+//         , _config(config)
+//         , _CGI(
+//               _request, _fd, _epfd, _config.servers.at(_sid),
+//               _config.servers.at(_sid).cgiConfigs) {
+// }
 
-Client &Client::operator=(const Client &obj) {
-    if (&obj == this) {
-        return *this;
-    }
-    _fd = obj._fd;
-    _sid = obj._sid;
-    _epfd = obj._epfd;
-    _request = obj._request;
-    _CGIResponseLen = obj._CGIResponseLen;
-    _CGIPid = obj._CGIPid;
-    return *this;
-}
+// Client::Client(int epfd, const t_config &config, const int sid)
+//         : _fd(-1)
+//         , _sid(sid)
+//         , _epfd(epfd)
+//         , _request()
+//         , _response(config, sid)
+//         , _CGIResponseLen(0)
+//         , _CGIPid(-1)
+//         , _CGIResponse(_CGIResponseStream, _CGIResponseLen, config, sid)
+//         , _config(config)
+//         , _CGI(
+//               _request, _fd, _epfd, _config.servers.at(_sid),
+//               _config.servers.at(_sid).cgiConfigs) {
+// }
 
-void Client::setFd(int fd) {
-    _fd = fd;
-    _CGI.setClientFd(fd);
-}
+// Client::Client(const Client &obj)
+//         : _fd(obj._fd)
+//         , _sid(obj._sid)
+//         , _epfd(obj._epfd)
+//         , _request(obj._request)
+//         , _response(obj._response)
+//         , _CGIResponseLen(obj._CGIResponseLen)
+//         , _CGIPid(obj._CGIPid)
+//         , _CGIResponse(obj._CGIResponse)
+//         , _config(obj._config)
+//         , _CGI(obj._CGI) {}
+
+// Client &Client::operator=(const Client &obj) {
+//     if (&obj == this) {
+//         return *this;
+//     }
+//     _fd = obj._fd;
+//     _sid = obj._sid;
+//     _epfd = obj._epfd;
+//     _request = obj._request;
+//     _CGIResponseLen = obj._CGIResponseLen;
+//     _CGIPid = obj._CGIPid;
+//     return *this;
+// }
 
 void Client::setLastActivity() { time(&_lastActivity); }
 
@@ -90,12 +106,13 @@ int Client::getFd() const { return _fd; }
 
 void Client::reset() {  // Fix: maybe even add _cgi.reset? why is responsestream and cgiresponselen
                         // taken to client??
-    setFd(-1);
+    _fd = -1;
     _CGIResponseStream.clear();  // Fix: find a better way to reset the cgi
     _CGIResponseLen = 0;
     _request.reset();
     _response.reset();
     _CGIResponse.reset();
+    _CGI.reset();
 }
 
 void Client::closeConnection() {
@@ -122,7 +139,7 @@ void Client::readCGIPipe(
     }
     if (bytesRead == 0) {
         int res = waitpid(_CGIPid, NULL, WNOHANG);
-        if (res == -1 || 1) {
+        if (res == -1) {
             std::cerr << "waitpid() failed in handleCGIResponse(): " << strerror(errno) << "\n";
             return;  // NOTFINISHED: i have no idea whats open here and what this function is
                      // responsible for

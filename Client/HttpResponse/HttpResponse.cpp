@@ -91,7 +91,7 @@ UriResult HttpResponse::processURI(const std::string &uri) {
     struct stat stats;
     result.httpCode = 200;
     result.autoindex = false;
-    const t_server &serverConfig = _config.servers.at(_sid);
+    const t_server &serverConfig = _config->servers.at(_sid);
     unsigned int    index = getLocation(uri, serverConfig);
     t_location      location = serverConfig.locations.at(index);
     attachPrefix(uri, result.path, serverConfig, index);
@@ -136,8 +136,7 @@ UriResult HttpResponse::processURI(const std::string &uri) {
 
 const std::string HttpResponse::_httpVersion = "HTTP/1.1";
 
-HttpResponse::HttpResponse(const t_config &config, const int sid) : _config(config), _sid(sid) {
-    // _responseBody.resize(1); // safeguard?
+HttpResponse::HttpResponse() : _config(NULL), _sid(-1) {
     _mimeTypes["html"] = "text/html";
     _mimeTypes["htm"] = "text/html";
     _mimeTypes["css"] = "text/css";
@@ -151,6 +150,11 @@ HttpResponse::HttpResponse(const t_config &config, const int sid) : _config(conf
 }
 
 std::vector<char> HttpResponse::getResponseBody() { return _responseBody; }
+
+void HttpResponse::init(const t_config *config, const int sid) {
+    _config = config;
+    _sid = sid;
+}
 
 void HttpResponse::reset() {
     _contentLength = 0;
@@ -220,7 +224,7 @@ std::string autoindex(const std::string &path, const std::string &uri) {
 #include <sys/types.h>
 #include <unistd.h>
 
-void HttpResponse::addBody(HttpRequest request, const UriResult &result) {
+bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
 
     std::fstream htmlPage;
     std::string  uri = request.getUri();
@@ -235,9 +239,9 @@ void HttpResponse::addBody(HttpRequest request, const UriResult &result) {
     } else {
         htmlPage.open(result.path.c_str());
         if (!htmlPage.is_open()) {
-            std::cout << "error opening html file: " << strerror(errno);
+            std::cerr << "error opening html file: " << strerror(errno) << std::endl;
             _statusCode = 404;
-            return;
+            return 1;
         }
         htmlPage.seekg(0, std::ios::end);
         std::streampos size = htmlPage.tellg();  // TODO change this. we can't use seek
@@ -250,12 +254,15 @@ void HttpResponse::addBody(HttpRequest request, const UriResult &result) {
         _responseBody.resize(size);
         htmlPage.read(&_responseBody[0], size);
         if (extractContentType(result.path) == 1) {
-            return;
+            std::cerr << "content type not supported" << std::endl;
+            _statusCode = 415;
+            return 1;
         }
     }
     extractContentLength();
     _response += "\r\n";
-    std::cout << std::endl << "[" << _response << "] " << std::endl << std::endl;
+    // std::cout << std::endl << "[" << _response << "] " << std::endl << std::endl;
+    return 0;
 }
 
 void HttpResponse::addRules() {
@@ -394,11 +401,10 @@ int HttpResponse::build(HttpRequest request) {
 
     if (_statusCode > 299 && _statusCode < 400)
         addRedirectHeaders(result.path);
-    else if (_statusCode >= 400) {
+    else if (_statusCode >= 400 || addBody(request, result) == 1) {
         serveErrorPage();
         return 1;  // FIX: What happens at 1? 400 is totally fine
-    } else
-        addBody(request, result);
+    }
     return 0;
 }
 

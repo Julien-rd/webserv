@@ -16,24 +16,11 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-CGI::CGI(HttpRequest                     &request,
-         int                              clientFd,
-         int                              epfd,
-         const t_server                  &serverConfig,
-         const std::vector<t_cgi_config> &cgiConfigs)
-        : _request(request)
-        , _epfd(epfd)
-        , _clientFd(clientFd)
-        , _cgiConfigs(cgiConfigs)
-        , _serverConfig(serverConfig) {
+CGI::CGI() {
     _pipeFd[0] = -1;
     _pipeFd[1] = -1;
     _postPipeFd[0] = -1;
     _postPipeFd[1] = -1;
-    // TODO this can be better moved to Server class
-    for (size_t i = 0; i < _cgiConfigs.size(); i++) {
-        _knownExtensions.push_back(_cgiConfigs.at(i).extension);
-    }
 }
 
 CGI::CGI(const CGI &obj)
@@ -47,8 +34,8 @@ CGI::CGI(const CGI &obj)
     _postPipeFd[1] = obj._postPipeFd[1];
     _postPipeFd[1] = obj._postPipeFd[1];
     _knownExtensions.clear();
-    for (size_t i = 0; i < _cgiConfigs.size(); i++) {
-        _knownExtensions.push_back(_cgiConfigs.at(i).extension);
+    for (size_t i = 0; i < _cgiConfigs->size(); i++) {
+        _knownExtensions.push_back(_cgiConfigs->at(i).extension);
     }
 }
 
@@ -93,15 +80,10 @@ const CGI &CGI::operator=(const CGI &obj) {
 
 bool CGI::scriptFileExists(void) const {
     std::string scriptPath(ROOT_FOLDER);
-    scriptPath +=
-        "/PasswordManager" +
-        _request.getUriData().path;  // Fix: This is hardcoded, pls add something like
-                                     // locationfind here we want our server adaptable so the
-                                     // config setup matters std::cout << scriptPath << "\n";
+    scriptPath += _serverConfig->locations.at(0).root + _request->getUriData().path;
     struct stat data;
     if (stat(scriptPath.c_str(), &data) == -1) {
-        std::cerr << "couldn't access CGI script file"
-                  << std::endl;  // TODO handle error pages here too???
+        std::cerr << "couldn't access CGI script file" << std::endl;
         return false;
     }
     if (data.st_mode & S_IXUSR) {
@@ -112,11 +94,11 @@ bool CGI::scriptFileExists(void) const {
 }
 
 bool CGI::initCGI(void) {
-    if (_request.getUriData().extension == ".py") {
+    if (_request->getUriData().extension == ".py") {
         if (!initPythonScript())
             return false;
         // std::cout << "initialized python CGI" << std::endl;
-    } else if (_request.getUriData().extension == ".php") {
+    } else if (_request->getUriData().extension == ".php") {
         if (!initPhpScript())
             return false;
         // std::cout << "initialized php CGI" << std::endl;
@@ -150,7 +132,7 @@ bool CGI::pipeIO(void) {  // Fix: This might leak. Make smart adjustments to if/
         std::cerr << "CGI fcntl\n";
         return false;
     }
-    if (_request.getMethod() == "POST") {
+    if (_request->getMethod() == "POST") {
         if (pipe(_postPipeFd) == -1) {
             std::cerr << "CGI post pipe failed\n";
             return false;
@@ -177,7 +159,7 @@ bool CGI::pipeIO(void) {  // Fix: This might leak. Make smart adjustments to if/
 
 bool CGI::spawnProcess(void) {
     // std::cout << "postpipe[0]: " << _postPipeFd[0] << "\n";
-    if (_request.getMethod() == "POST") {
+    if (_request->getMethod() == "POST") {
         if (dup2(_postPipeFd[0], STDIN_FILENO) == -1) {
             std::cerr << "dup2 failed for post pipe\n";
             return false;
@@ -203,14 +185,14 @@ bool CGI::spawnProcess(void) {
         }
         if (!addPipeToEpoll())
             return false;
-        if (_request.getMethod() == "POST") {
-            const std::vector<char> &body = _request.getBody();
+        if (_request->getMethod() == "POST") {
+            const std::vector<char> &body = _request->getBody();
             std::string              bodyStr(body.begin(), body.end());
             size_t                   totalWritten = 0;
-            while (totalWritten < _request.getContentLength()) {
+            while (totalWritten < _request->getContentLength()) {
                 ssize_t written = write(_postPipeFd[1],
                                         bodyStr.data() + totalWritten,
-                                        _request.getContentLength() - totalWritten);
+                                        _request->getContentLength() - totalWritten);
                 if (written <= 0) {
                     // Fix: handle error
                     break;
@@ -286,16 +268,32 @@ bool CGI::isCGIRequest(const HttpRequest &request) {
         // std::cout << "comparing " << request._uriData.extension << " with "
         //           << _knownExtensions[i] << "\n";
         if (request.getUriData().extension == _knownExtensions[i]) {
-            _request = request;
+            _request = &request;
             return true;
         }
     }
     return false;
 }
 
-void CGI::setClientFd(const int fd) { _clientFd = fd; }
+void CGI::init(HttpRequest                     *request,
+               int                              clientFd,
+               int                              epfd,
+               const t_server                  *serverConfig,
+               const std::vector<t_cgi_config> *cgiConfigs) {
+
+    _request = request;
+    _epfd = epfd;
+    _clientFd = clientFd;
+    _cgiConfigs = cgiConfigs;
+    _serverConfig = serverConfig;
+    // TODO this can be better moved to Server class
+    for (size_t i = 0; i < _cgiConfigs->size(); ++i) {
+        _knownExtensions.push_back(_cgiConfigs->at(i).extension);
+    }
+}
 
 void CGI::reset(void) {
+    _clientFd = -1;
     _scriptName.erase();
     _executable.erase();
     _argv.clear();
