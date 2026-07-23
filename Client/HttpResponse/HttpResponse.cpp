@@ -380,7 +380,7 @@ void HttpResponse::serveSuccessPage(
     _response += htmlBody;
 }
 
-int HttpResponse::build(HttpRequest request) {
+void HttpResponse::build(HttpRequest request) {
 
     UriResult    result;
     std::fstream htmlPage;
@@ -401,11 +401,8 @@ int HttpResponse::build(HttpRequest request) {
 
     if (_statusCode > 299 && _statusCode < 400)
         addRedirectHeaders(result.path);
-    else if (_statusCode >= 400 || addBody(request, result) == 1) {
+    else if (_statusCode >= 400 || addBody(request, result) == 1)
         serveErrorPage();
-        return 1;  // FIX: What happens at 1? 400 is totally fine
-    }
-    return 0;
 }
 
 const char *HttpResponse::getResponse() { return _response.c_str(); }

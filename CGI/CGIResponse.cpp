@@ -95,27 +95,24 @@ void CGIResponse::addRules() {
                                                       // security layer
 }
 
-int CGIResponse::build(HttpRequest request) {
+void CGIResponse::build(HttpRequest request) { //fix: make this similar to og build() again
     _statusCode = request.getStatusCode();
     if (_statusCode >= 400) {
         serveErrorPage();
-        return 1;
+        return;
     }
     if (_CGIResponseLen == 0)
-        return 1;
+        return;//fix: what to do here
     extractStatus();
     buildStatusLine();  // only mandatory part
-    if (getTimeStamp() == 1)
-        return 1;
+    if (getTimeStamp() == 1) 
+        return ;//fix: what to do here
     addMandatoryHeaders();
     addRules();
     if (_statusCode < 400)
         addCGIBody(request);
-    if (_statusCode >= 400) {
+    if (_statusCode >= 400)
         serveErrorPage();
-        return 1;
-    }
-    return 0;
 }
 
 void CGIResponse::setCGIResponseStr(const std::string &CGIResponseStr) {

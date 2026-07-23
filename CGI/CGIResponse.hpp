@@ -14,7 +14,7 @@ class CGIResponse : public HttpResponse {
 
     void init(size_t CGIResponseLen, const t_config *config, const int sid);
     void reset();
-    int  build(HttpRequest request);
+    void  build(HttpRequest request);
     void extractStatus(void);
 
     // getters

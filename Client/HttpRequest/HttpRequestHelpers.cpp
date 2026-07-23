@@ -114,20 +114,17 @@ bool HttpRequest::validUri() {
 
 bool HttpRequest::validateURIPath(std::string &path) {
     if (*(path.begin()) != '/') {
-        _statusCode = 400;
         std::cout << "ERROR: path doesn't begin with '/'\n";
         return false;
     }
     for (std::string::iterator it = path.begin(); it != path.end(); ++it) {
         if (*it < 33 || *it > 126) {
-            _statusCode = 400;
             std::cout << "invalid URI\n";
             return false;
         }
     }
     if (path.size() > 2 &&
         (path.find("/../") != std::string::npos || path.rfind("/..") == path.size() - 3)) {
-        _statusCode = 400;
         std::cout << "ERROR: escape root sequence found in URI path\n";
         return false;
     }

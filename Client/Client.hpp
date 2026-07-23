@@ -48,5 +48,5 @@ class Client {  // Fix: This has too many responsibilities: extract everything f
     const t_config   *_config;
     CGI               _CGI;
 
-    void closeConnection();
+    void closeConnection(int reason);
 };

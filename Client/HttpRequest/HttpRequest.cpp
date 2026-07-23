@@ -394,7 +394,7 @@ int HttpRequest::parseURIContent(void) {
     std::string path = _uri.substr(0, qmark);
     path = percentDecode(path, false);
     if (validateURIPath(path) == false) {
-        std::cerr << "invalid path in URI" << std::endl;
+        _statusCode = 400;
         return 1;
     }
     _uriData.query = (qmark != std::string::npos) ? _uri.substr(qmark + 1) : "";

@@ -2,6 +2,7 @@
 
 #include "../CGI/CGI.hpp"
 #include "../CGI/CGIResponse.hpp"
+#include "../Utils/Macros.hpp"
 #include "HttpRequest/HttpRequest.hpp"
 #include "HttpResponse/HttpResponse.hpp"
 
@@ -13,6 +14,7 @@
 #include <ctime>
 #include <fcntl.h>
 #include <iostream>
+#include <linux/close_range.h>
 #include <netinet/in.h>
 #include <poll.h>
 #include <sstream>
@@ -115,7 +117,8 @@ void Client::reset() {  // Fix: maybe even add _cgi.reset? why is responsestream
     _CGI.reset();
 }
 
-void Client::closeConnection() {
+void Client::closeConnection(bool closeReason) {
+    if ()
     _response.build(_request);
     const char *response = _response.getResponse();
     if (send(_fd, response, strlen(response), 0) == -1)
@@ -159,15 +162,10 @@ void Client::readCGIPipe(
         //           << _CGIResponseStream.str() << "\n}\n";
         _CGIResponse.setCGIResponseStr(_CGIResponseStream.str());
         _CGIResponse.setCGIResponseLen(_CGIResponseLen);
-        if (_CGIResponse.build(_request) == 1) {
-            closeConnection();
-            return;
-            // TODO handle error
-        }
+        _CGIResponse.build(_request);
         const char *response = _CGIResponse.getResponse();
         // std::cout << "\nHttpResponse Response:\n" << response << "]" <<std::endl;
-        if (send(_fd, response, strlen(response), 0) ==
-            -1) {  // Fix: we are not allowed to use strlen right
+        if (send(_fd, response, strlen(response), 0) == -1) {
             std::cerr << "send() failed in handleCGIResponse(): " << strerror(errno) << "\n";
             return;  // NOTFINISHED: i have no idea whats open here and what this function is
                      // responsible for
@@ -236,19 +234,18 @@ int Client::loop(std::string &recvBuffer) {
         if (_request.parseHttpRequest(recvBuffer, _bytesRead) == 1) {
             _request.setStatusCode(400);
             closeConnection();
-            return 1;
+            return CLOSE;
         }
-        if (_request.parsingDone() == false) {
-            return 0;
-        }
-
+        if (_request.parsingDone() == false)
+            return KEEP;
         _bytesRead += _request.getBytesRead();
         // _request.print();
         if (_request.parseURIContent() == 1) {
             closeConnection();
-            return 1;
+            return CLOSE;
         }
-        if (_CGI.isCGIRequest(_request)) {
+        if (_CGI.isCGIRequest(
+                _request)) {  // fix: rework this or put inside function if all of these necessary
             std::cout << "==> found a CGI request\n";
             doCGI();
             _request.reset();
@@ -260,22 +257,20 @@ int Client::loop(std::string &recvBuffer) {
             _CGI.reset();
             continue;
         }
-        responseStatus = _response.build(_request);
-        if (responseStatus == 1)
-            err = true;
+        _response.build(_request);
         const char *response = _response.getResponse();
         // std::cout << "response:\n" << response << std::endl;
-        if (send(_fd, response, strlen(response), 0) ==
-            -1)  // TODO how should we protect here? cut client/close server?
-            return 1;
+        if (send(_fd, response, strlen(response), 0) == -1) {
+            closeConnection(CLOSE_TRANSPORT_FAIL);  // fix: special case here we shouldnt send something
+            return CLOSE;
+        }
         std::vector<char> responseBody = _response.getResponseBody();
-        if (send(_fd, &responseBody[0], responseBody.size(), 0) == -1)
-            return 1;
+        if (send(_fd, &responseBody[0], responseBody.size(), 0) == -1) {
+            closeConnection();  // fix: special case here we shouldnt send something
+            return CLOSE;
+        }
         _request.reset();
         _response.reset();
-        if (err == true)
-            return 1;
-        // std::cout << "SUCCESS\n";
     }
-    return 0;
+    return KEEP;
 }
