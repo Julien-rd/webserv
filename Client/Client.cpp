@@ -17,7 +17,6 @@
 #include <linux/close_range.h>
 #include <netinet/in.h>
 #include <poll.h>
-#include <sstream>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -75,18 +74,17 @@ void Client::init(int epfd, const t_config *config, const int sid, const int cli
 //               _config.servers.at(_sid).cgiConfigs) {
 // }
 
-Client::Client(const Client &obj)
-        : _fd(obj._fd)
-        , _sid(obj._sid)
-        , _epfd(obj._epfd)
-        , _request(obj._request)
-        , _response(obj._response)
-        , _CGIResponseStr(obj._CGIResponseStr)
-        , _CGIResponseLen(obj._CGIResponseLen)
-        , _CGIPid(obj._CGIPid)
-        , _CGIResponse(obj._CGIResponse)
-        , _config(obj._config)
-        , _CGI(obj._CGI) {}
+// Client::Client(const Client &obj)
+//         : _fd(obj._fd)
+//         , _sid(obj._sid)
+//         , _epfd(obj._epfd)
+//         , _request(obj._request)
+//         , _response(obj._response)
+//         , _CGIResponseLen(obj._CGIResponseLen)
+//         , _CGIPid(obj._CGIPid)
+//         , _CGIResponse(obj._CGIResponse)
+//         , _config(obj._config)
+//         , _CGI(obj._CGI) {}
 
 // Client &Client::operator=(const Client &obj) {
 //     if (&obj == this) {
@@ -110,8 +108,7 @@ int Client::getFd() const { return _fd; }
 void Client::reset() {  // Fix: maybe even add _cgi.reset? why is responsestream and cgiresponselen
                         // taken to client??
     _fd = -1;
-    // _CGIResponseStream.clear();  // Fix: find a better way to reset the cgi
-    _CGIResponseStr.clear();
+    _CGIResponseStream.clear();  // Fix: find a better way to reset the cgi
     _CGIResponseLen = 0;
     _request.reset();
     _response.reset();
@@ -119,9 +116,9 @@ void Client::reset() {  // Fix: maybe even add _cgi.reset? why is responsestream
     _CGI.reset();
 }
 
-void Client::closeConnection(bool closeReason) {
-    if ()
-    _response.build(_request);
+void Client::closeConnection(int reason) {
+    if (reason == CLOSE_CLIENT_ERROR || reason == CLOSE_SERVER_ERROR)
+        _response.build(_request);
     const char *response = _response.getResponse();
     if (send(_fd, response, strlen(response), 0) == -1)
         std::cerr << "read() failed in Client::handleCGIResponse(): " << strerror(errno) << "\n";
@@ -137,8 +134,7 @@ void Client::readCGIPipe(
     bytesRead = read(pipeReadFd, buf, BUFFER_SIZE - 1);
     if (bytesRead == -1) {
         _CGIResponseLen = 0;
-        // _CGIResponseStream.clear();
-        _CGIResponseStr.clear();
+        _CGIResponseStream.clear();
         std::cerr << "read() failed in Client::handleCGIResponse(): " << strerror(errno) << "\n";
         return;  // NOTFINISHED: i have no idea whats open here and what this function is
                  // responsible for
@@ -163,7 +159,7 @@ void Client::readCGIPipe(
         close(pipeReadFd);
         // std::cout << "\nbuilding HttpResponse from CGI Response:\n{\n"
         //           << _CGIResponseStream.str() << "\n}\n";
-        _CGIResponse.setCGIResponseStr(_CGIResponseStr);
+        _CGIResponse.setCGIResponseStr(_CGIResponseStream.str());
         _CGIResponse.setCGIResponseLen(_CGIResponseLen);
         _CGIResponse.build(_request);
         const char *response = _CGIResponse.getResponse();
@@ -190,7 +186,7 @@ void Client::readCGIPipe(
         buf[bytesRead] = '\0';
         // std::cout << "adding (( " << buf << " )) to _CGIResponseStream\n";
         _CGIResponseLen += bytesRead;
-        _CGIResponseStr.append(buf, bytesRead);
+        _CGIResponseStream.write(buf, bytesRead + 1);
         // std::cout << "_CGIResponseStream becamse: ((" << _CGIResponseStream.str()
         //           << " ))" << std::endl;
     }
@@ -203,24 +199,24 @@ void Client::doCGI(void) {
     //           << _config.servers.at(_sid).port << "\n";
     if (!_CGI.scriptFileExists()) {
         _request.setStatusCode(500);
-        closeConnection();
+        closeConnection(CLOSE_SERVER_ERROR);
         return;
     }
     if (!_CGI.initCGI()) {
         _request.setStatusCode(500);
-        closeConnection();
+        closeConnection(CLOSE_SERVER_ERROR);
         return;
     }
     // std::cout << "========= initCGI() succeeded\n";
     if (!_CGI.pipeIO()) {
         _request.setStatusCode(500);
-        closeConnection();
+        closeConnection(CLOSE_SERVER_ERROR);
         return;
     }
     // std::cout << "========= pipeIO() succeeded\n";
     if (!_CGI.spawnProcess()) {
         _request.setStatusCode(500);
-        closeConnection();
+        closeConnection(CLOSE_SERVER_ERROR);
         return;
     }
     _CGIPid = _CGI.getPid();
@@ -236,7 +232,7 @@ int Client::loop(std::string &recvBuffer) {
     while (_bytesRead < bufferLen) {
         if (_request.parseHttpRequest(recvBuffer, _bytesRead) == 1) {
             _request.setStatusCode(400);
-            closeConnection();
+            closeConnection(CLOSE_CLIENT_ERROR);
             return CLOSE;
         }
         if (_request.parsingDone() == false)
@@ -244,7 +240,7 @@ int Client::loop(std::string &recvBuffer) {
         _bytesRead += _request.getBytesRead();
         // _request.print();
         if (_request.parseURIContent() == 1) {
-            closeConnection();
+            closeConnection(CLOSE_CLIENT_ERROR);
             return CLOSE;
         }
         if (_CGI.isCGIRequest(
@@ -253,9 +249,8 @@ int Client::loop(std::string &recvBuffer) {
             doCGI();
             _request.reset();
             _response.reset();
-            // _CGIResponseStream.str("");
-            // _CGIResponseStream.clear();
-            _CGIResponseStr.clear();
+            _CGIResponseStream.str("");
+            _CGIResponseStream.clear();
             _CGIResponseLen = 0;
             _CGIResponse.reset();
             _CGI.reset();
@@ -265,12 +260,12 @@ int Client::loop(std::string &recvBuffer) {
         const char *response = _response.getResponse();
         // std::cout << "response:\n" << response << std::endl;
         if (send(_fd, response, strlen(response), 0) == -1) {
-            closeConnection(CLOSE_TRANSPORT_FAIL);  // fix: special case here we shouldnt send something
+            closeConnection(CLOSE_TRANSPORT_FAIL); 
             return CLOSE;
         }
         std::vector<char> responseBody = _response.getResponseBody();
         if (send(_fd, &responseBody[0], responseBody.size(), 0) == -1) {
-            closeConnection();  // fix: special case here we shouldnt send something
+            closeConnection(CLOSE_TRANSPORT_FAIL);
             return CLOSE;
         }
         _request.reset();

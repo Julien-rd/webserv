@@ -41,7 +41,7 @@ class Client {  // Fix: This has too many responsibilities: extract everything f
     size_t       _bytesRead;
     time_t       _lastActivity;
 
-    // std::stringstream _CGIResponseStream;
+    std::stringstream _CGIResponseStream;
     std::string     _CGIResponseStr;
     ssize_t         _CGIResponseLen;
     pid_t           _CGIPid;
