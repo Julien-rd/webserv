@@ -5,7 +5,6 @@
 #include "HttpResponse/HttpResponse.hpp"
 
 #include <ctime>
-#include <sstream>
 #include <string>
 
 class Client {  // Fix: This has too many responsibilities: extract everything from cgi to the
@@ -13,9 +12,9 @@ class Client {  // Fix: This has too many responsibilities: extract everything f
                 // also the request/response workflow can be outsources to HTTP handling
   public:
     Client();
+    // Client(const Client &obj);
     // Client(const t_config &config, const int _sid);
     // Client(int epfd, const t_config &config, const int _sid);
-    Client(const Client &obj);
     // Client &operator=(const Client &obj);
 
     int    loop(std::string &recvBuffer);
@@ -41,7 +40,7 @@ class Client {  // Fix: This has too many responsibilities: extract everything f
     size_t       _bytesRead;
     time_t       _lastActivity;
 
-    std::stringstream _CGIResponseStream;
+    std::string _CGIResponseStream;
     std::string     _CGIResponseStr;
     ssize_t         _CGIResponseLen;
     pid_t           _CGIPid;

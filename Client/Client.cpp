@@ -40,7 +40,7 @@ void Client::init(int epfd, const t_config *config, const int sid, const int cli
     _response.init(config, sid);
     _CGIResponse.init(_CGIResponseLen, config, sid);
     _CGI.init(
-        &_request, _fd, _epfd, &_config->servers.at(_sid), &_config->servers.at(_sid).cgiConfigs);
+        &_request, _fd, _epfd, &_config->servers.at(_sid));
     setLastActivity();
 }
 
@@ -128,10 +128,11 @@ void Client::closeConnection(int reason) {
 
 void Client::readCGIPipe(
     int pipeReadFd) {  // ALL OF THE ERRORS HERE CAUSE INFINITE LOADING AND CRASH THE SERVER
-    char    buf[BUFFER_SIZE];
+    
+    std::string buf(BUFFER_SIZE, '\0');
     ssize_t bytesRead;
 
-    bytesRead = read(pipeReadFd, buf, BUFFER_SIZE - 1);
+    bytesRead = read(pipeReadFd, &buf[0], BUFFER_SIZE - 1);
     if (bytesRead == -1) {
         _CGIResponseLen = 0;
         _CGIResponseStream.clear();
@@ -144,22 +145,21 @@ void Client::readCGIPipe(
         if (res == -1) {
             std::cerr << "waitpid() failed in handleCGIResponse(): " << strerror(errno) << "\n";
             return;  // NOTFINISHED: i have no idea whats open here and what this function is
-                     // responsible for
+                     // responsible for // needs to have the epoll del everywhere
         }
         if (res == 0) {  // TODO this branch is untested
             kill(_CGIPid, SIGKILL);
             waitpid(_CGIPid, NULL, 0);
         }
-        if (epoll_ctl(_epfd, EPOLL_CTL_DEL, pipeReadFd, NULL) == -1) {
-            std::cerr << "epoll_ctl() DEL failed in handleCGIResponse(): " << strerror(errno)
-                      << "\n";
-            return;  // NOTFINISHED: i have no idea whats open here and what this function is
-                     // responsible for
+        if (epoll_ctl(_epfd,  EPOLL_CTL_DEL, pipeReadFd, NULL) == -1) {
+        std::cerr << "epoll_ctl() DEL failed in readCGIPipe(): " << strerror(errno)
+                  << "\n";
+           return; 
         }
         close(pipeReadFd);
         // std::cout << "\nbuilding HttpResponse from CGI Response:\n{\n"
         //           << _CGIResponseStream.str() << "\n}\n";
-        _CGIResponse.setCGIResponseStr(_CGIResponseStream.str());
+        _CGIResponse.setCGIResponseStr(_CGIResponseStream);
         _CGIResponse.setCGIResponseLen(_CGIResponseLen);
         _CGIResponse.build(_request);
         const char *response = _CGIResponse.getResponse();
@@ -182,12 +182,15 @@ void Client::readCGIPipe(
         }
         _request.reset();
         _CGIResponse.reset();
+        _CGI.reset();
+        _CGIResponseStream.clear();
+        _CGIResponseLen = 0;
     } else {
-        buf[bytesRead] = '\0';
         // std::cout << "adding (( " << buf << " )) to _CGIResponseStream\n";
+        buf.resize(bytesRead);
         _CGIResponseLen += bytesRead;
-        _CGIResponseStream.write(buf, bytesRead + 1);
-        // std::cout << "_CGIResponseStream becamse: ((" << _CGIResponseStream.str()
+        _CGIResponseStream.append(buf.data(), bytesRead);
+        // std::cout << "_CGIResponseStream becamse: ((" << _CGIResponseStream
         //           << " ))" << std::endl;
     }
 }
@@ -226,8 +229,6 @@ void Client::doCGI(void) {
 
 int Client::loop(std::string &recvBuffer) {
     _bytesRead = 0;
-    bool         err = false;
-    int          responseStatus;
     unsigned int bufferLen = recvBuffer.length();
     while (_bytesRead < bufferLen) {
         if (_request.parseHttpRequest(recvBuffer, _bytesRead) == 1) {
@@ -249,11 +250,10 @@ int Client::loop(std::string &recvBuffer) {
             doCGI();
             _request.reset();
             _response.reset();
-            _CGIResponseStream.str("");
             _CGIResponseStream.clear();
             _CGIResponseLen = 0;
-            _CGIResponse.reset();
-            _CGI.reset();
+            // _CGIResponse.reset(); //fix: those were the issues now pls check what needs to be reset
+            // _CGI.reset();
             continue;
         }
         _response.build(_request);

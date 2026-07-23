@@ -23,21 +23,21 @@ CGI::CGI() {
     _postPipeFd[1] = -1;
 }
 
-CGI::CGI(const CGI &obj)
-        : _request(obj._request)
-        , _epfd(obj._epfd)
-        , _clientFd(obj._clientFd)
-        , _cgiConfigs(obj._cgiConfigs)
-        , _serverConfig(obj._serverConfig) {
-    _pipeFd[0] = obj._pipeFd[0];
-    _pipeFd[0] = obj._pipeFd[0];
-    _postPipeFd[1] = obj._postPipeFd[1];
-    _postPipeFd[1] = obj._postPipeFd[1];
-    _knownExtensions.clear();
-    for (size_t i = 0; i < _cgiConfigs->size(); i++) {
-        _knownExtensions.push_back(_cgiConfigs->at(i).extension);
-    }
-}
+// CGI::CGI(const CGI &obj)
+//         : _request(obj._request)
+//         , _epfd(obj._epfd)
+//         , _clientFd(obj._clientFd)
+//         , _cgiConfigs(obj._cgiConfigs)
+//         , _serverConfig(obj._serverConfig) {
+//     _pipeFd[0] = obj._pipeFd[0];
+//     _pipeFd[0] = obj._pipeFd[0];
+//     _postPipeFd[1] = obj._postPipeFd[1];
+//     _postPipeFd[1] = obj._postPipeFd[1];
+//     _knownExtensions.clear();
+//     for (size_t i = 0; i < obj._knownExtensions.size(); i++) {
+//         _knownExtensions.push_back(obj._knownExtensions.at(i));
+//     }
+// }
 
 CGI::~CGI(void) {
     // if (_pipeFd[0] > -1) {
@@ -279,13 +279,13 @@ bool CGI::isCGIRequest(const HttpRequest &request) {
 void CGI::init(HttpRequest                     *request,
                int                              clientFd,
                int                              epfd,
-               const t_server                  *serverConfig,
-               const std::vector<t_cgi_config> *cgiConfigs) {
+               const t_server                  *serverConfig
+) {
 
     _request = request;
     _epfd = epfd;
     _clientFd = clientFd;
-    _cgiConfigs = cgiConfigs;
+    _cgiConfigs = &serverConfig->cgiConfigs;
     _serverConfig = serverConfig;
     // TODO this can be better moved to Server class
     for (size_t i = 0; i < _cgiConfigs->size(); ++i) {
@@ -294,7 +294,7 @@ void CGI::init(HttpRequest                     *request,
 }
 
 void CGI::reset(void) {
-    _clientFd = -1;
+    // _clientFd = -1; //fix: was buggy but where does this happen instead or does it just get overwritten anyways
     _scriptName.erase();
     _executable.erase();
     _argv.clear();

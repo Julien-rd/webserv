@@ -41,7 +41,7 @@ class CGI {
     //     int                              epfd,
     //     const t_server                  &serverConfig,
     //     const std::vector<t_cgi_config> &cgiConfigs);
-    CGI(const CGI &obj);
+    // CGI(const CGI &obj);
     const CGI &operator=(const CGI &obj);
     ~CGI(void);
 
@@ -57,8 +57,7 @@ class CGI {
     void init(HttpRequest                     *request,
               int                              clientFd,
               int                              epfd,
-              const t_server                  *serverConfig,
-              const std::vector<t_cgi_config> *cgiConfigs);
+              const t_server                  *serverConfig);
     void reset();
     void reconstruct(const HttpRequest               &request,
                      int                              clientFd,

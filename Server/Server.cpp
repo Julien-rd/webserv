@@ -186,7 +186,6 @@ void Server::handleServerEvent(void) {
 void Server::handleClientEvent(const int clientFd) {
     std::string recvBuffer(BUFFER_SIZE, '\0');
     ssize_t     bytesRead = 0;
-    std::cout << "here1, _clients.size(): " << _clients.size() << "\n";
     _clients.at(clientFd).setLastActivity();
     bytesRead = recv(clientFd, &recvBuffer[0], BUFFER_SIZE, 0);
     if (bytesRead == 0) {
