@@ -151,6 +151,10 @@ bool HttpRequest::hasHostHeader() {
 
 bool HttpRequest::hasContentLength() {
     std::map<std::string, std::string>::iterator it = _headers.find("content-length");
+    if (it == _headers.end() && _currentState != BODY_CHUNKED){
+            std::cerr << "Content-Length is missing\n";
+            return false;
+        }
     if (it != _headers.end()) {
         if (_currentState == BODY_CHUNKED) {
             std::cerr << "Header has both transfer-encoding and content-length\n";
@@ -162,7 +166,7 @@ bool HttpRequest::hasContentLength() {
             std::cerr << "Invalid Content-Length\n";
             return false;
         }
-        if (_contentLength > _clientMaxBody * MEGABYTE) {
+        if (_contentLength > _clientMaxBody * MEGABYTE) { 
             std::cerr << "Request Entity Too Large\n<";
             return false;
         }

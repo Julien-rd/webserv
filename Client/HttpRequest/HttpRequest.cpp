@@ -217,6 +217,8 @@ int HttpRequest::parseHeaders(std::string &recvBuffer) {
                 return 1;
             ++_bytesRead;
             _currentState = BODY;
+            if (validateMandatoryHeaders() == false)
+                return 1;
             /* fall through */
         default:
             return 0;
@@ -298,6 +300,11 @@ void HttpRequest::parseChunkedBody(std::string recvBuffer) {
             if (pos == std::string::npos)
                 return;
             _bytesNeeded = hexaToDeci(_buffer.substr(0, pos));
+            if(_clientMaxBody - _body.size() < _bytesNeeded){
+                _parsingDone = true;
+                _statusCode = 405; // TODO check if that works
+                return ;
+            }
             _buffer.erase(0, pos + 2);
             if (_bytesNeeded != 0)
                 _chunkedBodyState = LINE;
@@ -355,18 +362,8 @@ int HttpRequest::parseHttpRequest(std::string &recvBuffer, size_t bytes_read) { 
         return 1;
     if (parseHeaders(recvBuffer) == 1)
         return 1;
-    if (_currentState == BODY) {
-        if (validateMandatoryHeaders() == false) {
-            return 1;
-        }
-        if (_currentState != BODY && _currentState != BODY_CHUNKED) {
-            _parsingDone = true;
-            _statusCode = 200;
-            return 0;
-        }
-        if (bodyMode(recvBuffer) == 1)
-            return 1;
-    }
+    if (bodyMode(recvBuffer) == 1)
+        return 1;
     return 0;
 }
 

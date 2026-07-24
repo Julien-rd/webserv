@@ -314,6 +314,44 @@ void HttpResponse::addRedirectHeaders(const std::string &path) {
     _response += "Content-Length: 0\r\n\r\n";
 }
 
+std::string HttpResponse::getRandomID() {
+  srand(time(NULL)); // TODO check if allowed
+  std::stringstream ss;
+  ss << rand();
+  return ss.str();
+}
+
+// TODO CHECK IF HEADERS ARE IMPLEMENTED CASE INSENSITIVE !!!!!!
+void HttpResponse::addCookies(HttpRequest request) {
+  size_t                                       end = 0;
+  size_t                                       start = 0;
+  std::map<std::string, std::string>           headers = request.getHeaders();
+  std::map<std::string, std::string>::iterator it;
+  for (it = headers.begin(); it != headers.end(); ++it) {
+    if (it->first == "cookie") {
+      while (1) {
+        end = it->second.find('=', start);
+        _response += "Set-Cookie: ";
+        _response += it->second.substr(start, end - start);
+        _response += "=deleted; path=/; expires=Thu, 01 Jan 1970 "
+                     "00:00:00 GMT\r\n";
+        start = it->second.find(';', start);
+        if (start == std::string::npos)
+          return;
+        ++start;
+      }
+    }
+  }
+  if (_method != "POST" && 0) // doesnt need to be checked if checked before -> cookieExists ==
+              // true) && check if new cookie is neccessary
+    return;
+  _response += "Set-Cookie: id=";
+  _response +=
+      getRandomID(); // we could add extra check to see if the num doesnt
+                     // collide with another on but chances are 1:32000 sth
+  _response += "; Max-Age=2592000\r\n";
+}
+
 void HttpResponse::buildStatusLine() {
     std::stringstream st;
     st << _statusCode;

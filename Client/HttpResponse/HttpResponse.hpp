@@ -45,6 +45,8 @@ class HttpResponse {
     std::string                        _statusCodeStr;
 
     bool                methodAllowed(unsigned int index, const std::vector<t_location> &locations);
+    void                addCookies(HttpRequest request);
+    std::string         getRandomID();
     void                buildStatusLine();
     int                 extractContentType(std::string path);
     void                extractContentLength();
