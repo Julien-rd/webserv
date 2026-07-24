@@ -72,21 +72,21 @@ void CGI::initMeta(int type) {
     ss << _request->getContentLength();
 
     if (_request->getMethod() == "POST") {
-        setMeta(_meta.content_length, "CONTENT_LENGTH=", ss.str());  // fix: chunks?
+        setMeta(_meta.content_length, "CONTENT_LENGTH", ss.str());  // fix: chunks?
     } else
-        setMeta(_meta.content_length, "CONTENT_LENGTH=", "0");  // fix: chunks?
+        setMeta(_meta.content_length, "CONTENT_LENGTH", "0");  // fix: chunks?
 
     if (_request->getHeaders().find("content-type") != headers.end())
-        setMeta(_meta.content_type, "CONTENT_TYPE=", headers.at("content-type"));
+        setMeta(_meta.content_type, "CONTENT_TYPE", headers.at("content-type"));
 
-    setMeta(_meta.path_info, "PATH_INFO=", _request->getUriData().pathInfo);
-    setMeta(_meta.query_string, "QUERY_STRING=", parseQueryString(_request->getUri()));
-    setMeta(_meta.request_method, "REQUEST_METHOD=", _request->getMethod());
-    setMeta(_meta.script_name, "SCRIPT_NAME=", _scriptName);
-    setMeta(_meta.server_port, "SERVER_PORT=", _serverConfig->port);
-    setMeta(_meta.server_protocol, "SERVER_PROTOCOL=", "HTTP/1.1");
+    setMeta(_meta.path_info, "PATH_INFO", _request->getUriData().pathInfo);
+    setMeta(_meta.query_string, "QUERY_STRING", parseQueryString(_request->getUri()));
+    setMeta(_meta.request_method, "REQUEST_METHOD", _request->getMethod());
+    setMeta(_meta.script_name, "SCRIPT_NAME", _scriptName);
+    setMeta(_meta.server_port, "SERVER_PORT", _serverConfig->port);
+    setMeta(_meta.server_protocol, "SERVER_PROTOCOL", "HTTP/1.1");
     if (_request->getHeaders().find("cookie") != _request->getHeaders().end())
-        setMeta(_meta.http_cookie, "HTTP_COOKIE=", headers.at("cookie"));
+        setMeta(_meta.http_cookie, "HTTP_COOKIE", headers.at("cookie"));
     if (type == PHP)
         setMeta(_meta.script_filename,
                 "SCRIPT_FILENAME=cgi-bin",

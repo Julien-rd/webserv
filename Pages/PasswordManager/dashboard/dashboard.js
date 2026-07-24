@@ -1,4 +1,3 @@
-alert("dashboard runnin");
 
 // Path to the JSON "database" and the uploaded profile pictures.
 // Adjust these if this file lives somewhere other than next to /database/.
