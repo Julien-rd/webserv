@@ -17,37 +17,37 @@ bool CGI::setScriptAttributesPhp(void) {
     return false;  // ERROR here
 }
 
-void CGI::setGETVariablesPhp(void) {
-    _envp[0] = _meta.request_method.c_str();
-    _envp[1] = _meta.query_string.c_str();
-    _envp[2] = _meta.script_name.c_str();
-    _envp[3] = _meta.path_info.c_str();
-    _envp[4] = _meta.server_name.c_str();
-    _envp[5] = _meta.server_port.c_str();
-    _envp[6] = _meta.server_protocol.c_str();
-    /* php specific */
-    _envp[7] = "REDIRECT_STATUS=1";
-    _envp[8] = _meta.script_filename.c_str();
-    _envp[9] = _meta.remote_addr.c_str();
-    _envp[10] = NULL;
-}
+// void CGI::setGETVariablesPhp(void) {
+//     _envp[0] = _meta.request_method.c_str();
+//     _envp[1] = _meta.query_string.c_str();
+//     _envp[2] = _meta.script_name.c_str();
+//     _envp[3] = _meta.path_info.c_str();
+//     _envp[4] = _meta.server_name.c_str();
+//     _envp[5] = _meta.server_port.c_str();
+//     _envp[6] = _meta.server_protocol.c_str();
+//     /* php specific */
+//     _envp[7] = "REDIRECT_STATUS=1";
+//     _envp[8] = _meta.script_filename.c_str();
+//     _envp[9] = _meta.remote_addr.c_str();
+//     _envp[10] = NULL;
+// }
 
-void CGI::setPOSTVariablesPhp(void) {
+// void CGI::setPOSTVariablesPhp(void) {
 
-    _envp[0] = _meta.request_method.c_str();
-    _envp[1] = _meta.content_length.c_str();
-    _envp[2] = _meta.content_type.c_str();
-    _envp[3] = _meta.script_name.c_str();
-    _envp[4] = _meta.path_info.c_str();
-    _envp[5] = _meta.server_name.c_str();
-    _envp[6] = _meta.server_port.c_str();
-    _envp[7] = _meta.server_protocol.c_str();
-    /* php specific */
-    _envp[8] = "REDIRECT_STATUS=1";
-    _envp[9] = _meta.script_filename.c_str();
-    _envp[10] = _meta.remote_addr.c_str();
-    _envp[11] = NULL;
-}
+//     _envp[0] = _meta.request_method.c_str();
+//     _envp[1] = _meta.content_length.c_str();
+//     _envp[2] = _meta.content_type.c_str();
+//     _envp[3] = _meta.script_name.c_str();
+//     _envp[4] = _meta.path_info.c_str();
+//     _envp[5] = _meta.server_name.c_str();
+//     _envp[6] = _meta.server_port.c_str();
+//     _envp[7] = _meta.server_protocol.c_str();
+//     /* php specific */
+//     _envp[8] = "REDIRECT_STATUS=1";
+//     _envp[9] = _meta.script_filename.c_str();
+//     _envp[10] = _meta.remote_addr.c_str();
+//     _envp[11] = NULL;
+// }
 
 void CGI::initMetaPhp(void) {
     try {
@@ -99,9 +99,9 @@ bool CGI::initPhpScript(void) {
     if (!setScriptAttributesPhp())
         return false;
     if (_request->getMethod() == "GET") {
-        setGETVariablesPhp();
+        setEnv(PHP, METHOD_GET);
     } else if (_request->getMethod() == "POST") {
-        setPOSTVariablesPhp();
+        setEnv(PHP, METHOD_POST);
     } else {
         std::cerr << "Unknown method in CGI" << std::endl;
         return false;

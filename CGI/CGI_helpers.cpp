@@ -1,6 +1,29 @@
 #include "CGI.hpp"
 
 #include <iostream>
+void CGI::setEnv(int type, int state) {
+    unsigned int entry = 0;
+    _envp[entry++] = _meta.request_method.c_str();
+    _envp[entry++] = _meta.query_string.c_str();
+    _envp[entry++] = _meta.script_name.c_str();
+    _envp[entry++] = _meta.path_info.c_str();
+    _envp[entry++] = _meta.server_name.c_str();
+    _envp[entry++] = _meta.server_port.c_str();
+    _envp[entry++] = _meta.server_protocol.c_str();
+
+    if (type == PHP) {
+        _envp[entry++] = "REDIRECT_STATUS=1";
+        _envp[entry++] = _meta.script_filename.c_str();
+        _envp[entry++] = _meta.remote_addr.c_str();
+    }
+    if (state == METHOD_GET)
+        _envp[entry++] = _meta.query_string.c_str();
+    if (state == METHOD_POST) {
+        _envp[entry++] = _meta.content_length.c_str();
+        _envp[entry++] = _meta.content_type.c_str();
+    }
+    _envp[entry] = NULL;
+}
 
 std::string parsePathInfo(const std::string &_uri, const std::string &scriptName) {
     const size_t pathInfoPos = _uri.find(scriptName) + std::string(scriptName).size();

@@ -12,6 +12,13 @@
 
 class Client;
 
+enum envStates {
+    PYTHON,
+    PHP,
+    METHOD_GET,
+    METHOD_POST
+};
+
 typedef struct s_metaVariables {
     std::string auth_type;
     std::string content_length;
@@ -36,12 +43,6 @@ typedef struct s_metaVariables {
 class CGI {
   public:
     CGI();
-    // CGI(HttpRequest                     *request,
-    //     int                              clientFd,
-    //     int                              epfd,
-    //     const t_server                  &serverConfig,
-    //     const std::vector<t_cgi_config> &cgiConfigs);
-    // CGI(const CGI &obj);
     const CGI &operator=(const CGI &obj);
     ~CGI(void);
 
@@ -86,11 +87,8 @@ class CGI {
 
     // setters //Fix: these are private so they are not setters but initializers? rename accordingly
     bool setScriptAttributesPython(void);
-    void setGETVariablesPython(void);
-    void setPOSTVariablesPython(void);
+    void setEnv(int type, int state);
     bool setScriptAttributesPhp(void);
-    void setGETVariablesPhp(void);
-    void setPOSTVariablesPhp(void);
 
     // inititalisers
     bool initPythonScript(void);

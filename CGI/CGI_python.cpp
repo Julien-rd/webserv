@@ -17,28 +17,28 @@ bool CGI::setScriptAttributesPython(void) {
     return false;  // FIX: pls add error message here
 }
 
-void CGI::setGETVariablesPython(void) {
-    _envp[0] = _meta.request_method.c_str();
-    _envp[1] = _meta.query_string.c_str();
-    _envp[2] = _meta.script_name.c_str();
-    _envp[3] = _meta.path_info.c_str();
-    _envp[4] = _meta.server_name.c_str();
-    _envp[5] = _meta.server_port.c_str();
-    _envp[6] = _meta.server_protocol.c_str();
-    _envp[7] = NULL;
-}
+// void CGI::setGETVariablesPython(void) {
+//     _envp[0] = _meta.request_method.c_str();
+//     _envp[1] = _meta.query_string.c_str();
+//     _envp[2] = _meta.script_name.c_str();
+//     _envp[3] = _meta.path_info.c_str();
+//     _envp[4] = _meta.server_name.c_str();
+//     _envp[5] = _meta.server_port.c_str();
+//     _envp[6] = _meta.server_protocol.c_str();
+//     _envp[7] = NULL;
+// }
 
-void CGI::setPOSTVariablesPython(void) {
-    _envp[0] = _meta.request_method.c_str();
-    _envp[1] = _meta.content_length.c_str();
-    _envp[2] = _meta.content_type.c_str();
-    _envp[3] = _meta.script_name.c_str();
-    _envp[4] = _meta.path_info.c_str();
-    _envp[5] = _meta.server_name.c_str();
-    _envp[6] = _meta.server_port.c_str();
-    _envp[7] = _meta.server_protocol.c_str();
-    _envp[8] = NULL;
-}
+// void CGI::setPOSTVariablesPython(void) {
+//     _envp[0] = _meta.request_method.c_str();
+//     _envp[1] = _meta.content_length.c_str();
+//     _envp[2] = _meta.content_type.c_str();
+//     _envp[3] = _meta.script_name.c_str();
+//     _envp[4] = _meta.path_info.c_str();
+//     _envp[5] = _meta.server_name.c_str();
+//     _envp[6] = _meta.server_port.c_str();
+//     _envp[7] = _meta.server_protocol.c_str();
+//     _envp[8] = NULL;
+// }
 
 void CGI::initMetaPython(void) {
     try {
@@ -88,9 +88,9 @@ bool CGI::initPythonScript(void) {
     if (!setScriptAttributesPython())
         return false;
     if (_request->getMethod() == "GET") {
-        setGETVariablesPython();
+        setEnv(PYTHON, METHOD_GET);
     } else if (_request->getMethod() == "POST") {
-        setPOSTVariablesPython();
+        setEnv(PYTHON, METHOD_POST);
     } else {
         std::cerr << "Unknown method in CGI" << std::endl;
         return false;  // ERROR
