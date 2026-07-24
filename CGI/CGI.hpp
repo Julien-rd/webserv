@@ -12,12 +12,7 @@
 
 class Client;
 
-enum envStates {
-    PYTHON,
-    PHP,
-    METHOD_GET,
-    METHOD_POST
-};
+enum envStates { PYTHON, PHP, METHOD_GET, METHOD_POST };
 
 typedef struct s_metaVariables {
     std::string auth_type;
@@ -56,10 +51,7 @@ class CGI {
     bool addPipeToEpoll(void);
     void wait(void) const;
     bool isCGIRequest(const HttpRequest &request);
-    void init(HttpRequest                     *request,
-              int                              clientFd,
-              int                              epfd,
-              const t_server                  *serverConfig);
+    void init(HttpRequest *request, int clientFd, int epfd, const t_server *serverConfig);
     void reset();
     void reconstruct(const HttpRequest               &request,
                      int                              clientFd,
@@ -94,7 +86,7 @@ class CGI {
     bool initScript(int type);
     void setMeta(std::string &field, const std::string &key, const std::string &value);
     void initMeta(int type);
-    
+
     void execute(void);
 };
 

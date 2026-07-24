@@ -274,8 +274,9 @@ void HttpRequest::parseBody(std::string recvBuffer) {
     std::string::iterator start = recvBuffer.begin() + _bytesRead;
     std::string::iterator end = recvBuffer.end();
     if (recvBuffer.length() - _bytesRead < _bytesNeeded) {
-        std::cout << "never stops: " << recvBuffer.length() << ", bytesRead: " << _bytesRead <<
-        ", bytesneeded: " << _bytesNeeded << ", bodysize: " << _body.size() << std::endl;
+        std::cout << "never stops: " << recvBuffer.length() << ", bytesRead: " << _bytesRead
+                  << ", bytesneeded: " << _bytesNeeded << ", bodysize: " << _body.size()
+                  << std::endl;
         _body.insert(_body.end(), start, end);
         _bytesRead += end - start;
     } else {
@@ -347,7 +348,9 @@ int HttpRequest::bodyMode(std::string recvBuffer) {  // Fix: add fail reasons pa
     return 0;
 }
 
-int HttpRequest::parseHttpRequest(std::string &recvBuffer, size_t bytes_read) { //Fix: this function is inefficient it cvalidates everything on every call
+int HttpRequest::parseHttpRequest(std::string &recvBuffer,
+                                  size_t bytes_read) {  // Fix: this function is inefficient it
+                                                        // cvalidates everything on every call
     _bytesRead = bytes_read;
     _parsingDone = false;
     if (parseRequestLine(recvBuffer) == 1)

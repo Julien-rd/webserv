@@ -42,7 +42,7 @@ void CGIResponse::addCGIBody(HttpRequest request) {
     // str.erase(0, bodyPos + 4);
     // std::cout << "in addBody(), bodyyyyyy:\n{{{\n"
     //           << _CGIResponseStr << "}}}" << std::endl;
-    size_t separatorPos = _CGIResponseStr.find("\r\n\r\n"); //fix what if not found here
+    size_t separatorPos = _CGIResponseStr.find("\r\n\r\n");  // fix what if not found here
     // std::cout << "_CGIResponseLen: " << _CGIResponseLen
     //           << " ====== sepeartorPos: " << separatorPos << std::endl;
     _responseBody.resize(_CGIResponseLen - 4 - separatorPos);
@@ -97,18 +97,18 @@ void CGIResponse::addRules() {
                                                       // security layer
 }
 
-void CGIResponse::build(HttpRequest request) { //fix: make this similar to og build() again
+void CGIResponse::build(HttpRequest request) {  // fix: make this similar to og build() again
     _statusCode = request.getStatusCode();
     if (_statusCode >= 400) {
         serveErrorPage();
         return;
     }
     if (_CGIResponseLen == 0)
-        return;//fix: what to do here
+        return;  // fix: what to do here
     extractStatus();
     buildStatusLine();  // only mandatory part
-    if (getTimeStamp() == 1) 
-        return ;//fix: what to do here
+    if (getTimeStamp() == 1)
+        return;  // fix: what to do here
     addMandatoryHeaders();
     addRules();
     if (_statusCode < 400)

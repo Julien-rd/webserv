@@ -1,5 +1,5 @@
-#include "CGI.hpp"
 #include "../Utils/Macros.hpp"
+#include "CGI.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -93,14 +93,13 @@ void CGI::initMeta(int type) {
                 _request->getUriData().path);  // TODO make this actually adaptable
 }
 
-
 bool CGI::setScriptAttributes(int type) {
     std::string extension;
     if (type == PYTHON)
         extension = ".py";
     else if (type == PHP)
         extension = ".php";
-    
+
     for (size_t i = 0; i < _cgiConfigs->size(); i++) {
         if (_cgiConfigs->at(i).extension == extension) {
             _executable = _cgiConfigs->at(i).executablePath;

@@ -39,8 +39,7 @@ void Client::init(int epfd, const t_config *config, const int sid, const int cli
     _request.init(config->servers.at(sid).clientMaxBody);
     _response.init(config, sid);
     _CGIResponse.init(_CGIResponseLen, config, sid);
-    _CGI.init(
-        &_request, _fd, _epfd, &_config->servers.at(_sid));
+    _CGI.init(&_request, _fd, _epfd, &_config->servers.at(_sid));
     setLastActivity();
 }
 
@@ -128,9 +127,9 @@ void Client::closeConnection(int reason) {
 
 void Client::readCGIPipe(
     int pipeReadFd) {  // ALL OF THE ERRORS HERE CAUSE INFINITE LOADING AND CRASH THE SERVER
-    
+
     std::string buf(BUFFER_SIZE, '\0');
-    ssize_t bytesRead;
+    ssize_t     bytesRead;
 
     bytesRead = read(pipeReadFd, &buf[0], BUFFER_SIZE - 1);
     if (bytesRead == -1) {
@@ -151,10 +150,9 @@ void Client::readCGIPipe(
             kill(_CGIPid, SIGKILL);
             waitpid(_CGIPid, NULL, 0);
         }
-        if (epoll_ctl(_epfd,  EPOLL_CTL_DEL, pipeReadFd, NULL) == -1) {
-        std::cerr << "epoll_ctl() DEL failed in readCGIPipe(): " << strerror(errno)
-                  << "\n";
-           return; 
+        if (epoll_ctl(_epfd, EPOLL_CTL_DEL, pipeReadFd, NULL) == -1) {
+            std::cerr << "epoll_ctl() DEL failed in readCGIPipe(): " << strerror(errno) << "\n";
+            return;
         }
         close(pipeReadFd);
         // std::cout << "\nbuilding HttpResponse from CGI Response:\n{\n"
@@ -252,15 +250,15 @@ int Client::loop(std::string &recvBuffer) {
             _response.reset();
             _CGIResponseStream.erase();
             _CGIResponseLen = 0;
-            // _CGIResponse.reset(); //fix: those were the issues now pls check what needs to be reset
-            // _CGI.reset();
+            // _CGIResponse.reset(); //fix: those were the issues now pls check what needs to be
+            // reset _CGI.reset();
             continue;
         }
         _response.build(_request);
         const char *response = _response.getResponse();
         // std::cout << "response:\n" << response << std::endl;
         if (send(_fd, response, strlen(response), 0) == -1) {
-            closeConnection(CLOSE_TRANSPORT_FAIL); 
+            closeConnection(CLOSE_TRANSPORT_FAIL);
             return CLOSE;
         }
         std::vector<char> responseBody = _response.getResponseBody();
