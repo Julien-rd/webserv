@@ -23,8 +23,17 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 json_path = os.path.normpath(os.path.join(script_dir, "..", "database", "data.json"))
 
 if os.path.exists(json_path):
-    with open(json_path, "r") as f:
-        data = json.load(f)
+    try:
+        with open(json_path, "r") as f:
+            content = f.read().strip()
+
+            if content:
+                data = json.loads(content)
+            else:
+                data = {"users": []}
+
+    except json.JSONDecodeError:
+        data = {"users": []}
 else:
     data = {"users": []}
 

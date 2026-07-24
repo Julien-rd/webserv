@@ -19,42 +19,42 @@
 typedef enum e_mapOperation { ADD, REMOVE } e_mapOperation;
 
 class Server : public Error {
-private:
-  const t_config& _config;
+  public:
+    Server(t_serverContext context);
+    Server(const Server &obj);
+    ~Server(void);
 
-  /* Attributes shared from Poller */
-  int _epfd;
+    int  checkClientCap(void);
+    void closeConnection(int clientFd);
+    void handleServerEvent(void);
+    void handleClientEvent(int clientFd);
 
-  /* Attributes shared from ServerManager  */
-  int                    _sid;
-  std::map<int, IntSet>& _serverToClientsMap;
-  std::map<int, int>&    _clientToServerMap;
-  std::map<int, Client>& _clients;
+    int  start(void);
+    void closeClientFds(void);
 
-  /* Server's own attributes */
-  int       _serverSocket;
-  addrinfo* _addrInfo;
+    // getters
+    int getIdentifier(void) const;
 
-  void initServerSocket(void);
-  void setServerSockAddr(void);
-  void addSocketToEpoll(int socketFd);
-  void bindAndListen(void);
-  void setToNonBlocking(int socketFd);
+  private:
+    const t_config &_config;
 
-  void updateClientsMap(e_mapOperation op, const int clientFd);
+    /* Attributes shared from Poller */
+    int _epfd;
 
-public:
-  Server(t_serverContext context);
-  Server(const Server& obj);
-  ~Server(void);
+    /* Attributes shared from ServerManager  */
+    int                    _sid;
+    std::map<int, IntSet> &_serverToClientsMap;
+    std::map<int, int>    &_clientToServerMap;
+    std::map<int, Client> &_clients;
 
-  int checkClientCap(void);
-  void closeConnection(int clientFd);
-  void handleServerEvent(void);
-  void handleClientEvent(int clientFd);
+    /* Server's own attributes */
+    int       _serverSocket;
+    addrinfo *_addrInfo;
 
-  int  start(void);
-  void closeClientFds(void);
-
-  int getIdentifier(void) const;
+    void initServerSocket(void);
+    void setServerSockAddr(void);
+    void addSocketToEpoll(int socketFd);
+    void bindAndListen(void);
+    void setToNonBlocking(int socketFd);
+    void updateClientsMap(e_mapOperation op, const int clientFd);
 };
