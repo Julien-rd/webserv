@@ -191,7 +191,7 @@ int Client::loop(std::string& recvBuffer) {
       return 1;
     }
     if (_request.parsingDone() == false) {
-        std::cout << "reached parsingDone" << std::endl;
+      std::cout << "reached parsingDone" << std::endl;
       return 0;
     }
     
@@ -225,7 +225,6 @@ int Client::loop(std::string& recvBuffer) {
     _response.reset();
     if (err == true)
       return 1;
-    // std::cout << "SUCCESS\n";
   }
   return 0;
 }
