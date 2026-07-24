@@ -94,13 +94,14 @@ bool CGI::scriptFileExists(void) const {
     return false;
 }
 
-bool CGI::initCGI(void) {
+bool CGI::initCGI(void) {  // fix: would be nice to add a little map with extensions to script type
+                           // to make code more flexible
     if (_request->getUriData().extension == ".py") {
-        if (!initPythonScript())
+        if (!initScript(PYTHON))
             return false;
         // std::cout << "initialized python CGI" << std::endl;
     } else if (_request->getUriData().extension == ".php") {
-        if (!initPhpScript())
+        if (!initScript(PHP))
             return false;
         // std::cout << "initialized php CGI" << std::endl;
     } else {
@@ -190,9 +191,6 @@ bool CGI::spawnProcess(void) {
             const std::vector<char> &body = _request->getBody();
             std::string              bodyStr(body.begin(), body.end());
             size_t                   totalWritten = 0;
-            std::cout << "[[[[[[[[[[\n"
-                      << "bodysize: " << body.size()
-                      << "\n_contentlength: " << _request->getContentLength() << "\n[[[[[[[[[[\n";
             while (totalWritten < _request->getContentLength()) {
                 ssize_t written = write(_postPipeFd[1],
                                         bodyStr.data() + totalWritten,

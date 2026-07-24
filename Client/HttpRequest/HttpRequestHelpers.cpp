@@ -7,7 +7,6 @@
 #include <string>
 
 void HttpRequest::addHeader() {
-    std::string data = "Abc";
     std::string fieldNameToLow = _fieldName;
     for (size_t it = 0; it < _fieldName.size(); ++it)
         fieldNameToLow[it] = tolower(_fieldName[it]);

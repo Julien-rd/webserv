@@ -127,7 +127,7 @@ print('  </section>')
 # --- Selected CGI env vars ---
 cgi_vars = [
     "REQUEST_METHOD", "SCRIPT_NAME", "PATH_INFO",
-    "SERVER_NAME", "SERVER_PORT", "SERVER_PROTOCOL",
+    "SERVER_NAME", "SERVER_PORT", "SERVER_PROTOCOL", "HTTP_COOKIE",
     "CONTENT_TYPE", "CONTENT_LENGTH",
     "HTTP_HOST", "HTTP_USER_AGENT", "REMOTE_ADDR",
 ]

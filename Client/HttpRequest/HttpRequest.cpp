@@ -193,7 +193,6 @@ int HttpRequest::parseHeaders(std::string &recvBuffer) {
             pos = recvBuffer.find("\r", _bytesRead);
             if (pos == std::string::npos) {
                 _fieldValue += recvBuffer.substr(_bytesRead);
-                // FIX: claude said it needs this here: _bytesRead = recvBuffer.size();
                 return 0;
             }
             exctractContent(recvBuffer, pos);

@@ -42,7 +42,7 @@ void CGIResponse::addCGIBody(HttpRequest request) {
     // str.erase(0, bodyPos + 4);
     // std::cout << "in addBody(), bodyyyyyy:\n{{{\n"
     //           << _CGIResponseStr << "}}}" << std::endl;
-    size_t separatorPos = _CGIResponseStr.find("\r\n\r\n");
+    size_t separatorPos = _CGIResponseStr.find("\r\n\r\n"); //fix what if not found here
     // std::cout << "_CGIResponseLen: " << _CGIResponseLen
     //           << " ====== sepeartorPos: " << separatorPos << std::endl;
     _responseBody.resize(_CGIResponseLen - 4 - separatorPos);
@@ -52,11 +52,13 @@ void CGIResponse::addCGIBody(HttpRequest request) {
 
     std::ostringstream ss;
     ss << _CGIResponseLen - 4 - separatorPos;
+    // std::cout << responseStream.str().size() << std::endl;
+    // std::cout << "[" << responseStream.str().data() << "]" << std::endl;
     // _response += "Content-Type: text/html\r\n";
     _response += "Content-Length: " + ss.str() + "\r\n";
     _response += _CGIResponseStr.substr(0, separatorPos + 4);
     _response.append(&_responseBody[0], _CGIResponseLen - 4 - separatorPos);
-    std::cout << std::endl << "[" << _response << "] " << std::endl << std::endl;
+    // std::cout << std::endl << "[" << _response << "] " << std::endl << std::endl;
 }
 
 void CGIResponse::addRules() {

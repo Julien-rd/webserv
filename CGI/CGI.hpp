@@ -36,6 +36,7 @@ typedef struct s_metaVariables {
     std::string server_name;
     std::string server_port;
     std::string server_protocol;
+    std::string http_cookie;
     std::string server_software;
     std::string script_filename;
 } t_metaVariables;
@@ -86,16 +87,14 @@ class CGI {
     int                              _postPipeFd[2];
 
     // setters //Fix: these are private so they are not setters but initializers? rename accordingly
-    bool setScriptAttributesPython(void);
     void setEnv(int type, int state);
-    bool setScriptAttributesPhp(void);
 
     // inititalisers
-    bool initPythonScript(void);
-    void initMetaPython(void);
-    bool initPhpScript(void);
-    void initMetaPhp(void);
-
+    bool setScriptAttributes(int type);
+    bool initScript(int type);
+    void setMeta(std::string &field, const std::string &key, const std::string &value);
+    void initMeta(int type);
+    
     void execute(void);
 };
 
