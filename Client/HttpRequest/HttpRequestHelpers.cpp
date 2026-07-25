@@ -151,25 +151,30 @@ bool HttpRequest::hasHostHeader() {
 
 bool HttpRequest::hasContentLength() {
     std::map<std::string, std::string>::iterator it = _headers.find("content-length");
-    if (it == _headers.end() && _currentState != BODY_CHUNKED){
-            std::cerr << "Content-Length is missing\n";
-            return false;
-        }
-    if (it != _headers.end()) {
-        if (_currentState == BODY_CHUNKED) {
-            std::cerr << "Header has both transfer-encoding and content-length\n";
-            return false;
-        }
-        std::stringstream ss(_headers["content-length"]);
-        ss >> _contentLength;
-        if (ss.fail()) {
-            std::cerr << "Invalid Content-Length\n";
-            return false;
-        }
-        if (_contentLength > _clientMaxBody * MEGABYTE) { 
-            std::cerr << "Request Entity Too Large\n<";
-            return false;
-        }
+    if (it == _headers.end())
+        return true;
+    if (_currentState == BODY_CHUNKED) {
+        std::cerr << "Header has both transfer-encoding and content-length\n";
+        return false;
+    }
+    const std::string &raw = it->second;
+    if (raw.empty() || raw.find_first_not_of("0123456789") != std::string::npos) {
+        std::cerr << "Invalid Content-Length\n";
+        _statusCode = 400;
+        return false;
+    }
+    errno = 0;
+    char         *end;
+    unsigned long val = std::strtoul(raw.c_str(), &end, 10);
+    if (errno == ERANGE || *end != '\0') {
+        std::cerr << "Content-Length out of range\n";
+        _statusCode = 400;
+        return false;
+    }
+    _contentLength = static_cast<size_t>(val);
+    if (_contentLength > _clientMaxBody * MEGABYTE) { 
+        std::cerr << "Request Entity Too Large\n<";
+        return false;
     }
     return true;
 }

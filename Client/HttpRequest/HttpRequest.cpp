@@ -300,10 +300,10 @@ void HttpRequest::parseChunkedBody(std::string recvBuffer) {
             if (pos == std::string::npos)
                 return;
             _bytesNeeded = hexaToDeci(_buffer.substr(0, pos));
-            if(_clientMaxBody - _body.size() < _bytesNeeded){
+            if (_body.size() >= _clientMaxBody || _bytesNeeded > _clientMaxBody - _body.size()) {
                 _parsingDone = true;
-                _statusCode = 405; // TODO check if that works
-                return ;
+                _statusCode = 413;
+                return;
             }
             _buffer.erase(0, pos + 2);
             if (_bytesNeeded != 0)
