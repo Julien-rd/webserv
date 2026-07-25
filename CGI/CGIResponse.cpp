@@ -36,15 +36,11 @@ CGIResponse::CGIResponse() {}
 
 void CGIResponse::addCGIBody(HttpRequest request) {
     (void) request;
-    // std::cout << std::endl << "[" << _CGIResponseStr << "] " << std::endl << std::endl;
-    // std::string str = _CGIResponseStream.str();
-    // size_t      bodyPos = str.find("\r\n\r\n");
-    // str.erase(0, bodyPos + 4);
-    // std::cout << "in addBody(), bodyyyyyy:\n{{{\n"
-    //           << _CGIResponseStr << "}}}" << std::endl;
-    size_t separatorPos = _CGIResponseStr.find("\r\n\r\n");
-    // std::cout << "_CGIResponseLen: " << _CGIResponseLen
-    //           << " ====== sepeartorPos: " << separatorPos << std::endl;
+    size_t separatorPos = _CGIResponseStr.find("\r\n\r\n");  // fix what if not found here
+    if (separatorPos == std::string::npos) { //fix: test and move this out of here maybe
+        _statusCode = 502;
+        return;
+    }
     _responseBody.resize(_CGIResponseLen - 4 - separatorPos);
     std::stringstream responseStream(_CGIResponseStr);
     responseStream.seekg(separatorPos + 4);
@@ -52,11 +48,9 @@ void CGIResponse::addCGIBody(HttpRequest request) {
 
     std::ostringstream ss;
     ss << _CGIResponseLen - 4 - separatorPos;
-    // _response += "Content-Type: text/html\r\n";
     _response += "Content-Length: " + ss.str() + "\r\n";
     _response += _CGIResponseStr.substr(0, separatorPos + 4);
     _response.append(&_responseBody[0], _CGIResponseLen - 4 - separatorPos);
-    std::cout << std::endl << "[" << _response << "] " << std::endl << std::endl;
 }
 
 void CGIResponse::addRules() {
@@ -95,18 +89,18 @@ void CGIResponse::addRules() {
                                                       // security layer
 }
 
-void CGIResponse::build(HttpRequest request) { //fix: make this similar to og build() again
+void CGIResponse::build(HttpRequest request) {  // fix: make this similar to og build() again
     _statusCode = request.getStatusCode();
     if (_statusCode >= 400) {
         serveErrorPage();
         return;
     }
     if (_CGIResponseLen == 0)
-        return;//fix: what to do here
+        return;  // fix: what to do here
     extractStatus();
     buildStatusLine();  // only mandatory part
-    if (getTimeStamp() == 1) 
-        return ;//fix: what to do here
+    if (getTimeStamp() == 1)
+        return;  // fix: what to do here
     addMandatoryHeaders();
     addRules();
     if (_statusCode < 400)

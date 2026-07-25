@@ -12,6 +12,8 @@
 
 class Client;
 
+enum envStates { PYTHON, PHP, METHOD_GET, METHOD_POST };
+
 typedef struct s_metaVariables {
     std::string auth_type;
     std::string content_length;
@@ -29,6 +31,7 @@ typedef struct s_metaVariables {
     std::string server_name;
     std::string server_port;
     std::string server_protocol;
+    std::string http_cookie;
     std::string server_software;
     std::string script_filename;
 } t_metaVariables;
@@ -36,12 +39,6 @@ typedef struct s_metaVariables {
 class CGI {
   public:
     CGI();
-    // CGI(HttpRequest                     *request,
-    //     int                              clientFd,
-    //     int                              epfd,
-    //     const t_server                  &serverConfig,
-    //     const std::vector<t_cgi_config> &cgiConfigs);
-    // CGI(const CGI &obj);
     const CGI &operator=(const CGI &obj);
     ~CGI(void);
 
@@ -54,10 +51,7 @@ class CGI {
     bool addPipeToEpoll(void);
     void wait(void) const;
     bool isCGIRequest(const HttpRequest &request);
-    void init(HttpRequest                     *request,
-              int                              clientFd,
-              int                              epfd,
-              const t_server                  *serverConfig);
+    void init(HttpRequest *request, int clientFd, int epfd, const t_server *serverConfig);
     void reset();
     void reconstruct(const HttpRequest               &request,
                      int                              clientFd,
@@ -85,18 +79,13 @@ class CGI {
     int                              _postPipeFd[2];
 
     // setters //Fix: these are private so they are not setters but initializers? rename accordingly
-    bool setScriptAttributesPython(void);
-    void setGETVariablesPython(void);
-    void setPOSTVariablesPython(void);
-    bool setScriptAttributesPhp(void);
-    void setGETVariablesPhp(void);
-    void setPOSTVariablesPhp(void);
+    void setEnv(int type, int state);
 
     // inititalisers
-    bool initPythonScript(void);
-    void initMetaPython(void);
-    bool initPhpScript(void);
-    void initMetaPhp(void);
+    bool setScriptAttributes(int type);
+    bool initScript(int type);
+    void setMeta(std::string &field, const std::string &key, const std::string &value);
+    void initMeta(int type);
 
     void execute(void);
 };
