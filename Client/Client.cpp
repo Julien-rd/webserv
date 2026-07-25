@@ -232,7 +232,8 @@ int Client::loop(std::string &recvBuffer) {
     unsigned int bufferLen = recvBuffer.length();
     while (_bytesRead < bufferLen) {
         if (_request.parseHttpRequest(recvBuffer, _bytesRead) == 1) {
-            _request.setStatusCode(400);
+            if(_request.getStatusCode()== 0)
+                _request.setStatusCode(400);
             closeConnection(CLOSE_CLIENT_ERROR);
             return CLOSE;
         }
