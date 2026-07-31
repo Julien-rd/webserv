@@ -79,9 +79,10 @@ private:
   int parseRequestLine(std::string& recvBuffer);
 
   int  bodyMode(std::string recvBuffer);
-  void  parseBody(std::string recvBuffer);
+  void parseBody(std::string recvBuffer);
   void parseChunkedBody(std::string recvBuffer);
   bool saveData();
+  void checkBodyHeaders();
   bool validateMandatoryHeaders();
 
   void trim();
