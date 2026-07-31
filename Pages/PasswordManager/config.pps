@@ -1,36 +1,37 @@
 
-client_timeout 10;
+client_timeout 50;
 server {
   client_max_body_size        1;
-  
+
   cgi_config .py /usr/bin/python3;
   allow_methods GET POST DELETE;
-  return 301 /login/;
-  root /PasswordManager;
+
   location /login/ {
-  root /PasswordManager;
-  index index.html;
-  allow_methods GET POST DELETE;
+    index index.html;
   }
+
   location /error/ {
-  root /PasswordManager;
-  index index.html;
-  allow_methods GET POST DELETE;
+    index index.html;
   }
+
+  location /registration/ {
+    index index.html;
+    allow_methods GET POST DELETE;
+  }
+
+  location /database/ {
+    allow_methods GET POST DELETE;
+  }
+
   location /dashboard/ {
-  root /PasswordManager;
-  index index.html;
-  allow_methods GET POST DELETE;
+    index index.html;
+    allow_methods GET POST DELETE;
   }
+
   location /processing/ {
-  root /PasswordManager;
-  index index.html;
-  allow_methods GET POST DELETE;
+    index index.html;
   }
   
   root /PasswordManager;
-  location /dashboard/ {
-  allow_methods GET POST DELETE;
-  }
   listen 127.0.0.1:7070;
 }

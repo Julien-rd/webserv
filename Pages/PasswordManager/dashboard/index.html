@@ -9,57 +9,123 @@
     body {
       font-family: sans-serif;
       background: #f5f5f5;
+      min-height: 100vh;
+      padding: 2.5rem 1.5rem;
+    }
+
+    .wrap {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .topbar {
       display: flex;
       align-items: center;
-      justify-content: center;
-      min-height: 100vh;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
     }
+    .topbar h1 { font-size: 15px; font-weight: 500; color: #111; }
+    .logout {
+      font-size: 13px;
+      color: #666;
+      text-decoration: none;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 6px 12px;
+      background: #fff;
+    }
+    .logout:hover { color: #111; border-color: #ccc; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 1.25rem;
+    }
+    @media (max-width: 560px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
     .card {
       background: white;
       border: 1px solid #e0e0e0;
       border-radius: 12px;
-      padding: 2.5rem 2rem;
-      max-width: 320px;
-      width: 100%;
     }
-    .avatar {
-      width: 40px; height: 40px;
+
+    /* Profile card */
+    .profile {
+      padding: 2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 4px;
+    }
+    .avatar-photo {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #e8f0fe;
+      margin-bottom: 12px;
+    }
+    .avatar-fallback {
+      width: 72px; height: 72px;
       border-radius: 50%;
       background: #e8f0fe;
       display: flex; align-items: center; justify-content: center;
-      font-size: 14px; font-weight: 500; color: #1a56db;
-      flex-shrink: 0;
+      font-size: 22px; font-weight: 500; color: #1a56db;
+      margin-bottom: 12px;
     }
-    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem; }
-    .name { font-size: 15px; font-weight: 500; color: #111; }
-    .sub { font-size: 13px; color: #666; }
-    .rows { border-top: 1px solid #e0e0e0; padding-top: 1rem; display: grid; gap: 10px; }
-    .row { display: flex; justify-content: space-between; font-size: 13px; }
+    .profile .name { font-size: 15px; font-weight: 500; color: #111; }
+    .profile .email { font-size: 13px; color: #666; word-break: break-all; }
+    .badge {
+      margin-top: 12px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #1a7f37;
+      background: #e9f7ed;
+      border-radius: 999px;
+      padding: 3px 10px;
+    }
+
+    /* Details card */
+    .details { padding: 1.5rem; }
+    .details h2 {
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+      margin-bottom: 1rem;
+    }
+    .rows { display: grid; gap: 10px; }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .row:last-child { border-bottom: none; padding-bottom: 0; }
     .row span:first-child { color: #666; }
-    .row span:last-child { font-weight: 500; color: #111; }
-    .active { color: #1a7f37 !important; }
-    .footer { border-top: 1px solid #e0e0e0; margin-top: 1rem; padding-top: 1rem; }
-    .footer a { font-size: 13px; color: #666; text-decoration: none; }
-    .footer a:hover { color: #111; }
+    .row span:last-child { font-weight: 500; color: #111; text-align: right; }
+
+    .state {
+      text-align: center;
+      font-size: 13px;
+      color: #666;
+      padding: 2rem 0;
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="header">
-      <div class="avatar">E</div>
-      <div>
-        <p class="name">Welcome back, Eric.</p>
-        <p class="sub">Successfully authenticated.</p>
-      </div>
+  <div class="wrap">
+    <div class="topbar">
+      <h1>Dashboard</h1>
+      <a class="logout" href="/dashboard/logout.py">Log out</a>
     </div>
-    <div class="rows">
-      <div class="row"><span>Status</span><span class="active">Active</span></div>
-      <div class="row"><span>Session</span><span>Secure</span></div>
-      <div class="row"><span>Passwords stored</span><span>—</span></div>
-    </div>
-    <div class="footer">
-      <a href="/login/">Log out</a>
-    </div>
+
+    <div id="content" class="state">Loading…</div>
   </div>
+
+  <script src=/dashboard/dashboard.js></script>
 </body>
 </html>

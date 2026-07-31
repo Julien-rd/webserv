@@ -2,14 +2,14 @@ NAME = webserv
 
 CXX = c++
 
-CXXFLAGS = -Wall -Wextra -Werror -MMD -MP -std=c++98 -pedantic -g #-fsanitize=address,undefined,bounds,float-divide-by-zero
+CXXFLAGS = #-Wall -Wextra -Werror -MMD -MP -std=c++98 -pedantic -g #-fsanitize=address,undefined,bounds,float-divide-by-zero
 
 SOURCES = main.cpp
 CLASS_SOURCES = Error/Error.cpp \
 				Poller/Poller.cpp \
 				ServerManager/ServerManager.cpp \
 				Server/Server.cpp \
-				CGI/CGI.cpp CGI/CGI_helpers.cpp CGI/CGI_php.cpp CGI/CGI_python.cpp CGI/CGIResponse.cpp \
+				CGI/CGI.cpp CGI/CGI_helpers.cpp CGI/CGIResponse.cpp \
 				Client/Client.cpp \
 				Client/HttpRequest/HttpRequest.cpp Client/HttpRequest/HttpRequestGetters.cpp \
 				Client/HttpRequest/HttpRequestHelpers.cpp \

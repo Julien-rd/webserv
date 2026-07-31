@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registrieren</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:sans-serif;
+    background:#f5f5f5;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    padding:2rem 1rem;
+}
+
+.card{
+    background:white;
+    border:1px solid #e0e0e0;
+    border-radius:12px;
+    padding:2.5rem 2rem;
+    width:100%;
+    max-width:340px;
+}
+
+h1{
+    font-size:1.1rem;
+    font-weight:500;
+    color:#111;
+    margin-bottom:.25rem;
+}
+
+.subtitle{
+    color:#666;
+    font-size:.85rem;
+    margin-bottom:1.5rem;
+}
+
+.field{
+    display:grid;
+    gap:4px;
+    margin-bottom:12px;
+}
+
+.row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+}
+
+label{
+    font-size:12px;
+    color:#666;
+}
+
+input{
+    width:100%;
+    padding:.55rem .75rem;
+    border:1px solid #ddd;
+    border-radius:8px;
+    font-size:.9rem;
+    outline:none;
+    font-family:inherit;
+}
+
+input:focus{
+    border-color:#888;
+}
+
+input[type=file]{
+    cursor:pointer;
+    padding:.4rem;
+}
+
+.avatar-row{
+    display:flex;
+    gap:12px;
+    align-items:center;
+    margin-bottom:12px;
+}
+
+.avatar-preview{
+    width:48px;
+    height:48px;
+    border-radius:50%;
+    border:1px solid #ddd;
+    background:#eee;
+    background-size:cover;
+    background-position:center;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:10px;
+    color:#888;
+    overflow:hidden;
+}
+
+.avatar-field{
+    flex:1;
+}
+
+button{
+    width:100%;
+    padding:.65rem;
+    border:none;
+    border-radius:8px;
+    background:#111;
+    color:white;
+    cursor:pointer;
+    font-size:.9rem;
+}
+
+button:hover{
+    background:#333;
+}
+
+button:disabled{
+    background:#888;
+}
+
+.status{
+    margin-top:10px;
+    text-align:center;
+    font-size:.8rem;
+    min-height:18px;
+}
+
+.ok{
+    color:#198754;
+}
+
+.error{
+    color:#dc3545;
+}
+
+.footer-link{
+    margin-top:18px;
+    text-align:center;
+    font-size:.82rem;
+}
+
+.footer-link a{
+    color:#111;
+    text-decoration:none;
+}
+
+.footer-link a:hover{
+    text-decoration:underline;
+}
+</style>
+
+</head>
+<body>
+
+<div class="card">
+
+<h1>Konto erstellen</h1>
+<p class="subtitle">
+Fülle das Formular aus, um dich zu registrieren.
+</p>
+
+<form action="/registration/register.py" method="POST" id="registerForm">
+
+<div class="row">
+<div class="field">
+<label>Vorname</label>
+<input type="text" id="firstName" name="firstName" required/>
+</div>
+
+<div class="field">
+<label>Nachname</label>
+<input type="text" id="lastName" name="lastName" required/>
+</div>
+</div>
+
+<div class="field">
+<label>E-Mail</label>
+<input type="email" id="email" name="email" required />
+</div>
+
+<div class="field">
+<label>Passwort</label>
+<input type="password" id="password" name="password" minlength="6" required>
+</div>
+
+<div class="avatar-row">
+
+<div class="avatar-preview" id="preview">
+Kein Bild
+</div>
+
+<div class="avatar-field">
+<label>Profilbild</label>
+<input
+type="file"
+id="profilePicture" name ="profilePicture"
+accept="image/*">
+</div>
+
+</div>
+
+<button id="submitBtn">
+Registrieren
+</button>
+
+<div class="status" id="status"></div>
+
+</form>
+
+<div class="footer-link">
+Bereits ein Konto?
+<a href="../login/">Anmelden</a>
+</div>
+
+</div>
+
+<script src=/registration/registration.js></script>
+
+</body>
+</html>
