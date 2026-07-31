@@ -19,7 +19,6 @@ class Client {  // Fix: This has too many responsibilities: extract everything f
 
     int    loop(std::string &recvBuffer);
     void   doCGI();
-    size_t getBytesRead();
     void   readCGIPipe(int pipeReadFd);
     void   init(int epfd, const t_config *config, const int sid, const int clientFd);
     void   reset();

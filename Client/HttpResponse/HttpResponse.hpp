@@ -45,8 +45,6 @@ class HttpResponse {
     std::string                        _statusCodeStr;
 
     bool                methodAllowed(unsigned int index, const std::vector<t_location> &locations);
-    void                addCookies(HttpRequest request);
-    std::string         getRandomID();
     void                buildStatusLine();
     int                 extractContentType(std::string path);
     void                extractContentLength();
@@ -56,7 +54,6 @@ class HttpResponse {
     void                addRedirectHeaders(const std::string &path);
     void                serveSuccessPage(HttpRequest request);
     virtual bool        addBody(HttpRequest request, const UriResult &result);
-    static bool         isDirectory(std::string &path);
     static unsigned int getLocation(const std::string &match, const t_server &serverConfig);
     void                attachPrefix(const std::string &uri,
                                      std::string       &path,

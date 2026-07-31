@@ -1,6 +1,6 @@
 #include "Parser.hpp"
 #include "Structs.hpp"
-
+#include "../Utils/Macros.hpp"
 #include <algorithm>
 
 void parseAutoindex(const std::vector<std::string> &args, t_location &location) {
@@ -34,7 +34,7 @@ void parseMaxBody(const std::vector<std::string> &args, t_server &server) {
     long  val = strtol(args.at(0).c_str(), &end, 10);
     if (*end != 0 || val < 0 || val > 100 || args.size() != 1)
         throw std::runtime_error("client_max_body directive invalid");
-    server.clientMaxBody = (unsigned int) val;
+    server.clientMaxBody = (unsigned int) val * MEGABYTE;
 }
 
 void parseListen(const std::vector<std::string> &args, t_server &server) {

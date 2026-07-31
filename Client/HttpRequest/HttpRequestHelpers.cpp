@@ -167,7 +167,8 @@ bool HttpRequest::hasContentLength() {
         return false;
     }
     _contentLength = static_cast<size_t>(val);
-    if (_contentLength > _clientMaxBody * MEGABYTE) { 
+    if (_contentLength > _clientMaxBody) { 
+        _statusCode = 413;
         std::cerr << "Request Entity Too Large\n<";
         return false;
     }
@@ -208,4 +209,11 @@ void HttpRequest::reset() {
     _parsingDone = false;
     _headers.clear();
     _body.clear();
+    _buffer.clear();
+    _bytesNeeded = 0;
+    _chunkedBodyState = BYTES;
+    _uriData.path.clear();
+    _uriData.pathInfo.clear();
+    _uriData.query.clear();
+    _uriData.extension.clear();
 }
