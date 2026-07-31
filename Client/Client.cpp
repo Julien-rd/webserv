@@ -227,6 +227,7 @@ void Client::doCGI(void) {
 
 int Client::loop(std::string &recvBuffer) {
     _bytesRead = 0;
+    std::cout << "start :[\n" << recvBuffer << "]\n";
     unsigned int bufferLen = recvBuffer.length();
     while (_bytesRead < bufferLen) {
         if (_request.parseHttpRequest(recvBuffer, _bytesRead) == 1) {
@@ -255,6 +256,7 @@ int Client::loop(std::string &recvBuffer) {
             // reset _CGI.reset();
             continue;
         }
+        std::cout << "u made it\n";
         _response.build(_request);
         const char *response = _response.getResponse();
         // std::cout << "response:\n" << response << std::endl;

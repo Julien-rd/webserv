@@ -260,7 +260,7 @@ void HttpRequest::parseBody(std::string recvBuffer) {
   std::string::iterator start = recvBuffer.begin() + _bytesRead;
   std::string::iterator end = recvBuffer.end();
   size_t len = recvBuffer.length() - _bytesRead;
-  if (_bytesNeeded < len) {
+  if (_bytesNeeded > len) {
     _body.insert(_body.end(), start, end);
     _bytesRead += len;
   } else {
