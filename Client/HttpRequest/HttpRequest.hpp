@@ -77,36 +77,6 @@ class HttpRequest {
 
     // size_t _bytes_read implent bytes_read!!! erase is to inefficient
 
-<<<<<<< HEAD
-  int  bodyMode(std::string recvBuffer);
-  void parseBody(std::string recvBuffer);
-  void parseChunkedBody(std::string recvBuffer);
-  bool saveData();
-  void checkBodyHeaders();
-  bool validateMandatoryHeaders();
-
-  void trim();
-  void findSeperator(std::string& recvBuffer, char seperator, size_t& pos,
-                     size_t& max_pos);
-  void exctractContent(std::string& recvBuffer, size_t pos);
-  bool brokenSyntax(size_t pos, size_t max_pos);
-  void addHeader();
-
-  std::string _httpVersion;
-  std::string _fieldName;
-  std::string _fieldValue;
-  size_t _bytesRead; // FIX: this this needs a better name what bytes, does it
-                     // accumulate
-  int  _statusCode;
-  bool _parsingDone;
-  // size_t _bytes_read implent bytes_read!!! erase is to inefficient;
-
-  // containers
-  std::vector<char> _body;
-
-  // from .conf file
-  size_t _client_max_body_size;
-=======
     bool validateURIPath(std::string &path);
     bool validMethod();
     bool validUri();
@@ -128,5 +98,4 @@ class HttpRequest {
     void exctractContent(std::string &recvBuffer, size_t pos);
     bool brokenSyntax(size_t pos, size_t max_pos);
     void addHeader();
->>>>>>> refs/remotes/origin/main
 };

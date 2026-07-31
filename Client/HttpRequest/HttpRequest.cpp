@@ -333,10 +333,8 @@ void HttpRequest::parseChunkedBody(std::string recvBuffer) {
 int HttpRequest::bodyMode(std::string recvBuffer) {  // Fix: add fail reasons parsechunked
     if (_currentState == BODY)
         parseBody(recvBuffer);
-    if (_currentState == BODY_CHUNKED) {
-        std::cout << "current state body\n";
+    if (_currentState == BODY_CHUNKED)
         parseChunkedBody(recvBuffer);
-    }
     return 0;
 }
 

@@ -74,11 +74,6 @@ void HttpRequest::findSeperator(std::string &recvBuffer,
 }
 
 bool HttpRequest::validMethod() {
-    // for (size_t i = 0; i < _method.size(); i++)
-    // {
-    //     printf("%02x ", (unsigned char)_method[i]);
-    // }
-    // printf("\n");
     if (!(_method == "GET" || _method == "POST" || _method == "DELETE")) {
         std::cout << "invalid Method\n";
         _statusCode = 501;
@@ -194,6 +189,7 @@ bool HttpRequest::validateMandatoryHeaders() {
         return (hasHostHeader() && hasContentLength());
     }
     _currentState = METHOD;
+    _parsingDone = true;
     return (hasHostHeader());
 }
 
