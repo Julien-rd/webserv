@@ -227,7 +227,6 @@ void Client::doCGI(void) {
 
 int Client::loop(std::string &recvBuffer) {
     _bytesRead = 0;
-    std::cout << "start :[\n" << recvBuffer << "]\n";
     unsigned int bufferLen = recvBuffer.length();
     while (_bytesRead < bufferLen) {
         if (_request.parseHttpRequest(recvBuffer, _bytesRead) == 1) {
@@ -238,7 +237,7 @@ int Client::loop(std::string &recvBuffer) {
         }
         if (_request.parsingDone() == false)
             return KEEP;
-        _bytesRead += _request.getBytesRead();
+        _bytesRead = _request.getBytesRead();
         // _request.print();
         if (_request.parseURIContent() == 1) {
             closeConnection(CLOSE_CLIENT_ERROR);
@@ -256,7 +255,6 @@ int Client::loop(std::string &recvBuffer) {
             // reset _CGI.reset();
             continue;
         }
-        std::cout << "u made it\n";
         _response.build(_request);
         const char *response = _response.getResponse();
         // std::cout << "response:\n" << response << std::endl;
@@ -265,7 +263,7 @@ int Client::loop(std::string &recvBuffer) {
             return CLOSE;
         }
         std::vector<char> responseBody = _response.getResponseBody();
-        if (send(_fd, &responseBody[0], responseBody.size(), 0) == -1) {
+        if (!responseBody.empty() && send(_fd, &responseBody[0], responseBody.size(), 0) == -1) {
             closeConnection(CLOSE_TRANSPORT_FAIL);
             return CLOSE;
         }

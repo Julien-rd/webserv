@@ -210,7 +210,7 @@ std::string autoindex(const std::string &path, const std::string &uri) {
            uri + "</h1>\r\n";
     DIR *dir = opendir(path.c_str());
     if (!dir)
-        return NULL;
+        return NULL; // TODO: std::string cannot return NULL > UB
     struct dirent *dr = readdir(dir);
     while (dr) {
         if (std::string(".").compare(dr->d_name))
@@ -251,6 +251,7 @@ bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
         //     std::cout << "empty file\n";
         //     return;
         // }
+        // TODO: check if size is not -1
         _responseBody.resize(size);
         htmlPage.read(&_responseBody[0], size);
         if (extractContentType(result.path) == 1) {
@@ -372,7 +373,10 @@ void HttpResponse::serveErrorPage() {
     st << _statusCode;
     st >> _statusCodeStr;
     _responseClass = _statusCode / 100;
-    getReasonPhrase();
+    _response.clear();
+    buildStatusLine();
+    addMandatoryHeaders();
+    addRules();
     std::string htmlBody = "<!DOCTYPE html>\r\n"
                            "<html>\r\n"
                            "    <body>\r\n<h1>" +

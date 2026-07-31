@@ -243,17 +243,17 @@ size_t hexaToDeci(std::string hexaNum) {
     return ret;
 }
 
-#include <fstream>
-bool HttpRequest::saveData() {
-    std::ofstream file("user", std::ios::out | std::ios::binary);
-    if (!file.is_open()) {
-        std::cerr << "file could not be opened\n";
-        return false;
-    }
-    file.write(_body.data(), _body.size());
-    file.close();
-    return true;
-}
+// #include <fstream>
+// bool HttpRequest::saveData() {
+//     std::ofstream file("user", std::ios::out | std::ios::binary);
+//     if (!file.is_open()) {
+//         std::cerr << "file could not be opened\n";
+//         return false;
+//     }
+//     file.write(_body.data(), _body.size());
+//     file.close();
+//     return true;
+// }
 
 void HttpRequest::parseBody(std::string recvBuffer) {
   _bytesNeeded = _contentLength - _body.size();
@@ -311,7 +311,6 @@ void HttpRequest::parseChunkedBody(std::string recvBuffer) {
                     _parsingDone = true;
                     _statusCode = 200;
                     _bytesRead += 2;
-                    saveData();
                 }
                 return;
             }
@@ -339,8 +338,7 @@ int HttpRequest::bodyMode(std::string recvBuffer) {  // Fix: add fail reasons pa
 }
 
 int HttpRequest::parseHttpRequest(std::string &recvBuffer,
-                                  size_t bytes_read) {  // Fix: this function is inefficient it
-                                                        // cvalidates everything on every call
+                                  size_t bytes_read) {
     _bytesRead = bytes_read;
     _parsingDone = false;
     if (parseRequestLine(recvBuffer) == 1)
@@ -399,10 +397,5 @@ int HttpRequest::parseURIContent(void) {
     }
     _uriData.query = percentDecode(_uriData.query, true);
     _uri = _uriData.path;
-    // std::cout << "from URI: " << _uri << " parsed =>\n"
-    //           << "path:   " << _uriData.path << "\next:  " <<
-    //           _uriData.extension
-    //           << "\npathInfo: " << _uriData.pathInfo
-    //           << "\nquery: " << _uriData.query << "\n";
     return 0;
 }
