@@ -17,7 +17,7 @@ void Logger::setLevel(Level threshold) { _threshold = threshold; }
 Logger::Level Logger::getLevel() const { return _threshold; }
 
 void Logger::log(Level level, const std::string &message) {
-    if (level < _threshold || level == DEFAULT)
+    if (level < _threshold)
         return;
     std::string ts = timestamp();
     if (!ts.empty())
@@ -33,7 +33,7 @@ void Logger::error(const std::string &message) { log(ERROR, message); }
 std::string Logger::levelToString(Level level) const {
     switch (level) {
     case DEFAULT:
-        return "DEFAULT";
+        return "ERROR";
     case DEBUG:
         return "DEBUG";
     case INFO:
