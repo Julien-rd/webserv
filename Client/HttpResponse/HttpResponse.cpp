@@ -353,37 +353,6 @@ void HttpResponse::serveErrorPage() {
     ss << htmlBody.length();
     _response += "Content-Length: " + ss.str() + "\r\n";
     _response += "\r\n";
-    _response += htmlBody;  // fix it to char vec
-}
-
-void HttpResponse::serveSuccessPage(
-    HttpRequest request) {  // FIX: why is this function never used? or where is it used
-    std::ostringstream ss;
-    getReasonPhrase();
-
-    std::vector<char> requestBody = request.getBody();
-
-    std::vector<char>::iterator start = std::find(requestBody.begin(), requestBody.end(), '=');
-    std::vector<char>::iterator end = std::find(requestBody.begin(), requestBody.end(), '&');
-    std::string                 username(start + 1, end);
-
-    start = std::find(end, requestBody.end(), '=');
-    end = std::find(requestBody.begin(), requestBody.end(), '\r');
-    std::string password(start + 1, end);
-
-    std::string htmlBody = "<!DOCTYPE html>\r\n"
-                           "<html>\r\n"
-                           "    <body>\r\n<h1>"
-                           "registration of " +
-                           username + " with password: " + password +
-                           " successful"  // make sure to protect against XSS
-                           "</h1>\r\n"
-                           "    </body>\r\n"
-                           "</html>\r\n";
-    _response += "Content-Type: text/html\r\n";
-    ss << htmlBody.length();
-    _response += "Content-Length: " + ss.str() + "\r\n";
-    _response += "\r\n";
     _response += htmlBody;
 }
 
@@ -394,14 +363,16 @@ void HttpResponse::build(HttpRequest request) {
     std::string  autoindexHtml;
 
     _statusCode = request.getStatusCode();
-    if (_statusCode < 400) {
-        _method = request.getMethod();  // FIX: Maybe add request to the response class so we can
-                                        // check for this elsewhere
-        result = processURI(uri);
-        _statusCode = result.httpCode;
+    if(_statusCode >= 400){
+        serveErrorPage();
+        return ;
     }
 
-    buildStatusLine();  // only mandatory part
+    _method = request.getMethod();
+    result = processURI(uri);
+    _statusCode = result.httpCode;
+
+    buildStatusLine();
     addMandatoryHeaders();
     addRules();
 
