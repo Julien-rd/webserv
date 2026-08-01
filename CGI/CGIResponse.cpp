@@ -8,6 +8,7 @@ void CGIResponse::init(size_t CGIResponseLen, const t_config *config, const int 
     _CGIResponseLen = CGIResponseLen;
     HttpResponse::init(config, sid);
 }
+
 void CGIResponse::reset() {
     _CGIResponseLen = 0;
     _CGIResponseStr.erase();
@@ -15,88 +16,105 @@ void CGIResponse::reset() {
 
 const std::string &CGIResponse::getCGIResponseStr() { return _CGIResponseStr; }
 
+CGIResponse::CGIResponse() {}
+
+size_t CGIResponse::findSeparator(size_t &sepLen) const {
+    size_t pos = _CGIResponseStr.find("\r\n\r\n");
+    if (pos != std::string::npos) {
+        sepLen = 4;
+        return pos;
+    }
+    pos = _CGIResponseStr.find("\n\n");
+    if (pos != std::string::npos) {
+        sepLen = 2;
+        return pos;
+    }
+    sepLen = 0;
+    return std::string::npos;
+}
+
 void CGIResponse::extractStatus(void) {
     std::istringstream stream(_CGIResponseStr);
     std::string        line;
 
     while (std::getline(stream, line)) {
-        if (line.empty() || line == "\r")
+        if (!line.empty() && line[line.size() - 1] == '\r')
+            line.erase(line.size() - 1);
+        if (line.empty())
             break;
-        if (line.substr(0, 7) == "Status:") {
-            std::string value = line.substr(8);
-            std::stringstream(value) >> _statusCode;
+        if (line.compare(0, 7, "Status:") == 0) {
+            std::string            value = line.substr(7);
+            std::string::size_type start = value.find_first_not_of(" \t");
+            if (start != std::string::npos)
+                value = value.substr(start);
+            std::istringstream(value) >> _statusCode;
             return;
         }
     }
     _statusCode = 200;
-    return;
 }
-
-CGIResponse::CGIResponse() {}
 
 void CGIResponse::addCGIBody(HttpRequest request) {
     (void) request;
-    size_t separatorPos = _CGIResponseStr.find("\r\n\r\n");  // fix what if not found here
-    if (separatorPos == std::string::npos) { //fix: test and move this out of here maybe
+
+    size_t sepLen = 0;
+    size_t separatorPos = findSeparator(sepLen);
+    if (separatorPos == std::string::npos) {
         _statusCode = 502;
         return;
     }
-    _responseBody.resize(_CGIResponseLen - 4 - separatorPos);
-    std::stringstream responseStream(_CGIResponseStr);
-    responseStream.seekg(separatorPos + 4);
-    responseStream.read(&_responseBody[0], _CGIResponseLen - 4 - separatorPos);
+
+    size_t bodyStart = separatorPos + sepLen;
+    size_t bodyLen = _CGIResponseStr.size() - bodyStart;
+
+    _responseBody = _CGIResponseStr.substr(bodyStart, bodyLen);
+
+    std::string        headerBlock = _CGIResponseStr.substr(0, separatorPos);
+    std::istringstream hs(headerBlock);
+    std::string        line;
+    while (std::getline(hs, line)) {
+        if (!line.empty() && line[line.size() - 1] == '\r')
+            line.erase(line.size() - 1);
+        if (line.empty())
+            continue;
+        if (line.compare(0, 7, "Status:") == 0)
+            continue;
+        if (line.compare(0, 15, "Content-Length:") == 0)
+            continue;
+        _response += line + "\r\n";
+    }
 
     std::ostringstream ss;
-    ss << _CGIResponseLen - 4 - separatorPos;
+    ss << bodyLen;
     _response += "Content-Length: " + ss.str() + "\r\n";
-    _response += _CGIResponseStr.substr(0, separatorPos + 4);
-    _response.append(&_responseBody[0], _CGIResponseLen - 4 - separatorPos);
+
+    _response += "\r\n";
+    _response.append(_responseBody.data(), _responseBody.size());
 }
 
 void CGIResponse::addRules() {
-    _response += "Connection: keep-alive\r\n";  // or close, maybe also add timeout
+    _response += "Connection: keep-alive\r\n";
     _response += "Cache-Control: max-age=3600\r\n";
     _response += "Custom-CGI-header: the custom value\r\n";
-    _response += "Referrer-Policy: strict-origin-when-cross-origin\r\n";  // we could also
-                                                                          // use a diff one
-                                                                          // because we dont
-                                                                          // have https, but
-                                                                          // it just sends
-                                                                          // the host url
-                                                                          // when changing
-                                                                          // to a different
-                                                                          // site
-    _response += "X-Content-Type-Options: nosniff\r\n";  // makes sure that only the correct
-                                                         // mime type gets treated, so if
-                                                         // there is a java script embedded
-                                                         // in the a png it will not be exec
-    _response += "X-Frame-Options: DENY\r\n";            // use our site in a frame on another site,
-                                               // prevents clickjacking, theoretically only
-                                               // relevant if there are sensitive
-                                               // informations or clicks involved, so for
-                                               // example we should include this for login
-                                               // site etc.
-    // _response += "Content Security Policy (CSP)\r\n"; useful against XSS (cross
-    // site scripting) -> i dont think it is relevant if we only use static sites,
-    // but we can still look into if it is neccessary
+    _response += "Referrer-Policy: strict-origin-when-cross-origin\r\n";
+    _response += "X-Content-Type-Options: nosniff\r\n";
+    _response += "X-Frame-Options: DENY\r\n";
     _response += "Content-Security-Policy: default-src 'self'; form-action "
-                 "'self';img-src 'self' data:;\r\n";  // covers script injection and form injection
-                                                      // + add escaping in HTML BODY!!!!! as extra
-                                                      // security layer
+                 "'self';img-src 'self' data:;\r\n";
 }
 
-void CGIResponse::build(HttpRequest request) {  // fix: make this similar to og build() again
+void CGIResponse::build(HttpRequest request) {
     _statusCode = request.getStatusCode();
     if (_statusCode >= 400) {
         serveErrorPage();
         return;
     }
     if (_CGIResponseLen == 0)
-        return;  // fix: what to do here
+        return;
     extractStatus();
-    buildStatusLine();  // only mandatory part
+    buildStatusLine();
     if (getTimeStamp() == 1)
-        return;  // fix: what to do here
+        return;
     addMandatoryHeaders();
     addRules();
     if (_statusCode < 400)

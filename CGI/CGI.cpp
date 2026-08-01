@@ -2,6 +2,7 @@
 
 #include "../Client/HttpRequest/HttpRequest.hpp"
 #include "../Utils/Macros.hpp"
+#include "../Logger/Logger.hpp"
 
 #include <cstdio>
 #include <cstring>
@@ -106,7 +107,7 @@ bool CGI::initCGI(void) {  // fix: would be nice to add a little map with extens
         // std::cout << "initialized php CGI" << std::endl;
     } else {
         // initUnkownExtension();
-        std::cerr << "initialized CGI with unknown extension" << std::endl;
+        Logger::getInstance().log(Level::WARNING, "initialized CGI with unknown extension");
         return false;
     }
     return true;
@@ -115,44 +116,44 @@ bool CGI::initCGI(void) {  // fix: would be nice to add a little map with extens
 bool CGI::pipeIO(void) {  // Fix: This might leak. Make smart adjustments to if/else to execute
                           // functions that dont depend on each other
     if (pipe(_pipeFd) == -1) {
-        std::cerr << "CGI pipe failed\n";
+        Logger::getInstance().log(Level::WARNING, "CGI pipe failed");
         return false;
     }
     if (fcntl(_pipeFd[0], F_SETFD, FD_CLOEXEC) == -1) {
-        std::cerr << "CGI fcntl\n";
+        Logger::getInstance().log(Level::WARNING, "CGI fcntl failed");
         return false;
     }
     if (fcntl(_pipeFd[0], F_SETFL, O_NONBLOCK) == -1) {
-        std::cerr << "CGI fcntl\n";
+        Logger::getInstance().log(Level::WARNING, "CGI fcntl failed");
         return false;
     }
     if (fcntl(_pipeFd[1], F_SETFD, FD_CLOEXEC) == -1) {
-        std::cerr << "CGI fcntl\n";
+        Logger::getInstance().log(Level::WARNING, "CGI fcntl failed");
         return false;
     }
     if (fcntl(_pipeFd[1], F_SETFL, O_NONBLOCK) == -1) {
-        std::cerr << "CGI fcntl\n";
+        Logger::getInstance().log(Level::WARNING, "CGI fcntl failed");
         return false;
     }
     if (_request->getMethod() == "POST") {
         if (pipe(_postPipeFd) == -1) {
-            std::cerr << "CGI post pipe failed\n";
+            Logger::getInstance().log(Level::WARNING, "CGI post pipe failed");
             return false;
         }
         if (fcntl(_postPipeFd[0], F_SETFD, FD_CLOEXEC) == -1) {
-            std::cerr << "CGI fcntl\n";
+            Logger::getInstance().log(Level::WARNING, "CGI fcntl failed");
             return false;
         }
         if (fcntl(_postPipeFd[0], F_SETFL, O_NONBLOCK) == -1) {
-            std::cerr << "CGI fcntl\n";
+            Logger::getInstance().log(Level::WARNING, "CGI fcntl failed");
             return false;
         }
         if (fcntl(_postPipeFd[1], F_SETFD, FD_CLOEXEC) == -1) {
-            std::cerr << "CGI fcntl\n";
+            Logger::getInstance().log(Level::WARNING, "CGI fcntl failed");
             return false;
         }
         if (fcntl(_postPipeFd[1], F_SETFL, O_NONBLOCK) == -1) {
-            std::cerr << "CGI fcntl\n";
+            Logger::getInstance().log(Level::WARNING, "CGI fcntl failed");
             return false;
         }
     }
@@ -163,13 +164,13 @@ bool CGI::spawnProcess(void) {
     // std::cout << "postpipe[0]: " << _postPipeFd[0] << "\n";
     if (_request->getMethod() == "POST") {
         if (dup2(_postPipeFd[0], STDIN_FILENO) == -1) {
-            std::cerr << "dup2 failed for post pipe\n";
+            Logger::getInstance().log(Level::WARNING, "dup2() failed for post pipe");
             return false;
         }
     }
     _pid = fork();
     if (_pid == -1) {
-        std::cerr << "fork() failed in CGI\n";
+        Logger::getInstance().log(Level::WARNING, "fork() failed for post pipe");
         return false;
     }
     if (_pid == 0) {
@@ -202,7 +203,7 @@ bool CGI::spawnProcess(void) {
                     if (errno == EINTR) {
                         continue;
                     }
-                    std::cerr << "write() failed in CGI post pipe: " << strerror(errno) << "\n";
+                    Logger::getInstance().log(Level::WARNING, "write() failed in CGI");
                     break;
                 }
                 totalWritten += written;
@@ -223,7 +224,7 @@ bool CGI::addPipeToEpoll(void) {
                                                    // null if the clients disconnects?
     ev.data.u64 = u64;
     if (epoll_ctl(_epfd, EPOLL_CTL_ADD, _pipeFd[0], &ev) == -1) {
-        std::cerr << "addPipeToEpoll() failed in CGI\n";
+        Logger::getInstance().log(Level::WARNING, "addPipeToEpoll() failed in CGI");
         return false;
     }
     return true;
@@ -232,7 +233,7 @@ bool CGI::addPipeToEpoll(void) {
 bool CGI::redirectIO(void) {
 
     if (dup2(_pipeFd[1], STDOUT_FILENO) == -1) {
-        std::cerr << "dup2() failed in CGI\n";
+        Logger::getInstance().log(Level::WARNING, "dup2() failed in CGI");
         return false;
     }
     close(_pipeFd[1]);
@@ -240,10 +241,9 @@ bool CGI::redirectIO(void) {
 }
 
 void CGI::wait(void) const {
-    if (waitpid(_pid, NULL, 0) == -1) {
-        std::cerr << "ERROR: waitpid(): " << strerror(errno)
-                  << std::endl;  // TODO Handle real errors and success waits
-    }
+    if (waitpid(_pid, NULL, 0) == -1)
+        Logger::getInstance().log(Level::WARNING, "waitpid() failed in CGI");
+
 }
 
 void CGI::execute(void) {
@@ -252,9 +252,8 @@ void CGI::execute(void) {
     argv[1] = &_argv[1][0];
     argv[2] = NULL;
     if (execve(_executable.c_str(), argv, const_cast<char **>(_envp)) == -1) {
-        std::cerr << "execve() failed. shouldn't reach here, maybe invalid "
-                     "arguments (path or argv))"
-                  << std::endl;
+        Logger::getInstance().log(Level::WARNING, "execve() failed in CGI");
+
         _exit(1);
     }
 }

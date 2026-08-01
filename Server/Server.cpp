@@ -3,10 +3,6 @@
 #include "../Error/Error.hpp"
 #include "../Utils/Macros.hpp"
 
-#include <arpa/inet.h>
-#include <cerrno>
-#include <errno.h>
-#include <error.h>
 #include <exception>
 #include <fcntl.h>
 #include <iostream>
@@ -79,6 +75,7 @@ void Server::closeConnection(int clientFd) {
         error_msg(ERR_EPOLL_CTL);
         return;
     }
+    std::cout << "auaa\n";
     if (close(clientFd) == -1)
         error_msg(ERR_CLOSE);
     return;
@@ -151,11 +148,7 @@ int Server::start(void) {
 }
 
 int Server::checkClientCap(void) {
-    if (_clients.size() >= _config.maxClients) {
-        // TODO FIX
-        std::cerr << "client capacity reached. can't accept more connections\n";
-        return 1;
-    }
+
     return 0;
 }
 

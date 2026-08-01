@@ -60,7 +60,8 @@ int main(int argc, char **argv) {
     log.setLevel(config.logLvl);
 
     if (argc > 3 || argc < 2) {
-        std::cerr << "Usage: ./webserv [config_file] [--log-level=debug|info|warning|error]\n";
+        std::cerr << "CGI fcntl\n";
+        Logger::getInstance().log(Level::ERROR, "Usage: ./webserv [config_file] [--log-level=debug|info|warning|error]");
         return 1;
     }
 
@@ -90,7 +91,7 @@ int main(int argc, char **argv) {
             poller.epollWait();
             serverManager.loopReadyEvents();
         } catch (std::exception &e) {
-            std::cerr << e.what() << std::endl;
+            Logger::getInstance().log(Level::ERROR, e.what());
             return 1;
         }
     }

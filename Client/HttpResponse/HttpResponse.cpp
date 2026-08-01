@@ -257,6 +257,7 @@ bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
                 break;
             total += bytesRead;
         }
+        std::cout << "ouuuch\n";
         close(fd);
         _responseBody.resize(total);
         if (extractContentType(result.path) == 1) {
