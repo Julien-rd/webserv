@@ -10,7 +10,6 @@ class CGIResponse : public HttpResponse {
     void reset();
     void build(HttpRequest request);
     void extractStatus(void);
-    size_t findSeparator(size_t &sepLen) const;
 
     // getters
     const std::string &getCGIResponseStr();

@@ -1,4 +1,4 @@
-#include "../../Logger/logger.hpp"
+#include "../../Logger/Logger.hpp"
 #include "../../Utils/Macros.hpp"
 #include "HttpRequest.hpp"
 
@@ -172,7 +172,7 @@ bool HttpRequest::hasContentLength() {
         std::cerr << "Request Entity Too Large\n<";
         return false;
     }
-    Logger::getInstance().log(Logger::DEBUG, "Starting html body parsing .");
+    Logger::getInstance().log(Level::DEBUG, "Starting html body parsing .");
     return true;
 }
 
@@ -181,11 +181,11 @@ bool HttpRequest::isChunked() {
     if (it == _headers.end())
         return true;
     if (it->second == "chunked") {
-        Logger::getInstance().log(Logger::DEBUG, "Starting chunked html body parsing .");
+        Logger::getInstance().log(Level::DEBUG, "Starting chunked html body parsing .");
         _currentState = BODY_CHUNKED;
         return true;
     }
-    Logger::getInstance().log(Logger::WARNING, "Unknown transfer-encoding type .");
+    Logger::getInstance().log(Level::WARNING, "Unknown transfer-encoding type .");
     return false;
 }
 
