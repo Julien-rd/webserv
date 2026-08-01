@@ -10,7 +10,6 @@
 #include <cstring>
 #include <ctime>
 #include <dirent.h>
-#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -18,6 +17,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <fcntl.h>
+
 
 unsigned int HttpResponse::getLocation(const std::string &match, const t_server &serverConfig) {
     unsigned int longestMatch = 0;
@@ -202,7 +203,7 @@ std::string autoindex(const std::string &path, const std::string &uri) {
            uri + "</h1>\r\n";
     DIR *dir = opendir(path.c_str());
     if (!dir)
-        return NULL; // TODO: std::string cannot return NULL > UB
+        return NULL;  // TODO: std::string cannot return NULL > UB
     struct dirent *dr = readdir(dir);
     while (dr) {
         if (std::string(".").compare(dr->d_name))
@@ -213,13 +214,8 @@ std::string autoindex(const std::string &path, const std::string &uri) {
     closedir(dir);
     return file;
 }
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
-
-    std::fstream htmlPage;
     std::string  uri = request.getUri();
     std::string  autoindexHtml;
     if (result.autoindex == true) {
@@ -230,23 +226,39 @@ bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
         here.read(&_responseBody[0], autoindexHtml.size());
         _response += "Content-Type: text/html\r\n";
     } else {
-        htmlPage.open(result.path.c_str());
-        if (!htmlPage.is_open()) {
-            std::cerr << "error opening html file: " << strerror(errno) << std::endl;
+        struct stat st;
+        if (stat(result.path.c_str(), &st) != 0) {
+            std::cerr << "stat failed: " << strerror(errno) << std::endl;
             _statusCode = 404;
             return 1;
         }
-        htmlPage.seekg(0, std::ios::end);
-        std::streampos size = htmlPage.tellg();  // TODO change this. we can't use seek
-        htmlPage.seekg(0, std::ios::beg);
-        // if (size == 0) {
-        //     _statusCode = 404; // check statusCodes
-        //     std::cout << "empty file\n";
-        //     return;
-        // }
-        // TODO: check if size is not -1
-        _responseBody.resize(size);
-        htmlPage.read(&_responseBody[0], size);
+        if (!S_ISREG(st.st_mode)) {
+            _statusCode = 404;
+            return 1;
+        }
+        int fd = open(result.path.c_str(), O_RDONLY);
+        if (fd < 0) {
+            std::cerr << "error opening file: " << strerror(errno) << std::endl;
+            _statusCode = 404;
+            return 1;
+        }
+        _responseBody.resize(st.st_size);
+        ssize_t bytesRead = 0;
+        size_t  total = 0;
+        while (total < (size_t) st.st_size) {
+            bytesRead = read(fd, &_responseBody[total], st.st_size - total);
+            if (bytesRead < 0) {
+                std::cerr << "read failed: " << strerror(errno) << std::endl;
+                close(fd);
+                _statusCode = 500;
+                return 1;
+            }
+            if (bytesRead == 0)
+                break;
+            total += bytesRead;
+        }
+        close(fd);
+        _responseBody.resize(total);
         if (extractContentType(result.path) == 1) {
             std::cerr << "content type not supported" << std::endl;
             _statusCode = 415;
@@ -255,16 +267,14 @@ bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
     }
     extractContentLength();
     _response += "\r\n";
-    // std::cout << std::endl << "[" << _response << "] " << std::endl << std::endl;
     return 0;
 }
 
 void HttpResponse::addRules() {
-    // if (_statusCode >= 300) {
-    //   // _response += "Connection: close\r\n";
-    //   return;
-    // }
-    _response += "Connection: keep-alive\r\n";  // or close, maybe also add timeout
+    if (_statusCode >= 400)
+      _response += "Connection: close\r\n";
+    else
+        _response += "Connection: keep-alive\r\n";  // or close, maybe also add timeout
     _response += "Cache-Control: max-age=3600\r\n";
     _response += "Referrer-Policy: strict-origin-when-cross-origin\r\n";  // we could also
                                                                           // use a diff one
@@ -380,7 +390,6 @@ void HttpResponse::serveSuccessPage(
 void HttpResponse::build(HttpRequest request) {
 
     UriResult    result;
-    std::fstream htmlPage;
     std::string  uri = request.getUri();
     std::string  autoindexHtml;
 
