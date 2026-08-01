@@ -1,8 +1,8 @@
 #include "CGI.hpp"
 
 #include "../Client/HttpRequest/HttpRequest.hpp"
-#include "../Utils/Macros.hpp"
 #include "../Logger/Logger.hpp"
+#include "../Utils/Macros.hpp"
 
 #include <cstdio>
 #include <cstring>
@@ -84,14 +84,13 @@ bool CGI::scriptFileExists(void) const {
     scriptPath += _serverConfig->locations.at(0).root + _request->getUriData().path;
     struct stat data;
     if (stat(scriptPath.c_str(), &data) == -1) {
-        std::cerr << "couldn't access CGI script file (" << scriptPath.c_str() << ")"
-                  << std::endl;  
+        log(Level::WARNING, "couldn't access CGI script file");
         return false;
     }
     if (data.st_mode & S_IXUSR) {
         return true;
     }
-    std::cerr << "CGI script is not executable\n";
+    log(Level::WARNING, "CGI script is not executable\n");
     return false;
 }
 
@@ -107,7 +106,7 @@ bool CGI::initCGI(void) {  // fix: would be nice to add a little map with extens
         // std::cout << "initialized php CGI" << std::endl;
     } else {
         // initUnkownExtension();
-        Logger::getInstance().log(Level::WARNING, "initialized CGI with unknown extension");
+        log(Level::WARNING, "initialized CGI with unknown extension");
         return false;
     }
     return true;
@@ -116,44 +115,44 @@ bool CGI::initCGI(void) {  // fix: would be nice to add a little map with extens
 bool CGI::pipeIO(void) {  // Fix: This might leak. Make smart adjustments to if/else to execute
                           // functions that dont depend on each other
     if (pipe(_pipeFd) == -1) {
-        Logger::getInstance().log(Level::WARNING, "CGI pipe failed");
+        log(Level::WARNING, "CGI pipe failed");
         return false;
     }
     if (fcntl(_pipeFd[0], F_SETFD, FD_CLOEXEC) == -1) {
-        Logger::getInstance().log(Level::WARNING, "CGI fcntl failed");
+        log(Level::WARNING, "CGI fcntl failed");
         return false;
     }
     if (fcntl(_pipeFd[0], F_SETFL, O_NONBLOCK) == -1) {
-        Logger::getInstance().log(Level::WARNING, "CGI fcntl failed");
+        log(Level::WARNING, "CGI fcntl failed");
         return false;
     }
     if (fcntl(_pipeFd[1], F_SETFD, FD_CLOEXEC) == -1) {
-        Logger::getInstance().log(Level::WARNING, "CGI fcntl failed");
+        log(Level::WARNING, "CGI fcntl failed");
         return false;
     }
     if (fcntl(_pipeFd[1], F_SETFL, O_NONBLOCK) == -1) {
-        Logger::getInstance().log(Level::WARNING, "CGI fcntl failed");
+        log(Level::WARNING, "CGI fcntl failed");
         return false;
     }
     if (_request->getMethod() == "POST") {
         if (pipe(_postPipeFd) == -1) {
-            Logger::getInstance().log(Level::WARNING, "CGI post pipe failed");
+            log(Level::WARNING, "CGI post pipe failed");
             return false;
         }
         if (fcntl(_postPipeFd[0], F_SETFD, FD_CLOEXEC) == -1) {
-            Logger::getInstance().log(Level::WARNING, "CGI fcntl failed");
+            log(Level::WARNING, "CGI fcntl failed");
             return false;
         }
         if (fcntl(_postPipeFd[0], F_SETFL, O_NONBLOCK) == -1) {
-            Logger::getInstance().log(Level::WARNING, "CGI fcntl failed");
+            log(Level::WARNING, "CGI fcntl failed");
             return false;
         }
         if (fcntl(_postPipeFd[1], F_SETFD, FD_CLOEXEC) == -1) {
-            Logger::getInstance().log(Level::WARNING, "CGI fcntl failed");
+            log(Level::WARNING, "CGI fcntl failed");
             return false;
         }
         if (fcntl(_postPipeFd[1], F_SETFL, O_NONBLOCK) == -1) {
-            Logger::getInstance().log(Level::WARNING, "CGI fcntl failed");
+            log(Level::WARNING, "CGI fcntl failed");
             return false;
         }
     }
@@ -164,13 +163,13 @@ bool CGI::spawnProcess(void) {
     // std::cout << "postpipe[0]: " << _postPipeFd[0] << "\n";
     if (_request->getMethod() == "POST") {
         if (dup2(_postPipeFd[0], STDIN_FILENO) == -1) {
-            Logger::getInstance().log(Level::WARNING, "dup2() failed for post pipe");
+            log(Level::WARNING, "dup2() failed for post pipe");
             return false;
         }
     }
     _pid = fork();
     if (_pid == -1) {
-        Logger::getInstance().log(Level::WARNING, "fork() failed for post pipe");
+        log(Level::WARNING, "fork() failed for post pipe");
         return false;
     }
     if (_pid == 0) {
@@ -203,7 +202,7 @@ bool CGI::spawnProcess(void) {
                     if (errno == EINTR) {
                         continue;
                     }
-                    Logger::getInstance().log(Level::WARNING, "write() failed in CGI");
+                    log(Level::WARNING, "write() failed in CGI");
                     break;
                 }
                 totalWritten += written;
@@ -224,7 +223,7 @@ bool CGI::addPipeToEpoll(void) {
                                                    // null if the clients disconnects?
     ev.data.u64 = u64;
     if (epoll_ctl(_epfd, EPOLL_CTL_ADD, _pipeFd[0], &ev) == -1) {
-        Logger::getInstance().log(Level::WARNING, "addPipeToEpoll() failed in CGI");
+        log(Level::WARNING, "addPipeToEpoll() failed in CGI");
         return false;
     }
     return true;
@@ -233,7 +232,7 @@ bool CGI::addPipeToEpoll(void) {
 bool CGI::redirectIO(void) {
 
     if (dup2(_pipeFd[1], STDOUT_FILENO) == -1) {
-        Logger::getInstance().log(Level::WARNING, "dup2() failed in CGI");
+        log(Level::WARNING, "dup2() failed in CGI");
         return false;
     }
     close(_pipeFd[1]);
@@ -242,8 +241,7 @@ bool CGI::redirectIO(void) {
 
 void CGI::wait(void) const {
     if (waitpid(_pid, NULL, 0) == -1)
-        Logger::getInstance().log(Level::WARNING, "waitpid() failed in CGI");
-
+        log(Level::WARNING, "waitpid() failed in CGI");
 }
 
 void CGI::execute(void) {
@@ -252,7 +250,7 @@ void CGI::execute(void) {
     argv[1] = &_argv[1][0];
     argv[2] = NULL;
     if (execve(_executable.c_str(), argv, const_cast<char **>(_envp)) == -1) {
-        Logger::getInstance().log(Level::WARNING, "execve() failed in CGI");
+        log(Level::WARNING, "execve() failed in CGI");
 
         _exit(1);
     }

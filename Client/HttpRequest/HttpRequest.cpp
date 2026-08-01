@@ -256,19 +256,19 @@ size_t hexaToDeci(std::string hexaNum) {
 // }
 
 void HttpRequest::parseBody(std::string recvBuffer) {
-  _bytesNeeded = _contentLength - _body.size();
-  std::string::iterator start = recvBuffer.begin() + _bytesRead;
-  std::string::iterator end = recvBuffer.end();
-  size_t len = recvBuffer.length() - _bytesRead;
-  if (_bytesNeeded > len) {
-    _body.insert(_body.end(), start, end);
-    _bytesRead += len;
-  } else {
-    _body.insert(_body.end(), start, start + _bytesNeeded);
-    _parsingDone = true;
-    _statusCode = 200;
-    _bytesRead += _bytesNeeded;
-  }
+    _bytesNeeded = _contentLength - _body.size();
+    std::string::iterator start = recvBuffer.begin() + _bytesRead;
+    std::string::iterator end = recvBuffer.end();
+    size_t                len = recvBuffer.length() - _bytesRead;
+    if (_bytesNeeded > len) {
+        _body.insert(_body.end(), start, end);
+        _bytesRead += len;
+    } else {
+        _body.insert(_body.end(), start, start + _bytesNeeded);
+        _parsingDone = true;
+        _statusCode = 200;
+        _bytesRead += _bytesNeeded;
+    }
 }
 
 // void HttpRequest::checkBodyHeaders(){
@@ -337,8 +337,7 @@ int HttpRequest::bodyMode(std::string recvBuffer) {  // Fix: add fail reasons pa
     return 0;
 }
 
-int HttpRequest::parseHttpRequest(std::string &recvBuffer,
-                                  size_t bytes_read) {
+int HttpRequest::parseHttpRequest(std::string &recvBuffer, size_t bytes_read) {
     _bytesRead = bytes_read;
     _parsingDone = false;
     if (parseRequestLine(recvBuffer) == 1)

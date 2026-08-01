@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <iostream>
 #include <netdb.h>
+#include <sstream>
 #include <string>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -69,13 +70,13 @@ void Server::updateClientsMap(e_mapOperation op, const int clientFd) {
 
 void Server::closeConnection(int clientFd) {
     updateClientsMap(REMOVE, clientFd);
-    std::cout << "Server __" << _sid << "__ closed connection with Client " << clientFd
-              << std::endl;
+    std::stringstream ss;
+    ss << "Server __" << _sid << "__ closed connection with Client " << clientFd;
+    log(Level::INFO, ss.str());
     if (epoll_ctl(_epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
         error_msg(ERR_EPOLL_CTL);
         return;
     }
-    std::cout << "auaa\n";
     if (close(clientFd) == -1)
         error_msg(ERR_CLOSE);
     return;
@@ -106,8 +107,6 @@ void Server::setServerSockAddr(void) {
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_family = AF_UNSPEC;
     hints.ai_flags = AI_NUMERICHOST;
-    std::cout << "ip: " << _config.servers[_sid].ip.c_str() << " == ";
-    std::cout << "port: " << _config.servers[_sid].port.c_str() << " == ";
     res = getaddrinfo(
         _config.servers[_sid].ip.c_str(), _config.servers[_sid].port.c_str(), &hints, &_addrInfo);
     if (res) {
@@ -147,10 +146,7 @@ int Server::start(void) {
     return _serverSocket;
 }
 
-int Server::checkClientCap(void) {
-
-    return 0;
-}
+int Server::checkClientCap(void) { return 0; }
 
 void Server::handleServerEvent(void) {
     int clientFd;
@@ -172,7 +168,9 @@ void Server::handleServerEvent(void) {
         updateClientsMap(ADD, clientFd);
         setToNonBlocking(clientFd);
         addSocketToEpoll(clientFd);
-        std::cout << "Server __" << _sid << "__ accepted Client: " << clientFd << std::endl;
+        std::stringstream ss;
+        ss << "Server with id " << _sid << " accepted a new Client " << clientFd;
+        log(Level::INFO, ss.str());
     }
 }
 
@@ -193,7 +191,7 @@ void Server::handleClientEvent(const int clientFd) {
     recvBuffer.resize(bytesRead);
     // std::cout << "####  " << recvBuffer << "   ####"<< std::endl;
     int responseStatus = _clients.at(clientFd).loop(recvBuffer);
-    
+
     if (responseStatus >= 1) {
         closeConnection(clientFd);
         return;

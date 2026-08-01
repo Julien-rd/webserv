@@ -58,3 +58,5 @@ std::string Logger::timestamp() const {
         return "";
     return std::string(buf);
 }
+
+void log(Level level, const std::string &msg) { Logger::getInstance().log(level, msg); }

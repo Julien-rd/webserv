@@ -10,6 +10,7 @@
 #include <cstring>
 #include <ctime>
 #include <dirent.h>
+#include <fcntl.h>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -17,8 +18,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <fcntl.h>
-
 
 unsigned int HttpResponse::getLocation(const std::string &match, const t_server &serverConfig) {
     unsigned int longestMatch = 0;
@@ -216,11 +215,10 @@ std::string autoindex(const std::string &path, const std::string &uri) {
 }
 
 bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
-    std::string  uri = request.getUri();
-    std::string  autoindexHtml;
+    std::string uri = request.getUri();
+    std::string autoindexHtml;
     if (result.autoindex == true) {
         autoindexHtml = autoindex(result.path, uri);
-        std::cout << "\n{" + autoindexHtml << "}\n";
         std::stringstream here(autoindexHtml);
         _responseBody.resize(autoindexHtml.size());
         here.read(&_responseBody[0], autoindexHtml.size());
@@ -228,7 +226,7 @@ bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
     } else {
         struct stat st;
         if (stat(result.path.c_str(), &st) != 0) {
-            std::cerr << "stat failed: " << strerror(errno) << std::endl;
+            log(Level::WARNING, "stat() failed in HttpResponse::addBody()");
             _statusCode = 404;
             return 1;
         }
@@ -238,7 +236,7 @@ bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
         }
         int fd = open(result.path.c_str(), O_RDONLY);
         if (fd < 0) {
-            std::cerr << "error opening file: " << strerror(errno) << std::endl;
+            log(Level::WARNING, "open() failed in HttpResponse::addBody()");
             _statusCode = 404;
             return 1;
         }
@@ -248,7 +246,7 @@ bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
         while (total < (size_t) st.st_size) {
             bytesRead = read(fd, &_responseBody[total], st.st_size - total);
             if (bytesRead < 0) {
-                std::cerr << "read failed: " << strerror(errno) << std::endl;
+                log(Level::WARNING, "read() failed in HttpResponse::addBody()");
                 close(fd);
                 _statusCode = 500;
                 return 1;
@@ -257,11 +255,10 @@ bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
                 break;
             total += bytesRead;
         }
-        std::cout << "ouuuch\n";
         close(fd);
         _responseBody.resize(total);
         if (extractContentType(result.path) == 1) {
-            std::cerr << "content type not supported" << std::endl;
+            log(Level::WARNING, "Content-Type not supported");
             _statusCode = 415;
             return 1;
         }
@@ -356,14 +353,14 @@ void HttpResponse::serveErrorPage() {
 
 void HttpResponse::build(HttpRequest request) {
 
-    UriResult    result;
-    std::string  uri = request.getUri();
-    std::string  autoindexHtml;
+    UriResult   result;
+    std::string uri = request.getUri();
+    std::string autoindexHtml;
 
     _statusCode = request.getStatusCode();
-    if(_statusCode >= 400){
+    if (_statusCode >= 400) {
         serveErrorPage();
-        return ;
+        return;
     }
 
     _method = request.getMethod();

@@ -4,8 +4,8 @@
 #include <cstring>
 #include <iostream>
 
-static void custom_perror(const char *spec, char *errnoMsg) {
-    std::cout << spec << errnoMsg << "\n";
+static void custom_perror(const char *spec, char *errnoMsg) { //fix: delete?
+    std::cerr << spec << errnoMsg << "\n";
 }
 
 void Error::error_msg(ErrorType type) {
