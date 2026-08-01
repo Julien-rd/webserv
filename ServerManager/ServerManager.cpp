@@ -18,6 +18,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <vector>
+#include "../Logger/logger.hpp"
 
 ServerManager::ServerManager(const t_serverManagerContext &context)
         : _config(context.config)
@@ -61,7 +62,7 @@ void ServerManager::startServers(void) {
 bool ServerManager::init(void) {
     startServers();
     if (_servers.size() == 0) {
-        std::cout << "WARNING: no servers were started" << std::endl;
+        Logger::getInstance().log(Logger::WARNING, "no servers were started");
         return 1;
     }
     std::cout << std::endl;

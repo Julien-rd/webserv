@@ -84,36 +84,38 @@ int main(int argc, char **argv) {
     t_config config;
     Logger &log = Logger::getInstance();
     log.setLevel(Logger::DEFAULT);
+
     if (argc > 3 || argc < 2) {
         std::cerr << "Usage: ./webserv [config_file] [--log-level=debug|info|warning|error]\n";
         return 1;
     }
+
     if(setupLogger(argc, argv) == false) {
         std::cerr << "Logger usage: [--log-level=debug|info|warning|error]\n";
         return 1;
     }
 
     if (!validConfigFile(argv[1])) {
-        std::cerr << "ERROR: invalid config file." << std::endl
-                  << "  usage: ./webserv FILENAME.pps" << std::endl;
+        Logger::getInstance().log(Logger::ERROR, "invalid config file.\nusage: ./webserv FILENAME.pps");
         return 1;
     }
+
     if (parseConfigFile(config, argv[1])) {
-        std::cerr << "ERROR: parsing configuration file failed. " << std::endl;
+        Logger::getInstance().log(Logger::ERROR, "parsing configuration file failed.");
         return 1;
     }
-    // printConfig(config);
+
     Poller poller;
     if (poller.createEpoll() != 0) {
         return 1;
     }
-    t_serverManagerContext context = {
-        config, poller.getEpfd(), poller.getReadyEventsCountRef(), poller.getTriggeredEventsRef()};
+
+    t_serverManagerContext context = {config, poller.getEpfd(), poller.getReadyEventsCountRef(), poller.getTriggeredEventsRef()};
     ServerManager serverManager(context);
-    // TODO make fieldnames case INSENSITIVE
-    if (serverManager.init()) {
+
+    if (serverManager.init())
         return 1;
-    }
+
     while (1) {
         try {
             poller.epollWait();

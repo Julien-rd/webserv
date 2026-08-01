@@ -3,6 +3,8 @@
 
 #include <sys/epoll.h>
 #include <vector>
+#include <cstring>
+#include <cerrno>
 
 class Poller : public Error {
   private:
