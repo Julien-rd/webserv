@@ -19,7 +19,7 @@ Poller::~Poller(void) {
 bool Poller::createEpoll(void) {
     _epfd = epoll_create1(0);
     if (_epfd == -1) {
-        Logger::getInstance().log(Logger::ERROR, "epoll_create1: " + std::string(strerror(errno)));
+        Logger::getInstance().log(Level::ERROR, "epoll_create1: " + std::string(strerror(errno)));
         return 1;
     }
     return 0;
@@ -32,7 +32,7 @@ int Poller::epollWait(void) {
                                    1000);  // NEXT TODO: 1000ms timeout and check for client last
                                            // activity over 10 difference to time()
     if (_readyEventsCount == -1) {
-        Logger::getInstance().log(Logger::ERROR, "epoll_wait: " + std::string(strerror(errno)));
+        Logger::getInstance().log(Level::ERROR, "epoll_wait: " + std::string(strerror(errno)));
         // perror(strerror(errno));
         return -1;
     }
