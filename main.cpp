@@ -1,6 +1,6 @@
 #include "ConfigParser/Parser.hpp"
 #include "ConfigParser/Structs.hpp"
-#include "Logger/logger.hpp"
+#include "Logger/Logger.hpp"
 #include "Poller/Poller.hpp"
 #include "ServerManager/ServerManager.hpp"
 #include "Utils/debugPrint.cpp"

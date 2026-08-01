@@ -18,7 +18,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <vector>
-#include "../Logger/logger.hpp"
+#include "../Logger/Logger.hpp"
 
 ServerManager::ServerManager(const t_serverManagerContext &context)
         : _config(context.config)

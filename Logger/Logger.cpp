@@ -1,4 +1,4 @@
-#include "logger.hpp"
+#include "Logger.hpp"
 
 #include <ctime>
 #include <iostream>
@@ -13,7 +13,7 @@ Logger &Logger::getInstance() {
     return instance;
 }
 
-void Logger::setLevel(Level threshold) { _threshold = threshold; }
+void  Logger::setLevel(Level threshold) { _threshold = threshold; }
 Level Logger::getLevel() const { return _threshold; }
 
 void Logger::log(Level level, const std::string &message) {

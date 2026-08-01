@@ -271,9 +271,6 @@ bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
 }
 
 void HttpResponse::addRules() {
-    // if (_statusCode >= 400)
-    //   _response += "Connection: close\r\n";
-    // else
     _response += "Connection: keep-alive\r\n";  // or close, maybe also add timeout
     _response += "Cache-Control: max-age=3600\r\n";
     _response += "Referrer-Policy: strict-origin-when-cross-origin\r\n";  // we could also

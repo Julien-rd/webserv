@@ -1,10 +1,8 @@
 #include "Poller.hpp"
 
-#include "../Error/Error.hpp"
-
 #include <unistd.h>
 
-#include "../Logger/logger.hpp"
+#include "../Logger/Logger.hpp"
 
 #define MAX_EVENTS 2048
 

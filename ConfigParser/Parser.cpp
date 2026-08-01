@@ -1,5 +1,5 @@
 #include "Parser.hpp"
-#include "../Logger/logger.hpp"
+#include "../Logger/Logger.hpp"
 
 #include <cstddef>
 #include <cstdio>

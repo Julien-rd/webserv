@@ -200,6 +200,7 @@ void Server::handleClientEvent(const int clientFd) {
     recvBuffer.resize(bytesRead);
     // std::cout << "####  " << recvBuffer << "   ####"<< std::endl;
     int responseStatus = _clients.at(clientFd).loop(recvBuffer);
+    
     if (responseStatus >= 1) {
         closeConnection(clientFd);
         return;
