@@ -255,7 +255,6 @@ int Client::loop(std::string &recvBuffer) {
         }
         _response.build(_request);
         const char *response = _response.getResponse();
-        // std::cout << "response:\n" << response << std::endl;
         if (send(_fd, response, strlen(response), 0) == -1) {
             closeConnection(CLOSE_TRANSPORT_FAIL);
             return CLOSE;

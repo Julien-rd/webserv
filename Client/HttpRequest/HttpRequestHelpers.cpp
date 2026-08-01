@@ -2,7 +2,6 @@
 #include "HttpRequest.hpp"
 
 #include <cctype>
-#include <iostream>
 #include <string>
 
 void HttpRequest::addHeader() {
@@ -172,21 +171,27 @@ bool HttpRequest::hasContentLength() {
         log(Level::WARNING, "Request Entity Too Large\n<");
         return false;
     }
+    Logger::getInstance().log(Level::DEBUG, "Starting html body parsing .");
     return true;
 }
 
-void HttpRequest::isChunked() {
+bool HttpRequest::isChunked() {
     std::map<std::string, std::string>::iterator it = _headers.find("transfer-encoding");
     if (it == _headers.end())
-        return;
-    if (it->second == "chunked")
+        return true;
+    if (it->second == "chunked") {
+        Logger::getInstance().log(Level::DEBUG, "Starting chunked html body parsing .");
         _currentState = BODY_CHUNKED;
-    return;
+        return true;
+    }
+    Logger::getInstance().log(Level::WARNING, "Unknown transfer-encoding type .");
+    return false;
 }
 
 bool HttpRequest::validateMandatoryHeaders() {
     if (_method == "POST") {
-        isChunked();
+        if (isChunked() == false)
+            return false;
         return (hasHostHeader() && hasContentLength());
     }
     _currentState = METHOD;

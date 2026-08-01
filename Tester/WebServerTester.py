@@ -7,6 +7,7 @@ so malformed / chunked / partial input reaches the server exactly as sent.
 
 Usage:
     python3 webserver_test.py --host 127.0.0.1 --port 8080
+    python3 WebServerTester.py --host 127.0.0.1 --port 7070
     python3 webserver_test.py --fast          # skip the slow/heavy tests
 
 Structure:
