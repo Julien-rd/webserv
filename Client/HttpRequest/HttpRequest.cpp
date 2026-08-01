@@ -297,13 +297,13 @@ int HttpRequest::parseChunkedBody(std::string recvBuffer) {
             if (parseHexSize(_buffer.substr(0, pos), _bytesNeeded) == false) {
                 _parsingDone = true;
                 _statusCode = 400;
-                Logger::getInstance().log(Logger::WARNING, "chunked: invalid chunk size.");
+                Logger::getInstance().log(Logger::WARNING, "parseChunkedBody: invalid chunk size.");
                 return 1;
             }
             if (_body.size() >= _clientMaxBody || _bytesNeeded > _clientMaxBody - _body.size()) {
                 _parsingDone = true;
                 _statusCode = 413;
-                Logger::getInstance().log(Logger::WARNING, "chunked: body exceeds clientMaxBody.");
+                Logger::getInstance().log(Logger::WARNING, "parseChunkedBody: body exceeds clientMaxBody.");
                 return 1;
             }
             _buffer.erase(0, pos + 2);
@@ -315,7 +315,7 @@ int HttpRequest::parseChunkedBody(std::string recvBuffer) {
                 _parsingDone = true;
                 _statusCode = 400;
                 Logger::getInstance().log(Logger::WARNING,
-                                          "chunked: bytes announced != bytes received.");
+                                          "parseChunkedBody: bytes announced != bytes received.");
                 return 1;
             }
             _body.insert(_body.end(), _buffer.begin(), _buffer.begin() + _bytesNeeded);
@@ -328,7 +328,7 @@ int HttpRequest::parseChunkedBody(std::string recvBuffer) {
             if (_buffer[0] != '\r' || _buffer[1] != '\n') {
                 _parsingDone = true;
                 _statusCode = 400;
-                Logger::getInstance().log(Logger::WARNING, "chunked: malformed terminator.");
+                Logger::getInstance().log(Logger::WARNING, "parseChunkedBody: malformed terminator.");
                 return 1;
             }
             for (std::vector<char>::iterator it = _body.begin(); it != _body.end(); ++it)
@@ -337,7 +337,7 @@ int HttpRequest::parseChunkedBody(std::string recvBuffer) {
             _buffer.erase(0, 2);
             _parsingDone = true;
             _statusCode = 200;
-            Logger::getInstance().log(Logger::DEBUG, "chunked body parsing done.");
+            Logger::getInstance().log(Logger::DEBUG, "parseChunkedBody: body parsing done.");
             return 0;
         }
     }

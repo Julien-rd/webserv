@@ -1,13 +1,13 @@
+#include "../../Logger/logger.hpp"
 #include "../../Utils/Macros.hpp"
 #include "HttpRequest.hpp"
 
 #include <cctype>
 #include <iostream>
-#include "../../Logger/logger.hpp"
 #include <string>
 
 void HttpRequest::addHeader() {
-      std::string fieldNameToLow = _fieldName;
+    std::string fieldNameToLow = _fieldName;
     for (size_t it = 0; it < _fieldName.size(); ++it)
         fieldNameToLow[it] = tolower(_fieldName[it]);
     if (_headers.count(fieldNameToLow) > 0) {
@@ -167,7 +167,7 @@ bool HttpRequest::hasContentLength() {
         return false;
     }
     _contentLength = static_cast<size_t>(val);
-    if (_contentLength > _clientMaxBody) { 
+    if (_contentLength > _clientMaxBody) {
         _statusCode = 413;
         std::cerr << "Request Entity Too Large\n<";
         return false;
@@ -176,20 +176,23 @@ bool HttpRequest::hasContentLength() {
     return true;
 }
 
-void HttpRequest::isChunked() {
+bool HttpRequest::isChunked() {
     std::map<std::string, std::string>::iterator it = _headers.find("transfer-encoding");
     if (it == _headers.end())
-        return;
-    if (it->second == "chunked"){
+        return true;
+    if (it->second == "chunked") {
         Logger::getInstance().log(Logger::DEBUG, "Starting chunked html body parsing .");
         _currentState = BODY_CHUNKED;
+        return true;
     }
-    return;
+    Logger::getInstance().log(Logger::WARNING, "Unknown transfer-encoding type .");
+    return false;
 }
 
 bool HttpRequest::validateMandatoryHeaders() {
     if (_method == "POST") {
-        isChunked();
+        if (isChunked() == false)
+            return false;
         return (hasHostHeader() && hasContentLength());
     }
     _currentState = METHOD;

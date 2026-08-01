@@ -83,7 +83,7 @@ class HttpRequest {
     bool validHttpsVersion();
     bool hasHostHeader();
     bool hasContentLength();
-    void isChunked();
+    bool isChunked();
     bool validNewLine(std::string &recvBuffer);
     bool containsWhiteSpaces();
     int  parseHeaders(std::string &recvBuffer);
