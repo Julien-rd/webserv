@@ -51,32 +51,6 @@ bool validConfigFile(char *fileName) {
     return true;
 }
 
-bool setupLogger(int argc, char **&argv) {
-    std::string logLevel[4] = {
-        "--log-level=debug", "--log-level=info", "--log-level=warning", "--log-level=error"};
-    if (argc < 3)
-        return true;
-    int level;
-    for (level = 0; level < 4; ++level) {
-        if (logLevel[level] == argv[2])
-            break;
-    }
-    switch (level) {
-    case 0:
-        Logger::getInstance().setLevel(Logger::DEBUG);
-        return true;
-    case 1:
-        Logger::getInstance().setLevel(Logger::INFO);
-        return true;
-    case 2:
-        Logger::getInstance().setLevel(Logger::WARNING);
-        return true;
-    case 3:
-        Logger::getInstance().setLevel(Logger::ERROR);
-        return true;
-    }
-    return false;
-}
 
 int main(int argc, char **argv) {
     signal(SIGINT, signalHandler);
@@ -90,18 +64,13 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    if(setupLogger(argc, argv) == false) {
-        std::cerr << "Logger usage: [--log-level=debug|info|warning|error]\n";
-        return 1;
-    }
-
     if (!validConfigFile(argv[1])) {
-        Logger::getInstance().log(Logger::ERROR, "invalid config file.\nusage: ./webserv FILENAME.pps");
+        Logger::getInstance().log(Level::ERROR, "invalid config file.\nusage: ./webserv FILENAME.pps");
         return 1;
     }
 
     if (parseConfigFile(config, argv[1])) {
-        Logger::getInstance().log(Logger::ERROR, "parsing configuration file failed.");
+        Logger::getInstance().log(Level::ERROR, "parsing configuration file failed.");
         return 1;
     }
 

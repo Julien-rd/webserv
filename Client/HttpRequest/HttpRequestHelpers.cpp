@@ -1,9 +1,7 @@
-#include "../../Utils/Macros.hpp"
 #include "HttpRequest.hpp"
 
 #include <cctype>
 #include <iostream>
-#include <sstream>
 #include <string>
 
 void HttpRequest::addHeader() {
