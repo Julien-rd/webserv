@@ -54,10 +54,6 @@ void CGIResponse::addCGIBody(HttpRequest request) {
 }
 
 void CGIResponse::addRules() {
-    // if (_statusCode >= 400) {
-    //   // _response += "Connection: close\r\n";
-    //   return;
-    // }
     _response += "Connection: keep-alive\r\n";  // or close, maybe also add timeout
     _response += "Cache-Control: max-age=3600\r\n";
     _response += "Custom-CGI-header: the custom value\r\n";
