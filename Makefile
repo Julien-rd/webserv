@@ -7,6 +7,7 @@ CXXFLAGS = #-Wall -Wextra -Werror -MMD -MP -std=c++98 -pedantic -g #-fsanitize=a
 SOURCES = main.cpp
 CLASS_SOURCES = Error/Error.cpp \
 				Poller/Poller.cpp \
+				Logger/logger.cpp \
 				ServerManager/ServerManager.cpp \
 				Server/Server.cpp \
 				CGI/CGI.cpp CGI/CGI_helpers.cpp CGI/CGIResponse.cpp \
