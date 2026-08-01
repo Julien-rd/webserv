@@ -1,9 +1,9 @@
 #pragma once
+#include <cerrno>
 #include <cstdio>
+#include <cstdlib>
 #include <map>
 #include <string>
-#include <cerrno>
-#include <cstdlib>
 #include <vector>
 
 enum state { METHOD, URI, HTTP_VERSION, CR, FIELD_NAME, FIELD_VALUE, EOH, BODY, BODY_CHUNKED };
@@ -90,7 +90,7 @@ class HttpRequest {
     int  parseRequestLine(std::string &recvBuffer);
     int  bodyMode(std::string recvBuffer);
     void parseBody(std::string recvBuffer);
-    void parseChunkedBody(std::string recvBuffer);
+    int  parseChunkedBody(std::string recvBuffer);
     bool saveData();
     bool validateMandatoryHeaders();
     void trim();

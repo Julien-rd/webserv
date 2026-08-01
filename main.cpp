@@ -84,9 +84,9 @@ int main(int argc, char **argv) {
     t_config config;
     Logger &log = Logger::getInstance();
     log.setLevel(Logger::DEFAULT);
-
+    
     if (argc > 3 || argc < 2) {
-        std::cerr << "Usage: ./webserv [config_file] [--log-level=debug|info|warning|error]\n";
+        std::cerr << "Usage: ./webserv [FILENAME.pps] [--log-level=debug|info|warning|error]\n";
         return 1;
     }
 
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
     }
 
     if (!validConfigFile(argv[1])) {
-        Logger::getInstance().log(Logger::ERROR, "invalid config file.\nusage: ./webserv FILENAME.pps");
+        Logger::getInstance().log(Logger::ERROR, "invalid config file.\nUsage: ./webserv FILENAME.pps");
         return 1;
     }
 

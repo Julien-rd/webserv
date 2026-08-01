@@ -3,7 +3,7 @@
 
 #include <cctype>
 #include <iostream>
-#include <sstream>
+#include "../../Logger/logger.hpp"
 #include <string>
 
 void HttpRequest::addHeader() {
@@ -172,6 +172,7 @@ bool HttpRequest::hasContentLength() {
         std::cerr << "Request Entity Too Large\n<";
         return false;
     }
+    Logger::getInstance().log(Logger::DEBUG, "Starting html body parsing .");
     return true;
 }
 
@@ -179,8 +180,10 @@ void HttpRequest::isChunked() {
     std::map<std::string, std::string>::iterator it = _headers.find("transfer-encoding");
     if (it == _headers.end())
         return;
-    if (it->second == "chunked")
+    if (it->second == "chunked"){
+        Logger::getInstance().log(Logger::DEBUG, "Starting chunked html body parsing .");
         _currentState = BODY_CHUNKED;
+    }
     return;
 }
 
