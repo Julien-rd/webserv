@@ -161,7 +161,6 @@ void Client::readCGIPipe(
         _CGIResponse.setCGIResponseLen(_CGIResponseLen);
         _CGIResponse.build(_request);
         const char *response = _CGIResponse.getResponse();
-        std::cout << "response :" << response << "]\n";
         // std::cout << "\nHttpResponse Response:\n" << response << "]" <<std::endl;
         if (send(_fd, response, strlen(response), 0) == -1) {
             std::cerr << "send() failed in handleCGIResponse(): " << strerror(errno) << "\n";
@@ -258,7 +257,6 @@ int Client::loop(std::string &recvBuffer) {
         }
         _response.build(_request);
         const char *response = _response.getResponse();
-        // std::cout << "response:\n" << response << std::endl;
         if (send(_fd, response, strlen(response), 0) == -1) {
             closeConnection(CLOSE_TRANSPORT_FAIL);
             return CLOSE;

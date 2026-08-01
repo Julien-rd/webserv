@@ -7,6 +7,7 @@ so malformed / chunked / partial input reaches the server exactly as sent.
 
 Usage:
     python3 webserver_test.py --host 127.0.0.1 --port 8080
+    python3 WebServerTester.py --host 127.0.0.1 --port 7070
     python3 webserver_test.py --fast          # skip the slow/heavy tests
 
 Structure:
@@ -140,7 +141,7 @@ def _():
 @test("Chunked Encoding", "Well-formed chunked POST is accepted")
 def _():
     body = b"4\r\nWiki\r\n5\r\npedia\r\n0\r\n\r\n"
-    req = (b"POST /upload HTTP/1.1\r\nHost: localhost\r\n"
+    req = (b"POST /login HTTP/1.1\r\nHost: localhost\r\n"
            b"Transfer-Encoding: chunked\r\n\r\n" + body)
     resp = raw_request(req)
     assert resp.startswith(b"HTTP/1.2") or resp.startswith(b"HTTP/1.1 2"), resp[:80]

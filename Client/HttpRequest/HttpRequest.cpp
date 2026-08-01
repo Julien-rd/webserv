@@ -331,9 +331,6 @@ int HttpRequest::parseChunkedBody(std::string recvBuffer) {
                 Logger::getInstance().log(Logger::WARNING, "parseChunkedBody: malformed terminator.");
                 return 1;
             }
-            for (std::vector<char>::iterator it = _body.begin(); it != _body.end(); ++it)
-                std::cout << *it;
-            std::cout << std::endl;
             _buffer.erase(0, 2);
             _parsingDone = true;
             _statusCode = 200;
