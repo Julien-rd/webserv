@@ -161,6 +161,7 @@ void Client::readCGIPipe(
         _CGIResponse.setCGIResponseLen(_CGIResponseLen);
         _CGIResponse.build(_request);
         const char *response = _CGIResponse.getResponse();
+        std::cout << "response :" << response << "]\n";
         // std::cout << "\nHttpResponse Response:\n" << response << "]" <<std::endl;
         if (send(_fd, response, strlen(response), 0) == -1) {
             std::cerr << "send() failed in handleCGIResponse(): " << strerror(errno) << "\n";

@@ -1,10 +1,11 @@
 #include "HttpRequest.hpp"
 
+#include "../../Logger/logger.hpp"
+
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
-#include "../../Logger/logger.hpp"
 
 HttpRequest::HttpRequest(size_t clientMaxBody)
         : _currentState(METHOD)
@@ -251,8 +252,14 @@ int HttpRequest::parseHeaders(std::string &recvBuffer) {
 
 bool parseHexSize(std::string s, size_t &out) {
     size_t pos = s.find(";");
-    if(pos != std::string::npos)
+    if (pos != std::string::npos)
         s.erase(pos);
+    if (s.empty())
+        return false;
+    for (std::string::size_type i = 0; i < s.size(); ++i) {
+        if (!isxdigit(static_cast<unsigned char>(s[i])))
+            return false;
+    }
     std::istringstream iss(s);
     iss >> std::hex >> out;
     if (iss.fail())
@@ -264,101 +271,89 @@ bool parseHexSize(std::string s, size_t &out) {
 }
 
 void HttpRequest::parseBody(std::string recvBuffer) {
-  _bytesNeeded = _contentLength - _body.size();
-  std::string::iterator start = recvBuffer.begin() + _bytesRead;
-  std::string::iterator end = recvBuffer.end();
-  size_t len = recvBuffer.length() - _bytesRead;
-  if (_bytesNeeded > len) {
-    _body.insert(_body.end(), start, end);
-    _bytesRead += len;
-  } else {
-    _body.insert(_body.end(), start, start + _bytesNeeded);
-    _parsingDone = true;
-    _statusCode = 200;
-    _bytesRead += _bytesNeeded;
-    Logger::getInstance().log(Logger::DEBUG, "html body parsing done.");
-  }
+    _bytesNeeded = _contentLength - _body.size();
+    std::string::iterator start = recvBuffer.begin() + _bytesRead;
+    std::string::iterator end = recvBuffer.end();
+    size_t                len = recvBuffer.length() - _bytesRead;
+    if (_bytesNeeded > len) {
+        _body.insert(_body.end(), start, end);
+        _bytesRead += len;
+    } else {
+        _body.insert(_body.end(), start, start + _bytesNeeded);
+        _parsingDone = true;
+        _statusCode = 200;
+        _bytesRead += _bytesNeeded;
+        Logger::getInstance().log(Logger::DEBUG, "html body parsing done.");
+    }
 }
 
 int HttpRequest::parseChunkedBody(std::string recvBuffer) {
-    size_t pos;
-    while (_bytesRead < recvBuffer.length()) {
-        switch (_chunkedBodyState) {
-        case BYTES:
-            _buffer += recvBuffer.substr(_bytesRead);
-            pos = _buffer.find("\r\n");
+    _buffer += recvBuffer.substr(_bytesRead);
+    while (true) {
+        if (_chunkedBodyState == BYTES) {
+            size_t pos = _buffer.find("\r\n");
             if (pos == std::string::npos)
                 return 0;
-            if(parseHexSize(_buffer.substr(0, pos), _bytesNeeded) == false){
+            if (parseHexSize(_buffer.substr(0, pos), _bytesNeeded) == false) {
                 _parsingDone = true;
                 _statusCode = 400;
-                Logger::getInstance().log(Logger::WARNING, "chunked request invalid bytes needed.");
+                Logger::getInstance().log(Logger::WARNING, "chunked: invalid chunk size.");
                 return 1;
             }
             if (_body.size() >= _clientMaxBody || _bytesNeeded > _clientMaxBody - _body.size()) {
                 _parsingDone = true;
-                Logger::getInstance().log(Logger::WARNING, "body is bigger than clientMaxBody.");
                 _statusCode = 413;
+                Logger::getInstance().log(Logger::WARNING, "chunked: body exceeds clientMaxBody.");
                 return 1;
             }
             _buffer.erase(0, pos + 2);
-            if (_bytesNeeded != 0)
-                _chunkedBodyState = LINE;
-            else
-                _chunkedBodyState = _EOF;
-            _bytesRead += pos + 2;
-            if (_bytesRead >= recvBuffer.length())
-                return _buffer.clear(), 0;
-            /* fall through */
-        case _EOF:
-            if (_chunkedBodyState == _EOF) {
-                if (_buffer.size() >= 2) {
-                    pos = _buffer.find("\r\n");
-                    if (pos == std::string::npos) {
-                        Logger::getInstance().log(Logger::WARNING, "chunked body has wrong format.");
-                        _parsingDone = true;
-                        _statusCode = 405;
-                        return 1;
-                    }
-                    Logger::getInstance().log(Logger::DEBUG, "chunked body parsing done.");
-                    for(std::vector<char>::iterator it = _body.begin(); it != _body.end(); ++it)
-                        std::cout << *it;
-                    std::cout << std::endl;
-                    _parsingDone = true;
-                    _statusCode = 200;
-                    _bytesRead += 2;
-                    
-                }
+            _chunkedBodyState = (_bytesNeeded == 0) ? _EOF : LINE;
+        } else if (_chunkedBodyState == LINE) {
+            if (_buffer.size() < _bytesNeeded + 2)
                 return 0;
+            if (_buffer[_bytesNeeded] != '\r' || _buffer[_bytesNeeded + 1] != '\n') {
+                _parsingDone = true;
+                _statusCode = 400;
+                Logger::getInstance().log(Logger::WARNING,
+                                          "chunked: bytes announced != bytes received.");
+                return 1;
             }
-            /* fall through */
-        case LINE:
-            _buffer += recvBuffer.substr(_bytesRead);
-            if (_buffer.size() < _bytesNeeded)
-                return 0;
-            std::string::iterator start = _buffer.begin();
-            _body.insert(_body.end(), start, start + _bytesNeeded);
+            _body.insert(_body.end(), _buffer.begin(), _buffer.begin() + _bytesNeeded);
             _buffer.erase(0, _bytesNeeded + 2);
-            _bytesRead += _bytesNeeded + 2;
             _chunkedBodyState = BYTES;
-            /* fall through */
+        } else if (_chunkedBodyState == _EOF) {
+            std::cout << "[" << _buffer << "]\n";
+            if (_buffer.size() < 2)
+                return 0;
+            if (_buffer[0] != '\r' || _buffer[1] != '\n') {
+                _parsingDone = true;
+                _statusCode = 400;
+                Logger::getInstance().log(Logger::WARNING, "chunked: malformed terminator.");
+                return 1;
+            }
+            for (std::vector<char>::iterator it = _body.begin(); it != _body.end(); ++it)
+                std::cout << *it;
+            std::cout << std::endl;
+            _buffer.erase(0, 2);
+            _parsingDone = true;
+            _statusCode = 200;
+            Logger::getInstance().log(Logger::DEBUG, "chunked body parsing done.");
+            return 0;
         }
     }
-    return 0;
 }
 
-int HttpRequest::bodyMode(std::string recvBuffer) {  // Fix: add fail reasons parsechunked
+int HttpRequest::bodyMode(std::string recvBuffer) {
     if (_currentState == BODY)
         parseBody(recvBuffer);
-    if (_currentState == BODY_CHUNKED){
-        if(parseChunkedBody(recvBuffer) == 1)
+    if (_currentState == BODY_CHUNKED) {
+        if (parseChunkedBody(recvBuffer) == 1)
             return 1;
     }
     return 0;
 }
 
-int HttpRequest::parseHttpRequest(std::string &recvBuffer,
-                                  size_t bytes_read) {
+int HttpRequest::parseHttpRequest(std::string &recvBuffer, size_t bytes_read) {
     _bytesRead = bytes_read;
     _parsingDone = false;
     if (parseRequestLine(recvBuffer) == 1)

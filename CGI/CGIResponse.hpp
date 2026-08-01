@@ -19,9 +19,11 @@ class CGIResponse : public HttpResponse {
     void setCGIResponseLen(size_t len);
 
   private:
+    std::string _responseBody;
     std::string _CGIResponseStr;
     size_t      _CGIResponseLen;
     void        addRules();
+    size_t findSeparator(size_t &sepLen) const;
     void addCGIBody(HttpRequest request);  // FIX: had to avoid errors to compile. addBody changed
                                            // in httpresponse
 };
