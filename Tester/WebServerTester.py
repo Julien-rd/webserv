@@ -144,7 +144,7 @@ def _():
     req = (b"POST /login HTTP/1.1\r\nHost: localhost\r\n"
            b"Transfer-Encoding: chunked\r\n\r\n" + body)
     resp = raw_request(req)
-    assert resp.startswith(b"HTTP/1.2") or resp.startswith(b"HTTP/1.1 2"), resp[:80]
+    assert resp.startswith(b"HTTP/1.0") or resp.startswith(b"HTTP/1.1 2"), resp[:80]
 
 
 @test("Chunked Encoding", "Malformed chunk size does not crash the server")

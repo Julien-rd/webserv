@@ -1,7 +1,30 @@
+#include "../Utils/Macros.hpp"
 #include "Parser.hpp"
 #include "Structs.hpp"
-#include "../Utils/Macros.hpp"
+
 #include <algorithm>
+#include <vector>
+
+void parseLogLvl(const std::vector<std::string>& args, Level& logLvl)
+{
+    if (args.size() != 1)
+        throw std::runtime_error("log_level directive invalid");
+
+    const std::string& value = args.at(0);
+
+    if (value == "default")
+        logLvl = Level::DEFAULT;
+    else if (value == "info")
+        logLvl = Level::INFO;
+    else if (value == "debug")
+        logLvl = Level::DEBUG;
+    else if (value == "error")
+        logLvl = Level::ERROR;
+    else if (value == "warning")
+        logLvl = Level::WARNING;
+    else
+        throw std::runtime_error("log_level has wrong argument");
+}
 
 void parseAutoindex(const std::vector<std::string> &args, t_location &location) {
     if (args.size() != 1)

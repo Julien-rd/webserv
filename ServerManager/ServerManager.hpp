@@ -10,7 +10,7 @@
 
 #define CLIENT_LIMIT 1024
 
-class ServerManager : Error {
+class ServerManager {
   public:
     ServerManager(const t_serverManagerContext &context);
     ~ServerManager(void);

@@ -1,4 +1,5 @@
 #include "Parser.hpp"
+#include "../Logger/Logger.hpp"
 
 #include <cstddef>
 #include <cstdio>
@@ -18,6 +19,7 @@ void setDefault(t_config &config) {
     config.clientsPerServer = 1024;
     config.maxClients = 1024;
     config.clientTimeout = 50;
+    config.logLvl = Level::DEFAULT;
 }
 
 bool parseConfigFile(t_config &config, const char *fileName) {
