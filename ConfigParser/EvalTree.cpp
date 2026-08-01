@@ -6,6 +6,9 @@
 void evalDirective(Node *tree, t_config &evalData) {
     if (!evalData.serverFlag) {
         switch (tree->tag) {
+        case LOGLVL:
+            parseLogLvl(tree->args, evalData.logLvl);
+            return;
         case MAX_CLIENTS:
             parseNumberGlobal(tree->args, &evalData.maxClients);
             return;

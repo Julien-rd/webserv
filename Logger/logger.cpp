@@ -3,7 +3,7 @@
 #include <ctime>
 #include <iostream>
 
-Logger::Logger() : _threshold(INFO) {}
+Logger::Logger() : _threshold(Level::INFO) {}
 Logger::~Logger() {}
 Logger::Logger(const Logger &) {}
 Logger &Logger::operator=(const Logger &) { return *this; }
@@ -14,7 +14,7 @@ Logger &Logger::getInstance() {
 }
 
 void Logger::setLevel(Level threshold) { _threshold = threshold; }
-Logger::Level Logger::getLevel() const { return _threshold; }
+Level Logger::getLevel() const { return _threshold; }
 
 void Logger::log(Level level, const std::string &message) {
     if (level < _threshold)
@@ -25,22 +25,22 @@ void Logger::log(Level level, const std::string &message) {
     std::cerr << "[" << levelToString(level) << "] " << message << "\n";
 }
 
-void Logger::debug(const std::string &message) { log(DEBUG, message); }
-void Logger::info(const std::string &message) { log(INFO, message); }
-void Logger::warning(const std::string &message) { log(WARNING, message); }
-void Logger::error(const std::string &message) { log(ERROR, message); }
+void Logger::debug(const std::string &message) { log(Level::DEBUG, message); }
+void Logger::info(const std::string &message) { log(Level::INFO, message); }
+void Logger::warning(const std::string &message) { log(Level::WARNING, message); }
+void Logger::error(const std::string &message) { log(Level::ERROR, message); }
 
 std::string Logger::levelToString(Level level) const {
     switch (level) {
-    case DEFAULT:
+    case Level::DEFAULT:
         return "ERROR";
-    case DEBUG:
+    case Level::DEBUG:
         return "DEBUG";
-    case INFO:
+    case Level::INFO:
         return "INFO";
-    case WARNING:
+    case Level::WARNING:
         return "WARNING";
-    case ERROR:
+    case Level::ERROR:
         return "ERROR";
     }
     return " ";

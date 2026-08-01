@@ -62,7 +62,7 @@ void ServerManager::startServers(void) {
 bool ServerManager::init(void) {
     startServers();
     if (_servers.size() == 0) {
-        Logger::getInstance().log(Logger::WARNING, "no servers were started");
+        Logger::getInstance().log(Level::WARNING, "no servers were started");
         return 1;
     }
     std::cout << std::endl;

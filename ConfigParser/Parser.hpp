@@ -7,6 +7,7 @@
 #define DELETE 2
 
 /* DirectiveHandlers.cpp */
+void    parseLogLvl(const std::vector<std::string> &args, Level &logLvl);
 void parseReturn(const std::vector<std::string> &args, t_location &location);
 void parseTryFiles(const std::vector<std::string> &args, t_location &location);
 void parseAlias(const std::vector<std::string> &args, t_location &location);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../Logger/logger.hpp"
 #include <string>
 #include <vector>
 
@@ -12,6 +13,7 @@ struct Node {
 enum types { CONTEXT, DIRECTIVE, BASE };
 
 enum d_tags {
+    LOGLVL,
     INDEX,
     TRYFILES,
     CLIENT_MAX_BODY_SIZE,
@@ -60,6 +62,7 @@ typedef struct s_config {
     bool                  serverFlag, locationFlag;
     unsigned int          maxClients;
     unsigned int          clientTimeout;
+    Level logLvl;
     // int errorLog;
     // int errorlvl;
     unsigned int          clientsPerServer;

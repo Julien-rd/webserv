@@ -1,17 +1,17 @@
-#ifndef LOGGER_HPP
-#define LOGGER_HPP
+#pragma once 
 
 #include <string>
 
+enum class Level {
+    DEFAULT   = 0,
+    DEBUG   = 1,
+    INFO    = 2,
+    WARNING = 3,
+    ERROR   = 4
+};
+
 class Logger {
 public:
-    enum Level {
-        DEFAULT   = 0,
-        DEBUG   = 1,
-        INFO    = 2,
-        WARNING = 3,
-        ERROR   = 4
-    };
     
     static Logger &getInstance();
 
@@ -36,5 +36,3 @@ public:
     
     Level _threshold;
 };
-
-#endif

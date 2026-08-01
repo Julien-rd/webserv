@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
     signal(SIGPIPE, SIG_IGN);
     t_config config;
     Logger &log = Logger::getInstance();
-    log.setLevel(Logger::DEFAULT);
+    log.setLevel(config.logLvl);
 
     if (argc > 3 || argc < 2) {
         std::cerr << "Usage: ./webserv [config_file] [--log-level=debug|info|warning|error]\n";
