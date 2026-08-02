@@ -60,12 +60,12 @@ int main(int argc, char **argv) {
     log.setLevel(config.logLvl);
 
     if (argc > 3 || argc < 2) {
-        Logger::getInstance().log(Level::ERROR, "Usage: ./webserv [config_file] [--log-level=debug|info|warning|error]");
+        std::cerr << "Usage: ./webserv [config_file] [--log-level=debug|info|warning|error]\n";
         return 1;
     }
 
     if (!validConfigFile(argv[1])) {
-        Logger::getInstance().log(Level::ERROR, "invalid config file.\nUsage: ./webserv FILENAME.pps");
+        std::cerr << "Invalid config file.\nUsage: ./webserv FILENAME.pps\n";
         return 1;
     }
 
