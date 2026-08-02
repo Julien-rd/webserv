@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <poll.h>
+#include <sstream>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -201,7 +202,9 @@ int Client::loop(std::string &recvBuffer) {
         }
         if (_CGI.isCGIRequest(
                 _request)) {  // fix: rework this or put inside function if all of these necessary
-            log(Level::INFO, "Starting CGI execution");
+            std::stringstream ss;
+            ss << "Server " << _sid << " CGI execution " << _request.getUri() <<" ";
+            log(Level::INFO, ss.str());
             doCGI();
             _request.reset();
             _response.reset();

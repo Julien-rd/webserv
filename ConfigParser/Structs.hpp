@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Logger/Logger.hpp"
+
 #include <string>
 #include <vector>
 
@@ -62,7 +63,7 @@ typedef struct s_config {
     bool                  serverFlag, locationFlag;
     unsigned int          maxClients;
     unsigned int          clientTimeout;
-    Level logLvl;
+    Level::Value          logLvl;
     // int errorLog;
     // int errorlvl;
     unsigned int          clientsPerServer;

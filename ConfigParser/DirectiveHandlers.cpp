@@ -5,12 +5,11 @@
 #include <algorithm>
 #include <vector>
 
-void parseLogLvl(const std::vector<std::string>& args, Level& logLvl)
-{
+void parseLogLvl(const std::vector<std::string> &args, Level::Value &logLvl) {
     if (args.size() != 1)
         throw std::runtime_error("log_level directive invalid");
 
-    const std::string& value = args.at(0);
+    const std::string &value = args.at(0);
 
     if (value == "default")
         logLvl = Level::DEFAULT;

@@ -2,7 +2,7 @@ NAME = webserv
 
 CXX = c++
 
-CXXFLAGS = #-Wall -Wextra -Werror -MMD -MP -std=c++98 -pedantic -g #-fsanitize=address,undefined,bounds,float-divide-by-zero
+CXXFLAGS = -Wall -Wextra -Werror -MMD -MP -std=c++98 -pedantic -g -fsanitize=address,undefined,bounds,float-divide-by-zero
 
 SOURCES = main.cpp
 CLASS_SOURCES = Error/Error.cpp \
@@ -19,9 +19,6 @@ CLASS_SOURCES = Error/Error.cpp \
 				ConfigParser/ParseTree.cpp ConfigParser/Tokenizer.cpp
 
 ALL_SOURCES = $(SOURCES) $(CLASS_SOURCES)
-
-HEADERS = ServerManager.hpp HttpRequest.hpp # TODO add the rest
-TEMPLATE = 
 
 OBJ_DIR = objects/
 OBJS = $(ALL_SOURCES:%.cpp=$(OBJ_DIR)%.o)
@@ -52,8 +49,10 @@ clean:
 
 fclean: clean
 	@rm -rf $(NAME)
+	
+-include $(DEPS)
 
 re: fclean all
 
--include $(DEPS)
+.PHONY: all clean fclean re
 

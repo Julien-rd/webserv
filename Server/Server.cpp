@@ -71,7 +71,7 @@ void Server::updateClientsMap(e_mapOperation op, const int clientFd) {
 void Server::closeConnection(int clientFd) {
     updateClientsMap(REMOVE, clientFd);
     std::stringstream ss;
-    ss << "Server __" << _sid << "__ closed connection with Client " << clientFd;
+    ss << "Server " << _sid << " closed connection with Client " << clientFd;
     log(Level::INFO, ss.str());
     if (epoll_ctl(_epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
         error_msg(ERR_EPOLL_CTL);
@@ -169,7 +169,7 @@ void Server::handleServerEvent(void) {
         setToNonBlocking(clientFd);
         addSocketToEpoll(clientFd);
         std::stringstream ss;
-        ss << "Server with id " << _sid << " accepted a new Client " << clientFd;
+        ss << "Server " << _sid << " accepted a new Client " << clientFd;
         log(Level::INFO, ss.str());
     }
 }
