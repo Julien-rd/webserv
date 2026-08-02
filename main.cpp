@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, SIG_IGN);
     t_config config;
-    Logger::getInstance().setLevel(Level::ERROR);
+    Logger::getInstance().setLevel(Level::DEBUG);
 
     if (argc > 3 || argc < 2) {
         log(Level::ERROR, "Usage: ./webserv [config_file] [--log-level=debug|info|warning|error]");
