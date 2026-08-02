@@ -44,6 +44,7 @@ class Client {  // Fix: This has too many responsibilities: extract everything f
     ssize_t         _CGIResponseLen;
     pid_t           _CGIPid;
     CGIResponse     _CGIResponse;
+    
     const t_config *_config;
     CGI             _CGI;
 

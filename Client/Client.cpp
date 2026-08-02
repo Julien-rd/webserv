@@ -6,7 +6,6 @@
 #include "HttpRequest/HttpRequest.hpp"
 #include "HttpResponse/HttpResponse.hpp"
 
-#include <cerrno>
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
@@ -120,7 +119,7 @@ void Client::closeConnection(int reason) {
         _response.build(_request);
     const char *response = _response.getResponse();
     if (send(_fd, response, strlen(response), 0) == -1)
-        std::cerr << "read() failed in Client::handleCGIResponse(): " << strerror(errno) << "\n";
+        log(Level::WARNING, "send() failed in Client::closeConnection");
     // NOTFINISHED: i have no idea whats open here and what this function is responsible for
     return;
 }
@@ -135,14 +134,14 @@ void Client::readCGIPipe(
     if (bytesRead == -1) {
         _CGIResponseLen = 0;
         _CGIResponseStream.erase();
-        std::cerr << "read() failed in Client::handleCGIResponse(): " << strerror(errno) << "\n";
+        log(Level::WARNING, "read() failed in Client::handleCGIResponse()");
         return;  // NOTFINISHED: i have no idea whats open here and what this function is
                  // responsible for
     }
     if (bytesRead == 0) {
         int res = waitpid(_CGIPid, NULL, WNOHANG);
         if (res == -1) {
-            std::cerr << "waitpid() failed in handleCGIResponse(): " << strerror(errno) << "\n";
+            log(Level::WARNING, "waitpid() failed in Client::handleCGIResponse()");
             return;  // NOTFINISHED: i have no idea whats open here and what this function is
                      // responsible for // needs to have the epoll del everywhere
         }
@@ -151,7 +150,7 @@ void Client::readCGIPipe(
             waitpid(_CGIPid, NULL, 0);
         }
         if (epoll_ctl(_epfd, EPOLL_CTL_DEL, pipeReadFd, NULL) == -1) {
-            std::cerr << "epoll_ctl() DEL failed in readCGIPipe(): " << strerror(errno) << "\n";
+            log(Level::WARNING, "epoll_ctl() DEL failed in readCGIPipe()");
             return;
         }
         close(pipeReadFd);
@@ -163,7 +162,7 @@ void Client::readCGIPipe(
         const char *response = _CGIResponse.getResponse();
         // std::cout << "\nHttpResponse Response:\n" << response << "]" <<std::endl;
         if (send(_fd, response, strlen(response), 0) == -1) {
-            std::cerr << "send() failed in handleCGIResponse(): " << strerror(errno) << "\n";
+            log(Level::WARNING, "send() failed in readCGIPipe()");
             return;  // NOTFINISHED: i have no idea whats open here and what this function is
                      // responsible for
         }
@@ -173,8 +172,7 @@ void Client::readCGIPipe(
         // }
         // std::cout << std::endl;
         if (send(_fd, &responseBody[0], responseBody.size(), 0) == -1) {
-            std::cerr << "epoll_ctl() DEL failed in handleCGIResponse(): " << strerror(errno)
-                      << "\n";
+            log(Level::WARNING, "send() failed in readCGIPipe()");
             return;  // NOTFINISHED: i have no idea whats open here and what this function is
                      // responsible for
         }
@@ -230,7 +228,7 @@ int Client::loop(std::string &recvBuffer) {
     unsigned int bufferLen = recvBuffer.length();
     while (_bytesRead < bufferLen) {
         if (_request.parseHttpRequest(recvBuffer, _bytesRead) == 1) {
-            if(_request.getStatusCode() == 0)
+            if (_request.getStatusCode() == 0)
                 _request.setStatusCode(400);
             closeConnection(CLOSE_CLIENT_ERROR);
             return CLOSE;
@@ -245,7 +243,7 @@ int Client::loop(std::string &recvBuffer) {
         }
         if (_CGI.isCGIRequest(
                 _request)) {  // fix: rework this or put inside function if all of these necessary
-            std::cout << "==> found a CGI request\n";
+            log(Level::INFO, "Starting CGI execution");
             doCGI();
             _request.reset();
             _response.reset();

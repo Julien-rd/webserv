@@ -283,7 +283,7 @@ void HttpRequest::parseBody(std::string recvBuffer) {
         _parsingDone = true;
         _statusCode = 200;
         _bytesRead += _bytesNeeded;
-        Logger::getInstance().log(Level::DEBUG, "html body parsing done.");
+        log(Level::DEBUG, "completed HTML body parsing");
     }
 }
 

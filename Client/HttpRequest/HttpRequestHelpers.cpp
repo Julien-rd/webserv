@@ -1,9 +1,7 @@
 #include "../../Logger/Logger.hpp"
-#include "../../Utils/Macros.hpp"
 #include "HttpRequest.hpp"
 
 #include <cctype>
-#include <iostream>
 #include <string>
 
 void HttpRequest::addHeader() {
@@ -75,7 +73,7 @@ void HttpRequest::findSeperator(std::string &recvBuffer,
 
 bool HttpRequest::validMethod() {
     if (!(_method == "GET" || _method == "POST" || _method == "DELETE")) {
-        std::cout << "invalid Method\n";
+        log(Level::WARNING, "invalid method");
         _statusCode = 501;
         return false;
     }
@@ -84,23 +82,23 @@ bool HttpRequest::validMethod() {
 
 bool HttpRequest::validUri() {
     if (_uri.size() > 4096) {
+        log(Level::WARNING, "invalid URI");
         _statusCode = 414;
-        std::cout << "invalid URI\n";
         return false;
     }
     if (_uri.find("#") != std::string::npos) {
+        log(Level::WARNING, "invalid URI");
         _statusCode = 400;
-        std::cout << "invalid URI\n";
         return false;
     }
     if (_uri.find("//") != std::string::npos) {
+        log(Level::WARNING, "invalid URI");
         _statusCode = 400;
-        std::cout << "invalid URI\n";
         return false;
     }
     if (_uri.find('\0') != std::string::npos) {
+        log(Level::WARNING, "invalid URI");
         _statusCode = 400;
-        std::cout << "invalid URI\n";
         return false;
     }
     return (true);
@@ -108,18 +106,18 @@ bool HttpRequest::validUri() {
 
 bool HttpRequest::validateURIPath(std::string &path) {
     if (*(path.begin()) != '/') {
-        std::cout << "ERROR: path doesn't begin with '/'\n";
+        log(Level::WARNING, "path doesn't begin with '/'");
         return false;
     }
     for (std::string::iterator it = path.begin(); it != path.end(); ++it) {
         if (*it < 33 || *it > 126) {
-            std::cout << "invalid URI\n";
+            log(Level::WARNING, "invalid URI");
             return false;
         }
     }
     if (path.size() > 2 &&
         (path.find("/../") != std::string::npos || path.rfind("/..") == path.size() - 3)) {
-        std::cout << "ERROR: escape root sequence found in URI path\n";
+        log(Level::WARNING, "escape root sequence found in URI path");
         return false;
     }
     return true;
@@ -131,7 +129,7 @@ bool HttpRequest::validHttpsVersion() {
     if (_httpVersion != "HTTP/1.1") {  // TODO does HTTP/1.1 need to be backward compatible? in
                                        // that case maybe we can't make this check
         _statusCode = 400;
-        std::cout << "HTTP version\n";
+        log(Level::WARNING, "HTTP version not supported");
         return false;
     }
     return true;
@@ -149,12 +147,13 @@ bool HttpRequest::hasContentLength() {
     if (it == _headers.end())
         return true;
     if (_currentState == BODY_CHUNKED) {
-        std::cerr << "Header has both transfer-encoding and content-length\n";
+        log(Level::WARNING, "Header has both transfer-encoding and content-length");
+        _statusCode = 400;
         return false;
     }
     const std::string &raw = it->second;
     if (raw.empty() || raw.find_first_not_of("0123456789") != std::string::npos) {
-        std::cerr << "Invalid Content-Length\n";
+        log(Level::WARNING, "Invalid Content-Length");
         _statusCode = 400;
         return false;
     }
@@ -162,14 +161,14 @@ bool HttpRequest::hasContentLength() {
     char         *end;
     unsigned long val = std::strtoul(raw.c_str(), &end, 10);
     if (errno == ERANGE || *end != '\0') {
-        std::cerr << "Content-Length out of range\n";
+        log(Level::WARNING, "Content-Length out of range");
         _statusCode = 400;
         return false;
     }
     _contentLength = static_cast<size_t>(val);
     if (_contentLength > _clientMaxBody) {
         _statusCode = 413;
-        std::cerr << "Request Entity Too Large\n<";
+        log(Level::WARNING, "Request Entity Too Large\n<");
         return false;
     }
     Logger::getInstance().log(Level::DEBUG, "Starting html body parsing .");

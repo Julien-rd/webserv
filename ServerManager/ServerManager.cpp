@@ -1,5 +1,6 @@
 #include "ServerManager.hpp"
 
+#include "../Logger/Logger.hpp"
 #include "../Utils/structs/ServerStructs.hpp"
 
 #include <cerrno>
@@ -14,11 +15,11 @@
 #include <map>
 #include <netinet/in.h>
 #include <poll.h>
+#include <sstream>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <vector>
-#include "../Logger/Logger.hpp"
 
 ServerManager::ServerManager(const t_serverManagerContext &context)
         : _config(context.config)
@@ -49,23 +50,28 @@ void ServerManager::startServers(void) {
         try {
             serverSocket = server.start();
         } catch (std::exception &e) {
-            std::cerr << "WARNING: couldn't start server _" << server.getIdentifier()
-                      << "_: " << e.what() << std::endl;
+            std::stringstream ss;
+            ss << server.getIdentifier();
+            std::string msg = "Couldn't start server _" + ss.str() + "_: " + e.what();
+            log(Level::WARNING, msg);
             continue;
         }
         addServerToMaps(serverSocket, server);
-        std::cout << "Started Server __" << _servers.at(serverSocket).getIdentifier()
-                  << "__ with socket " << serverSocket << " successfully" << std::endl;
+        std::ostringstream ss;
+        ss << "Started server with ID " << _servers.at(serverSocket).getIdentifier()
+           << " on " << _config.servers[server.getIdentifier()].ip
+           << ":" << _config.servers[server.getIdentifier()].port
+           << " (socket " << serverSocket << ")";
+        log(Level::INFO, ss.str());
     }
 }
 
 bool ServerManager::init(void) {
     startServers();
     if (_servers.size() == 0) {
-        Logger::getInstance().log(Level::WARNING, "no servers were started");
+        log(Level::WARNING, "no servers were started");
         return 1;
     }
-    std::cout << std::endl;
     return 0;
 }
 

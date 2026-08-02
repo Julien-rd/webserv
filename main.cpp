@@ -17,7 +17,7 @@ simple: Any fd you need to wait on must go through epoll. Waiting on it any
 other way blocks the loop. This applies to sockets, pipes, timers (timerfd),
 signals (signalfd) — anything. CGI pipes are no exception. */
 void signalHandler(int sig) {
-    std::cout << "Exiting with signal: " << sig << std::endl;
+    std::cout << "Exiting with signal: " << sig << std::endl; //fix how to log here? should we? 
     // _exit(sig);
     throw std::exception();  // TODO we shouldn't use exceptions for normal
                              // logic
@@ -51,35 +51,36 @@ bool validConfigFile(char *fileName) {
     return true;
 }
 
-
 int main(int argc, char **argv) {
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, SIG_IGN);
     t_config config;
-    Logger &log = Logger::getInstance();
-    log.setLevel(config.logLvl);
+    Logger::getInstance().setLevel(Level::ERROR);
 
     if (argc > 3 || argc < 2) {
-        std::cerr << "Usage: ./webserv [config_file] [--log-level=debug|info|warning|error]\n";
+        log(Level::ERROR, "Usage: ./webserv [config_file] [--log-level=debug|info|warning|error]");
         return 1;
     }
 
     if (!validConfigFile(argv[1])) {
-        std::cerr << "Invalid config file.\nUsage: ./webserv FILENAME.pps\n";
+        Logger::getInstance().log(Level::ERROR, "invalid config file.\nUsage: ./webserv FILENAME.pps");
         return 1;
     }
 
     if (parseConfigFile(config, argv[1])) {
-        Logger::getInstance().log(Level::ERROR, "parsing configuration file failed.");
+        log(Level::ERROR, "parsing configuration file failed.");
         return 1;
     }
+
+    Logger::getInstance().setLevel(config.logLvl);
 
     Poller poller;
     if (poller.createEpoll() != 0) {
         return 1;
     }
 
-    t_serverManagerContext context = {config, poller.getEpfd(), poller.getReadyEventsCountRef(), poller.getTriggeredEventsRef()};
+    t_serverManagerContext context = {
+        config, poller.getEpfd(), poller.getReadyEventsCountRef(), poller.getTriggeredEventsRef()};
     ServerManager serverManager(context);
 
     if (serverManager.init())
@@ -90,7 +91,7 @@ int main(int argc, char **argv) {
             poller.epollWait();
             serverManager.loopReadyEvents();
         } catch (std::exception &e) {
-            Logger::getInstance().log(Level::ERROR, e.what());
+            log(Level::ERROR, e.what());
             return 1;
         }
     }

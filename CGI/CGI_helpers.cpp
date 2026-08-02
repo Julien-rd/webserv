@@ -109,7 +109,8 @@ bool CGI::setScriptAttributes(int type) {
             return true;
         }
     }
-    return false;  // FIX: pls add error message here
+    log(Level::WARNING, "CGI file extension not found in setScriptAttributes()");
+    return false;
 }
 
 bool CGI::initScript(int type) {
@@ -121,7 +122,7 @@ bool CGI::initScript(int type) {
     } else if (_request->getMethod() == "POST") {
         setEnv(type, METHOD_POST);
     } else {
-        std::cerr << "Unknown method in CGI" << std::endl;
+        log(Level::WARNING, "Unknown method in CGI");
         return false;
     }
     return true;

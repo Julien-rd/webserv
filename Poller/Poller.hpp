@@ -1,10 +1,10 @@
 #pragma once
 #include "../Error/Error.hpp"
 
+#include <cerrno>
+#include <cstring>
 #include <sys/epoll.h>
 #include <vector>
-#include <cstring>
-#include <cerrno>
 
 class Poller : public Error {
   private:

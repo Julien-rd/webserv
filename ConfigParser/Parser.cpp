@@ -1,4 +1,5 @@
 #include "Parser.hpp"
+
 #include "../Logger/Logger.hpp"
 
 #include <cstddef>
@@ -34,7 +35,7 @@ bool parseConfigFile(t_config &config, const char *fileName) {
     } catch (std::exception &e) {
         if (tree)
             freeTree(tree);
-        std::cout << "Error: " << e.what() << "\n";
+        log(Level::ERROR, e.what());
         return true;
     }
     return false;
