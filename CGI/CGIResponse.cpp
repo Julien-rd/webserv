@@ -92,9 +92,9 @@ void CGIResponse::addCGIBody(HttpRequest request) {
     _response.append(_responseBody.data(), _responseBody.size());
 }
 
-void CGIResponse::addRules() {
-    _response += "Connection: keep-alive\r\n";
-    _response += "Cache-Control: max-age=3600\r\n";
+void CGIResponse::addRules(const HttpRequest &request) {
+    addConnectionHeader(request);
+    addCacheHeaders();
     _response += "Custom-CGI-header: the custom value\r\n";
     _response += "Referrer-Policy: strict-origin-when-cross-origin\r\n";
     _response += "X-Content-Type-Options: nosniff\r\n";
@@ -106,7 +106,7 @@ void CGIResponse::addRules() {
 void CGIResponse::build(HttpRequest request) {
     _statusCode = request.getStatusCode();
     if (_statusCode >= 400) {
-        serveErrorPage();
+        serveErrorPage(request);
         return;
     }
     if (_CGIResponseLen == 0)
@@ -115,12 +115,11 @@ void CGIResponse::build(HttpRequest request) {
     buildStatusLine();
     if (getTimeStamp() == 1)
         return;
-    addMandatoryHeaders();
-    addRules();
+    addRules(request);
     if (_statusCode < 400)
         addCGIBody(request);
     if (_statusCode >= 400)
-        serveErrorPage();
+        serveErrorPage(request);
 }
 
 void CGIResponse::setCGIResponseStr(const std::string &CGIResponseStr) {

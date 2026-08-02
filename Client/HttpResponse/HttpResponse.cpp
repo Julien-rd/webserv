@@ -19,6 +19,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+bool HttpResponse::keepConnection() const { return _keepAlive; }
+
 unsigned int HttpResponse::getLocation(const std::string &match, const t_server &serverConfig) {
     unsigned int longestMatch = 0;
     unsigned int ret = 0;
@@ -153,10 +155,12 @@ void HttpResponse::reset() {
     _contentType.clear();
     _timeStamp.clear();
     _reasonPhrase.clear();
-    _header.clear();
     _response.clear();
     _responseBody.clear();
     _statusCodeStr.clear();
+    _method.clear();
+    _statusCode = 0;
+    _responseClass = 0;
 }
 
 int HttpResponse::getTimeStamp() {
@@ -268,44 +272,55 @@ bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
     return 0;
 }
 
-void HttpResponse::addRules() {
-    _response += "Connection: keep-alive\r\n";  // or close, maybe also add timeout
-    _response += "Cache-Control: max-age=3600\r\n";
-    _response += "Referrer-Policy: strict-origin-when-cross-origin\r\n";  // we could also
-                                                                          // use a diff one
-                                                                          // because we dont
-                                                                          // have https, but
-                                                                          // it just sends
-                                                                          // the host url
-                                                                          // when changing
-                                                                          // to a different
-                                                                          // site
-    _response += "X-Content-Type-Options: nosniff\r\n";  // makes sure that only the correct
-                                                         // mime type gets treated, so if
-                                                         // there is a java script embedded
-                                                         // in the a png it will not be exec
-    _response += "X-Frame-Options: DENY\r\n";            // use our site in a frame on another site,
-                                               // prevents clickjacking, theoretically only
-                                               // relevant if there are sensitive
-                                               // informations or clicks involved, so for
-                                               // example we should include this for login
-                                               // site etc.
-    // _response += "Content Security Policy (CSP)\r\n"; useful against XSS (cross
-    // site scripting) -> i dont think it is relevant if we only use static sites,
-    // but we can still look into if it is neccessary
-    //
-    _response += "Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline'; "
-                 "form-action 'self'; img-src 'self' data:;\r\n";
-    // covers script injection and form injection + add
-    // escaping in HTML BODY!!!!! as extra security
-    // layer
+void HttpResponse::addCacheHeaders() {
+    if (_responseClass == 2)
+        _response += "Cache-Control: max-age=3600\r\n";
+    else if (_responseClass == 3)
+        _response += "Cache-Control: no-cache\r\n";
+    else
+        _response += "Cache-Control: no-store\r\n";
 }
 
-void HttpResponse::addMandatoryHeaders() {  // FIX: Will there be more mandatories? otherwise just
-                                            // remove
+void HttpResponse::addSecurityHeaders() {
+    _response += "Referrer-Policy: strict-origin-when-cross-origin\r\n";
+    _response += "X-Content-Type-Options: nosniff\r\n";
+    _response += "X-Frame-Options: DENY\r\n";
+    _response += "Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline'; "
+                 "form-action 'self'; img-src 'self' data:;\r\n";
+}
+
+void HttpResponse::addConnectionHeader(const HttpRequest &request) {
+    std::string                                  version = request.getHttpVersion();
+    std::map<std::string, std::string>           headers = request.getHeaders();
+    std::map<std::string, std::string>::iterator it = headers.find("connection");
+
+    if (_statusCode == 400 || _statusCode == 408 || _statusCode == 413 || _statusCode == 501)
+        _keepAlive = false;
+    else if (version == "HTTP/1.0"){
+        if(it != headers.end())
+            _keepAlive = (it->second == "keep-alive");
+        else
+            _keepAlive = false;
+    }
+    else
+    {
+        if(it != headers.end())
+            _keepAlive = (it->second != "close");
+        else
+            _keepAlive = true;
+    }
+    if(_keepAlive == true)
+        _response += "Connection: keep-alive\r\n";
+    else
+        _response += "Connection: close\r\n";
+}
+
+void HttpResponse::addHeaders(const HttpRequest &request) {
     if (getTimeStamp() != 1)
         _response += "Date: " + _timeStamp + "\r\n";
-    // if get request -> Content length, or chunked header thingy
+    addConnectionHeader(request);
+    addCacheHeaders();
+    addSecurityHeaders();
 }
 
 void HttpResponse::addRedirectHeaders(const std::string &path) {
@@ -327,7 +342,7 @@ void HttpResponse::buildStatusLine() {
     _response += "\r\n";
 }
 
-void HttpResponse::serveErrorPage() {
+void HttpResponse::serveErrorPage(const HttpRequest &request) {
     std::ostringstream ss;
     std::stringstream  st;
     st << _statusCode;
@@ -335,8 +350,7 @@ void HttpResponse::serveErrorPage() {
     _responseClass = _statusCode / 100;
     _response.clear();
     buildStatusLine();
-    addMandatoryHeaders();
-    addRules();
+    addHeaders(request);
     std::string htmlBody = "<!DOCTYPE html>\r\n"
                            "<html>\r\n"
                            "    <body>\r\n<h1>" +
@@ -351,6 +365,13 @@ void HttpResponse::serveErrorPage() {
     _response += htmlBody;
 }
 
+void HttpResponse::deletePath(std::string path) {
+    if (std::remove(path.c_str()) == 0) {
+        _statusCode = 204;
+    } else
+        _statusCode = 404;
+}
+
 void HttpResponse::build(HttpRequest request) {
 
     UriResult   result;
@@ -359,7 +380,7 @@ void HttpResponse::build(HttpRequest request) {
 
     _statusCode = request.getStatusCode();
     if (_statusCode >= 400) {
-        serveErrorPage();
+        serveErrorPage(request);
         return;
     }
 
@@ -367,14 +388,15 @@ void HttpResponse::build(HttpRequest request) {
     result = processURI(uri);
     _statusCode = result.httpCode;
 
+    // if (_method == "DELETE")
+    //     deletePath(result.path);
     buildStatusLine();
-    addMandatoryHeaders();
-    addRules();
+    addHeaders(request);
 
     if (_statusCode > 299 && _statusCode < 400)
         addRedirectHeaders(result.path);
     else if (_statusCode >= 400 || addBody(request, result) == 1)
-        serveErrorPage();
+        serveErrorPage(request);
 }
 
 const char *HttpResponse::getResponse() { return _response.c_str(); }

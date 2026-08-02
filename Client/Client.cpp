@@ -222,6 +222,8 @@ int Client::loop(std::string &recvBuffer) {
             closeConnection(CLOSE_TRANSPORT_FAIL);
             return CLOSE;
         }
+        if(_response.keepConnection() == false)
+            return CLOSE;
         _request.reset();
         _response.reset();
     }
