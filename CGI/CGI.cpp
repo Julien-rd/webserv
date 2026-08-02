@@ -9,7 +9,6 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <iostream>
 #include <stdio.h>
 #include <sys/epoll.h>
 #include <sys/stat.h>

@@ -52,7 +52,6 @@ class HttpResponse {
     virtual void        addRules();
     void                addMandatoryHeaders();
     void                addRedirectHeaders(const std::string &path);
-    void                serveSuccessPage(HttpRequest request);
     virtual bool        addBody(HttpRequest request, const UriResult &result);
     static unsigned int getLocation(const std::string &match, const t_server &serverConfig);
     void                attachPrefix(const std::string &uri,
