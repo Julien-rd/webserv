@@ -148,6 +148,15 @@ int Server::start(void) {
 
 int Server::checkClientCap(void) { return 0; }
 
+void Server::newClient(int clientFd) {
+    updateClientsMap(ADD, clientFd);
+    setToNonBlocking(clientFd);
+    addSocketToEpoll(clientFd);
+    std::stringstream ss;
+    ss << "Server " << _sid << " accepted a new Client " << clientFd;
+    log(Level::INFO, ss.str());
+}
+
 void Server::handleServerEvent(void) {
     int clientFd;
 
@@ -165,12 +174,7 @@ void Server::handleServerEvent(void) {
             close(clientFd);
             return;
         }
-        updateClientsMap(ADD, clientFd);
-        setToNonBlocking(clientFd);
-        addSocketToEpoll(clientFd);
-        std::stringstream ss;
-        ss << "Server " << _sid << " accepted a new Client " << clientFd;
-        log(Level::INFO, ss.str());
+        newClient(clientFd);
     }
 }
 
@@ -189,7 +193,6 @@ void Server::handleClientEvent(const int clientFd) {
         return;
     }
     recvBuffer.resize(bytesRead);
-    // std::cout << "####  " << recvBuffer << "   ####"<< std::endl;
     int responseStatus = _clients.at(clientFd).loop(recvBuffer);
 
     if (responseStatus >= 1) {

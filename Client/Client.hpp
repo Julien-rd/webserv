@@ -18,7 +18,6 @@ class Client {  // Fix: This has too many responsibilities: extract everything f
     // Client &operator=(const Client &obj);
 
     int    loop(std::string &recvBuffer);
-    void   doCGI();
     void   readCGIPipe(int pipeReadFd);
     void   init(int epfd, const t_config *config, const int sid, const int clientFd);
     void   reset();
@@ -49,4 +48,6 @@ class Client {  // Fix: This has too many responsibilities: extract everything f
     CGI             _CGI;
 
     void closeConnection(int reason);
+    void   doCGI();
+    void   handleCGI();
 };

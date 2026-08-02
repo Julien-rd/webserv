@@ -57,4 +57,5 @@ class Server : public Error {
     void bindAndListen(void);
     void setToNonBlocking(int socketFd);
     void updateClientsMap(e_mapOperation op, const int clientFd);
+    void newClient(int clientFd);
 };

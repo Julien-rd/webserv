@@ -12,6 +12,7 @@
 #include <cstring>
 #include <ctime>
 #include <fcntl.h>
+#include <iostream>
 #include <netinet/in.h>
 #include <poll.h>
 #include <sstream>
@@ -114,7 +115,7 @@ void Client::readCGIPipe(
             return;  // NOTFINISHED: i have no idea whats open here and what this function is
                      // responsible for // needs to have the epoll del everywhere
         }
-        if (res == 0) { 
+        if (res == 0) {
             kill(_CGIPid, SIGKILL);
             waitpid(_CGIPid, NULL, 0);
         }
@@ -132,17 +133,20 @@ void Client::readCGIPipe(
             return;  // NOTFINISHED: i have no idea whats open here and what this function is
                      // responsible for
         }
-        std::vector<char> responseBody = _CGIResponse.getResponseBody();
-        if (send(_fd, &responseBody[0], responseBody.size(), 0) == -1) {
-            log(Level::WARNING, "send() failed in readCGIPipe()");
-            return;  // NOTFINISHED: i have no idea whats open here and what this function is
-                     // responsible for
+        if (_CGIResponse.getResponseBody().size() != 0) {
+            std::vector<char> responseBody = _CGIResponse.getResponseBody();
+            if (send(_fd, &responseBody[0], responseBody.size(), 0) == -1) {
+                log(Level::WARNING, "send() failed in readCGIPipe()");
+                return;  // NOTFINISHED: i have no idea whats open here and what this function is
+                         // responsible for
+            }
         }
         _request.reset();
         _CGIResponse.reset();
         _CGI.reset();
         _CGIResponseStream.erase();
         _CGIResponseLen = 0;
+        _CGIResponseStr.erase();
     } else {
         buf.resize(bytesRead);
         _CGIResponseLen += bytesRead;
@@ -151,10 +155,6 @@ void Client::readCGIPipe(
 }
 
 void Client::doCGI(void) {
-    // std::cout << " in doCGI() => _config.servers.at(_sid).ip: "
-    //           << _config.servers.at(_sid).cgiConfigs.size() << "\n";
-    // std::cout << " in doCGI() => _config.servers.at(_sid).port: "
-    //           << _config.servers.at(_sid).port << "\n";
     if (!_CGI.scriptFileExists()) {
         _request.setStatusCode(500);
         closeConnection(CLOSE_SERVER_ERROR);
@@ -165,21 +165,27 @@ void Client::doCGI(void) {
         closeConnection(CLOSE_SERVER_ERROR);
         return;
     }
-    // std::cout << "========= initCGI() succeeded\n";
     if (!_CGI.pipeIO()) {
         _request.setStatusCode(500);
         closeConnection(CLOSE_SERVER_ERROR);
         return;
     }
-    // std::cout << "========= pipeIO() succeeded\n";
     if (!_CGI.spawnProcess()) {
         _request.setStatusCode(500);
         closeConnection(CLOSE_SERVER_ERROR);
         return;
     }
     _CGIPid = _CGI.getPid();
-    // std::cout << "========= spawnProcess() succeeded\n";
-    // writing to the pipe? std::cout << "========= wait() succeeded\n";
+}
+
+void Client::handleCGI() {
+    std::stringstream ss;
+    ss << "Server " << _sid << " CGI execution " << _request.getUri() << " ";
+    log(Level::INFO, ss.str());
+    doCGI();
+    _request.reset();
+    _CGIResponseStream.erase();
+    _CGIResponseLen = 0;
 }
 
 int Client::loop(std::string &recvBuffer) {
@@ -195,24 +201,13 @@ int Client::loop(std::string &recvBuffer) {
         if (_request.parsingDone() == false)
             return KEEP;
         _bytesRead = _request.getBytesRead();
-        // _request.print();
         if (_request.parseURIContent() == 1) {
             closeConnection(CLOSE_CLIENT_ERROR);
             return CLOSE;
         }
-        if (_CGI.isCGIRequest(
-                _request)) {  // fix: rework this or put inside function if all of these necessary
-            std::stringstream ss;
-            ss << "Server " << _sid << " CGI execution " << _request.getUri() <<" ";
-            log(Level::INFO, ss.str());
-            doCGI();
-            _request.reset();
-            _response.reset();
-            _CGIResponseStream.erase();
-            _CGIResponseLen = 0;
-            // _CGIResponse.reset(); //fix: those were the issues now pls check what needs to be
-            // reset _CGI.reset();
-            continue;
+        if (_CGI.isCGIRequest(_request)) {
+            handleCGI(); //fix: this can fail and lead to close
+            return KEEP;
         }
         _response.build(_request);
         const char *response = _response.getResponse();
@@ -225,7 +220,7 @@ int Client::loop(std::string &recvBuffer) {
             closeConnection(CLOSE_TRANSPORT_FAIL);
             return CLOSE;
         }
-        if(_response.keepConnection() == false)
+        if (_response.keepConnection() == false)
             return CLOSE;
         _request.reset();
         _response.reset();
