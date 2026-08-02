@@ -118,7 +118,7 @@ void ServerManager::loopReadyEvents(void) {
         } else {         /* is CGI's pipe fd */
             int fds[2];  // fds[0] is the pipefd. fds[1] is the owning client's fd.
             pp_memcpy(fds, &_triggeredEvents[i].data.u64, sizeof(uint64_t));
-            _clients.at(fds[1]).readCGIPipe(fds[0]);
+            _clients.at(fds[1]).getCGI().buildResponse(fds[0]);
         }
     }
 }

@@ -372,11 +372,10 @@ void HttpResponse::deletePath(std::string path) {
         _statusCode = 404;
 }
 
-void HttpResponse::build(HttpRequest request) {
+void HttpResponse::build(HttpRequest &request) {
 
     UriResult   result;
     std::string uri = request.getUri();
-    std::string autoindexHtml;
 
     _statusCode = request.getStatusCode();
     if (_statusCode >= 400) {

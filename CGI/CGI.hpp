@@ -1,4 +1,5 @@
 #pragma once
+#include "../CGI/CGIResponse.hpp"
 #include "../Client/HttpRequest/HttpRequest.hpp"
 #include "../ConfigParser/Structs.hpp"
 
@@ -6,9 +7,6 @@
 #include <sys/types.h>
 
 #define KNOWN_EXTENSIONS_COUNT 2
-
-// # define FT_THROW(class_name, exception_name)
-// 	throw class_name##_##exception_name()
 
 class Client;
 
@@ -42,31 +40,27 @@ class CGI {
     const CGI &operator=(const CGI &obj);
     ~CGI(void);
 
-    bool validateRequest(void) const;
-    bool scriptFileExists(void) const;
-    bool initCGI(void);
-    bool pipeIO(void);
-    bool redirectIO(void);
-    bool spawnProcess(void);
-    bool addPipeToEpoll(void);
-    void wait(void) const;
+    bool handleCGI(void);
+    void buildResponse(int pipeReadFd);
     bool isCGIRequest(const HttpRequest &request);
-    void init(HttpRequest *request, int clientFd, int epfd, const t_server *serverConfig);
+    void init(HttpRequest *request, int clientFd, int epfd, int sid, const t_server *serverConfig);
     void reset();
-    void reconstruct(const HttpRequest               &request,
-                     int                              clientFd,
-                     int                              epfd,
-                     const t_server                  &serverConfig,
-                     const std::vector<t_cgi_config> &cgiConfigs);
 
     // getters
     pid_t getPid(void) const;
 
   private:
-    const HttpRequest               *_request;
+    std::string _CGIResponseStream;
+    std::string _CGIResponseStr;
+    ssize_t     _CGIResponseLen;
+    pid_t       _CGIPid;
+    CGIResponse _CGIResponse;
+
+    HttpRequest                     *_request;
     std::string                      _scriptName;
     t_metaVariables                  _meta;
     pid_t                            _pid;
+    int                              _sid;
     int                              _epfd;
     int                              _clientFd;
     const std::vector<t_cgi_config> *_cgiConfigs;
@@ -88,9 +82,16 @@ class CGI {
     void initMeta(int type);
 
     void execute(void);
+    bool doCGI(void);
+    bool validateRequest(void) const;
+    bool scriptFileExists(void) const;
+    bool initCGI(void);
+    bool pipeIO(void);
+    bool redirectIO(void);
+    bool spawnProcess(void);
+    bool addPipeToEpoll(void);
+    void wait(void) const;
 };
 
 std::string parsePathInfo(const std::string &_uri, const std::string &scriptName);
 std::string parseQueryString(const std::string &_uri);
-// std::string	getScriptName(const std::string& _uri, const std::string& name1,
-// const std::string& name2);

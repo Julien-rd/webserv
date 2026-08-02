@@ -230,26 +230,6 @@ int HttpRequest::parseHeaders(std::string &recvBuffer) {
     return 0;
 }
 
-// size_t hexaToDeci(std::string hexaNum) {
-//     std::cout << "hexanum: " << hexaNum << std::endl;
-//     size_t      ret = 0;
-//     size_t      exponent = hexaNum.length();
-//     std::string hexaDigits = "0123456789ABCDEF";
-//     for (std::string::iterator it = hexaNum.begin(); it != hexaNum.end(); ++it) {
-//         --exponent;
-//         size_t pos = hexaDigits.find(toupper(*it));
-//         // if (pos == std::string::npos)
-//         // TODO necessary?
-//         size_t num = 1;
-//         for (size_t i = exponent; i != 0; --i)
-//             num *= 16;
-//         ret += pos * num;
-//     }
-//     std::cout << "ret: " << ret << std::endl;
-//     abort();
-//     return ret;
-// }
-
 bool parseHexSize(std::string s, size_t &out) {
     size_t pos = s.find(";");
     if (pos != std::string::npos)

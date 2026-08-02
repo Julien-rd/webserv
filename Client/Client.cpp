@@ -1,7 +1,6 @@
 #include "Client.hpp"
 
 #include "../CGI/CGI.hpp"
-#include "../CGI/CGIResponse.hpp"
 #include "../Utils/Macros.hpp"
 #include "HttpRequest/HttpRequest.hpp"
 #include "HttpResponse/HttpResponse.hpp"
@@ -12,22 +11,17 @@
 #include <cstring>
 #include <ctime>
 #include <fcntl.h>
-#include <iostream>
 #include <netinet/in.h>
 #include <poll.h>
-#include <sstream>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
-#define BUFFER_SIZE 4096
 
 Client::Client() {
     _fd = -1;
-    _CGIResponseLen = 0;
-    _CGIPid = -1;
 }
 
 void Client::init(int epfd, const t_config *config, const int sid, const int clientFd) {
@@ -37,8 +31,7 @@ void Client::init(int epfd, const t_config *config, const int sid, const int cli
     _fd = clientFd;
     _request.init(config->servers.at(sid).clientMaxBody);
     _response.init(config, sid);
-    _CGIResponse.init(_CGIResponseLen, config, sid);
-    _CGI.init(&_request, _fd, _epfd, &_config->servers.at(_sid));
+    _CGI.init(&_request, _fd, _epfd, _sid, &_config->servers.at(_sid));
     setLastActivity();
 }
 
@@ -73,14 +66,13 @@ time_t Client::getLastActivity() { return _lastActivity; }
 
 int Client::getFd() const { return _fd; }
 
+CGI& Client::getCGI()  { return _CGI; }
+
 void Client::reset() {  // Fix: maybe even add _cgi.reset? why is responsestream and cgiresponselen
                         // taken to client??
     _fd = -1;
-    _CGIResponseStream.erase();  // Fix: find a better way to reset the cgi
-    _CGIResponseLen = 0;
     _request.reset();
     _response.reset();
-    _CGIResponse.reset();
     _CGI.reset();
 }
 
@@ -94,99 +86,7 @@ void Client::closeConnection(int reason) {
     return;
 }
 
-void Client::readCGIPipe(
-    int pipeReadFd) {  // ALL OF THE ERRORS HERE CAUSE INFINITE LOADING AND CRASH THE SERVER
 
-    std::string buf(BUFFER_SIZE, '\0');
-    ssize_t     bytesRead;
-
-    bytesRead = read(pipeReadFd, &buf[0], BUFFER_SIZE - 1);
-    if (bytesRead == -1) {
-        _CGIResponseLen = 0;
-        _CGIResponseStream.erase();
-        log(Level::WARNING, "read() failed in Client::handleCGIResponse()");
-        return;  // NOTFINISHED: i have no idea whats open here and what this function is
-                 // responsible for
-    }
-    if (bytesRead == 0) {
-        int res = waitpid(_CGIPid, NULL, WNOHANG);
-        if (res == -1) {
-            log(Level::WARNING, "waitpid() failed in Client::handleCGIResponse()");
-            return;  // NOTFINISHED: i have no idea whats open here and what this function is
-                     // responsible for // needs to have the epoll del everywhere
-        }
-        if (res == 0) {
-            kill(_CGIPid, SIGKILL);
-            waitpid(_CGIPid, NULL, 0);
-        }
-        if (epoll_ctl(_epfd, EPOLL_CTL_DEL, pipeReadFd, NULL) == -1) {
-            log(Level::WARNING, "epoll_ctl() DEL failed in readCGIPipe()");
-            return;
-        }
-        close(pipeReadFd);
-        _CGIResponse.setCGIResponseStr(_CGIResponseStream);
-        _CGIResponse.setCGIResponseLen(_CGIResponseLen);
-        _CGIResponse.build(_request);
-        const char *response = _CGIResponse.getResponse();
-        if (send(_fd, response, strlen(response), 0) == -1) {
-            log(Level::WARNING, "send() failed in readCGIPipe()");
-            return;  // NOTFINISHED: i have no idea whats open here and what this function is
-                     // responsible for
-        }
-        if (_CGIResponse.getResponseBody().size() != 0) {
-            std::vector<char> responseBody = _CGIResponse.getResponseBody();
-            if (send(_fd, &responseBody[0], responseBody.size(), 0) == -1) {
-                log(Level::WARNING, "send() failed in readCGIPipe()");
-                return;  // NOTFINISHED: i have no idea whats open here and what this function is
-                         // responsible for
-            }
-        }
-        _request.reset();
-        _CGIResponse.reset();
-        _CGI.reset();
-        _CGIResponseStream.erase();
-        _CGIResponseLen = 0;
-        _CGIResponseStr.erase();
-    } else {
-        buf.resize(bytesRead);
-        _CGIResponseLen += bytesRead;
-        _CGIResponseStream.append(buf.data(), bytesRead);
-    }
-}
-
-void Client::doCGI(void) {
-    if (!_CGI.scriptFileExists()) {
-        _request.setStatusCode(500);
-        closeConnection(CLOSE_SERVER_ERROR);
-        return;
-    }
-    if (!_CGI.initCGI()) {
-        _request.setStatusCode(500);
-        closeConnection(CLOSE_SERVER_ERROR);
-        return;
-    }
-    if (!_CGI.pipeIO()) {
-        _request.setStatusCode(500);
-        closeConnection(CLOSE_SERVER_ERROR);
-        return;
-    }
-    if (!_CGI.spawnProcess()) {
-        _request.setStatusCode(500);
-        closeConnection(CLOSE_SERVER_ERROR);
-        return;
-    }
-    _CGIPid = _CGI.getPid();
-}
-
-void Client::handleCGI() {
-    std::stringstream ss;
-    ss << "Server " << _sid << " CGI execution " << _request.getUri() << " ";
-    log(Level::INFO, ss.str());
-    doCGI();
-    _request.reset();
-    _CGIResponseStream.erase();
-    _CGIResponseLen = 0;
-}
 
 int Client::loop(std::string &recvBuffer) {
     _bytesRead = 0;
@@ -206,7 +106,12 @@ int Client::loop(std::string &recvBuffer) {
             return CLOSE;
         }
         if (_CGI.isCGIRequest(_request)) {
-            handleCGI(); //fix: this can fail and lead to close
+            if (!_CGI.handleCGI()) {
+                closeConnection(CLOSE_SERVER_ERROR);
+                _request.reset(); //fix: maybe unnecessary
+                return CLOSE;
+            }
+            _request.reset();
             return KEEP;
         }
         _response.build(_request);

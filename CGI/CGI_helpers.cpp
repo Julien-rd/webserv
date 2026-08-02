@@ -138,18 +138,3 @@ std::string parseQueryString(const std::string &_uri) {
     return _uri.substr(queryStringPos + 1);
 }
 
-// std::string	getScriptName(const std::string& _uri, const std::string& name1,
-// const std::string& name2) { 	std::string	scriptName;
-
-// 	if (_uri.compare(0, name1.size(), name1) == 0) {
-// 		return name1;
-// 	}
-// 	else if (_uri.compare(0, name2.size(), name2) == 0) {
-// 		return name2;
-// 	}
-// 	else {
-// 		std::cout << "DEBUG: shouldn't reach here" << std::endl;
-// 		throw CGI::StandardException();
-// 	}
-
-// }

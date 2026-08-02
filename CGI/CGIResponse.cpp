@@ -103,7 +103,7 @@ void CGIResponse::addRules(const HttpRequest &request) {
                  "'self';img-src 'self' data:;\r\n";
 }
 
-void CGIResponse::build(HttpRequest request) {
+void CGIResponse::build(HttpRequest &request) { //fix: detonate this function request ist completely empty, build from scratch
     _statusCode = request.getStatusCode();
     if (_statusCode >= 400) {
         serveErrorPage(request);

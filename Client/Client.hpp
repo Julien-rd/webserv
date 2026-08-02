@@ -1,15 +1,12 @@
 #pragma once
 #include "../CGI/CGI.hpp"
-#include "../CGI/CGIResponse.hpp"
 #include "HttpRequest/HttpRequest.hpp"
 #include "HttpResponse/HttpResponse.hpp"
 
 #include <ctime>
 #include <string>
 
-class Client {  // Fix: This has too many responsibilities: extract everything from cgi to the
-                // existing cgi classes or a cgi handler even the resetting.
-                // also the request/response workflow can be outsources to HTTP handling
+class Client { 
   public:
     Client();
     // Client(const Client &obj);
@@ -18,13 +15,13 @@ class Client {  // Fix: This has too many responsibilities: extract everything f
     // Client &operator=(const Client &obj);
 
     int    loop(std::string &recvBuffer);
-    void   readCGIPipe(int pipeReadFd);
     void   init(int epfd, const t_config *config, const int sid, const int clientFd);
     void   reset();
 
     // getters
     time_t getLastActivity();
     int    getFd() const;
+    CGI&    getCGI();
 
     // setters
     void setLastActivity();
@@ -38,12 +35,6 @@ class Client {  // Fix: This has too many responsibilities: extract everything f
     size_t       _bytesRead;
     time_t       _lastActivity;
 
-    std::string     _CGIResponseStream;
-    std::string     _CGIResponseStr;
-    ssize_t         _CGIResponseLen;
-    pid_t           _CGIPid;
-    CGIResponse     _CGIResponse;
-    
     const t_config *_config;
     CGI             _CGI;
 

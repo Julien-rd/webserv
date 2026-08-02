@@ -2,11 +2,11 @@
 
 #define ROOT_FOLDER "Pages"
 #define ERR 1
-#define SUCCESS 0
 #define TIMEOUT 20
 #define MEGABYTE 1048576
 #define KEEP 0
 #define CLOSE 1
+#define BUFFER_SIZE 4096
 
 enum e_closeReason {
     CLOSE_CLEAN,          // normal keep-alive end, client done, no error to report

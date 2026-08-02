@@ -173,7 +173,7 @@ bool HttpRequest::hasContentLength() {
         log(Level::WARNING, "Request Entity Too Large");
         return false;
     }
-    Logger::getInstance().log(Level::DEBUG, "Starting html body parsing .");
+    log(Level::DEBUG, "Starting html body parsing .");
     return true;
 }
 
@@ -182,15 +182,15 @@ bool HttpRequest::isChunked() {
     if (it == _headers.end())
         return true;
     if(_httpVersion == "HTTP/1.0"){
-        Logger::getInstance().log(Level::WARNING, "transfer encoding not supported by http 1.0 .");
+        log(Level::WARNING, "transfer encoding not supported by http 1.0 .");
         return false;
     }
     if (it->second == "chunked") {
-        Logger::getInstance().log(Level::DEBUG, "Starting chunked html body parsing .");
+        log(Level::DEBUG, "Starting chunked html body parsing .");
         _currentState = BODY_CHUNKED;
         return true;
     }
-    Logger::getInstance().log(Level::WARNING, "Unknown transfer-encoding type .");
+    log(Level::WARNING, "Unknown transfer-encoding type .");
     return false;
 }
 
