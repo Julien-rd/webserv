@@ -12,10 +12,9 @@
 #include <cstring>
 #include <ctime>
 #include <fcntl.h>
-#include <iostream>
-#include <linux/close_range.h>
 #include <netinet/in.h>
 #include <poll.h>
+#include <sstream>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -41,36 +40,6 @@ void Client::init(int epfd, const t_config *config, const int sid, const int cli
     _CGI.init(&_request, _fd, _epfd, &_config->servers.at(_sid));
     setLastActivity();
 }
-
-// Client::Client(const t_config &config, const int sid)
-//         : _fd(-1)
-//         , _sid(sid)
-//         , _epfd(-1)
-//         , _request(config.servers.at(sid).clientMaxBody)
-//         , _response(config, sid)
-//         , _CGIResponseLen(0)
-//         , _CGIPid(-1)
-//         , _CGIResponse(_CGIResponseStream, _CGIResponseLen, config, sid)
-//         , _config(config)
-//         , _CGI(
-//               _request, _fd, _epfd, _config.servers.at(_sid),
-//               _config.servers.at(_sid).cgiConfigs) {
-// }
-
-// Client::Client(int epfd, const t_config &config, const int sid)
-//         : _fd(-1)
-//         , _sid(sid)
-//         , _epfd(epfd)
-//         , _request()
-//         , _response(config, sid)
-//         , _CGIResponseLen(0)
-//         , _CGIPid(-1)
-//         , _CGIResponse(_CGIResponseStream, _CGIResponseLen, config, sid)
-//         , _config(config)
-//         , _CGI(
-//               _request, _fd, _epfd, _config.servers.at(_sid),
-//               _config.servers.at(_sid).cgiConfigs) {
-// }
 
 // Client::Client(const Client &obj)
 //         : _fd(obj._fd)
@@ -145,7 +114,7 @@ void Client::readCGIPipe(
             return;  // NOTFINISHED: i have no idea whats open here and what this function is
                      // responsible for // needs to have the epoll del everywhere
         }
-        if (res == 0) {  // TODO this branch is untested
+        if (res == 0) { 
             kill(_CGIPid, SIGKILL);
             waitpid(_CGIPid, NULL, 0);
         }
@@ -154,23 +123,16 @@ void Client::readCGIPipe(
             return;
         }
         close(pipeReadFd);
-        // std::cout << "\nbuilding HttpResponse from CGI Response:\n{\n"
-        //           << _CGIResponseStream.str() << "\n}\n";
         _CGIResponse.setCGIResponseStr(_CGIResponseStream);
         _CGIResponse.setCGIResponseLen(_CGIResponseLen);
         _CGIResponse.build(_request);
         const char *response = _CGIResponse.getResponse();
-        // std::cout << "\nHttpResponse Response:\n" << response << "]" <<std::endl;
         if (send(_fd, response, strlen(response), 0) == -1) {
             log(Level::WARNING, "send() failed in readCGIPipe()");
             return;  // NOTFINISHED: i have no idea whats open here and what this function is
                      // responsible for
         }
         std::vector<char> responseBody = _CGIResponse.getResponseBody();
-        // for (unsigned int i = 0; i < responseBody.size(); ++i) {
-        //     std::cout << responseBody.at(i);
-        // }
-        // std::cout << std::endl;
         if (send(_fd, &responseBody[0], responseBody.size(), 0) == -1) {
             log(Level::WARNING, "send() failed in readCGIPipe()");
             return;  // NOTFINISHED: i have no idea whats open here and what this function is
@@ -182,12 +144,9 @@ void Client::readCGIPipe(
         _CGIResponseStream.erase();
         _CGIResponseLen = 0;
     } else {
-        // std::cout << "adding (( " << buf << " )) to _CGIResponseStream\n";
         buf.resize(bytesRead);
         _CGIResponseLen += bytesRead;
         _CGIResponseStream.append(buf.data(), bytesRead);
-        // std::cout << "_CGIResponseStream becamse: ((" << _CGIResponseStream
-        //           << " ))" << std::endl;
     }
 }
 
@@ -243,7 +202,9 @@ int Client::loop(std::string &recvBuffer) {
         }
         if (_CGI.isCGIRequest(
                 _request)) {  // fix: rework this or put inside function if all of these necessary
-            log(Level::INFO, "Starting CGI execution");
+            std::stringstream ss;
+            ss << "Server " << _sid << " CGI execution " << _request.getUri() <<" ";
+            log(Level::INFO, ss.str());
             doCGI();
             _request.reset();
             _response.reset();

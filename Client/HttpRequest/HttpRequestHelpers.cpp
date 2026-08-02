@@ -170,7 +170,7 @@ bool HttpRequest::hasContentLength() {
     _contentLength = static_cast<size_t>(val);
     if (_contentLength > _clientMaxBody) {
         _statusCode = 413;
-        log(Level::WARNING, "Request Entity Too Large\n<");
+        log(Level::WARNING, "Request Entity Too Large");
         return false;
     }
     Logger::getInstance().log(Level::DEBUG, "Starting html body parsing .");

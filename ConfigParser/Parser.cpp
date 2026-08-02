@@ -5,7 +5,6 @@
 #include <cstddef>
 #include <cstdio>
 #include <exception>
-#include <iostream>
 #include <vector>
 
 void freeTree(Node *node) {

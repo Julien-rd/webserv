@@ -3,7 +3,7 @@
 #include <ctime>
 #include <iostream>
 
-Logger::Logger() : _threshold(Level::INFO) {}
+Logger::Logger() : _threshold(Level::ERROR) {}
 Logger::~Logger() {}
 Logger::Logger(const Logger &) {}
 Logger &Logger::operator=(const Logger &) { return *this; }
@@ -13,10 +13,10 @@ Logger &Logger::getInstance() {
     return instance;
 }
 
-void  Logger::setLevel(Level threshold) {_threshold = threshold; }
-Level Logger::getLevel() const { return _threshold; }
+void         Logger::setLevel(Level::Value threshold) { _threshold = threshold; }
+Level::Value Logger::getLevel() const { return _threshold; }
 
-void Logger::log(Level level, const std::string &message) {
+void Logger::log(Level::Value level, const std::string &message) {
     if (level < _threshold)
         return;
     std::string ts = timestamp();
@@ -30,7 +30,7 @@ void Logger::info(const std::string &message) { log(Level::INFO, message); }
 void Logger::warning(const std::string &message) { log(Level::WARNING, message); }
 void Logger::error(const std::string &message) { log(Level::ERROR, message); }
 
-std::string Logger::levelToString(Level level) const {
+std::string Logger::levelToString(Level::Value level) const {
     switch (level) {
     case Level::DEBUG:
         return "DEBUG";
@@ -59,4 +59,4 @@ std::string Logger::timestamp() const {
     return std::string(buf);
 }
 
-void log(Level level, const std::string &msg) { Logger::getInstance().log(level, msg); }
+void log(Level::Value level, const std::string &msg) { Logger::getInstance().log(level, msg); }

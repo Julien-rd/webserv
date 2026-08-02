@@ -1,5 +1,6 @@
 
 client_timeout 50;
+log_level info;
 server {
   client_max_body_size        1;
 

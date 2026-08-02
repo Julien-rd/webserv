@@ -58,10 +58,9 @@ void ServerManager::startServers(void) {
         }
         addServerToMaps(serverSocket, server);
         std::ostringstream ss;
-        ss << "Started server with ID " << _servers.at(serverSocket).getIdentifier()
-           << " on " << _config.servers[server.getIdentifier()].ip
-           << ":" << _config.servers[server.getIdentifier()].port
-           << " (socket " << serverSocket << ")";
+        ss << "Server " << _servers.at(serverSocket).getIdentifier() << " started on "
+           << _config.servers[server.getIdentifier()].ip << ":"
+           << _config.servers[server.getIdentifier()].port << " (socket " << serverSocket << ")";
         log(Level::INFO, ss.str());
     }
 }
