@@ -24,6 +24,7 @@ class HttpResponse {
     void         init(const t_config *config, const int sid);
     virtual void reset();
     int          getTimeStamp();
+    bool         keepConnection() const;
 
   protected:
     // Fix: should be extracted out of conf file
@@ -35,7 +36,6 @@ class HttpResponse {
     size_t                             _responseClass;
     std::string                        _reasonPhrase;
     static const std::string           _httpVersion;
-    std::map<std::string, std::string> _header;
     const t_config                    *_config;
     int                                _sid;
     std::string                        _response;
@@ -43,14 +43,13 @@ class HttpResponse {
     size_t                             _statusCode;
     std::string                        _method;
     std::string                        _statusCodeStr;
+    bool                               _keepAlive;
 
     bool                methodAllowed(unsigned int index, const std::vector<t_location> &locations);
     void                buildStatusLine();
     int                 extractContentType(std::string path);
     void                extractContentLength();
-    void                serveErrorPage();
-    virtual void        addRules();
-    void                addMandatoryHeaders();
+    void                serveErrorPage(const HttpRequest &request);
     void                addRedirectHeaders(const std::string &path);
     void                serveSuccessPage(HttpRequest request);
     virtual bool        addBody(HttpRequest request, const UriResult &result);
@@ -60,6 +59,12 @@ class HttpResponse {
                                      const t_server    &location,
                                      unsigned int       index);
     UriResult           processURI(const std::string &uri);
+    void                deletePath(std::string path);
+
+    virtual void addHeaders(const HttpRequest &request);
+    void         addCacheHeaders();
+    void         addSecurityHeaders();
+    void         addConnectionHeader(const HttpRequest &request);
 
     // Http Phrase getters
     void getReasonPhraseInfo();
