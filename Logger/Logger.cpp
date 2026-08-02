@@ -25,10 +25,10 @@ void Logger::log(Level::Value level, const std::string &message) {
     std::cerr << "[" << levelToString(level) << "] " << message << "\n";
 }
 
-// void Logger::debug(const std::string &message) { log(Level::DEBUG, message); }
-// void Logger::info(const std::string &message) { log(Level::INFO, message); }
-// void Logger::warning(const std::string &message) { log(Level::WARNING, message); }
-// void Logger::error(const std::string &message) { log(Level::ERROR, message); }
+void Logger::debug(const std::string &message) { log(Level::DEBUG, message); }
+void Logger::info(const std::string &message) { log(Level::INFO, message); }
+void Logger::warning(const std::string &message) { log(Level::WARNING, message); }
+void Logger::error(const std::string &message) { log(Level::ERROR, message); }
 
 std::string Logger::levelToString(Level::Value level) const {
     switch (level) {

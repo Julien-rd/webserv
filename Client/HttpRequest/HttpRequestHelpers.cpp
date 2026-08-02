@@ -126,7 +126,7 @@ bool HttpRequest::validateURIPath(std::string &path) {
 #include <csignal>
 #include <cstdlib>
 bool HttpRequest::validHttpsVersion() {
-    if (_httpVersion != "HTTP/1.1") {  // TODO does HTTP/1.1 need to be backward compatible? in
+    if (_httpVersion != "HTTP/1.1" && _httpVersion != "HTTP/1.0") {  // TODO does HTTP/1.1 need to be backward compatible? in
                                        // that case maybe we can't make this check
         _statusCode = 400;
         log(Level::WARNING, "HTTP version not supported");
@@ -136,6 +136,8 @@ bool HttpRequest::validHttpsVersion() {
 }
 
 bool HttpRequest::hasHostHeader() {
+    if(_httpVersion == "HTTP/1.0")
+        return true;
     std::map<std::string, std::string>::iterator it = _headers.find("host");
     if (it == _headers.end())
         return false;
@@ -179,6 +181,10 @@ bool HttpRequest::isChunked() {
     std::map<std::string, std::string>::iterator it = _headers.find("transfer-encoding");
     if (it == _headers.end())
         return true;
+    if(_httpVersion == "HTTP/1.0"){
+        Logger::getInstance().log(Level::WARNING, "transfer encoding not supported by http 1.0 .");
+        return false;
+    }
     if (it->second == "chunked") {
         Logger::getInstance().log(Level::DEBUG, "Starting chunked html body parsing .");
         _currentState = BODY_CHUNKED;
