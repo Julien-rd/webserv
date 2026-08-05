@@ -203,19 +203,13 @@ void Server::handleClientEvent(int &clientFd, unsigned int &event) {
         return closeConnection(clientFd);
     _clients.at(clientFd).setLastActivity();
     if (event & EPOLLIN) {
-        recvClientEvent(clientFd);
+        if (recvClientEvent(clientFd) == CLIENT_CLOSE)
+            return closeConnection(clientFd);
     }
     if (event & EPOLLOUT) {
-        sendClientEvent(clientFd);
+        if (sendClientEvent(clientFd) == CLIENT_CLOSE)
+            return closeConnection(clientFd);
     }
-    
-    // int responseStatus = recvClientEvent(clientFd);
-    // // sendClientEvent();
-
-    // if (responseStatus >= 1) {
-    //     closeConnection(clientFd);
-    //     return;
-    // }
 }
 
 int Server::getIdentifier(void) const { return _sid; }

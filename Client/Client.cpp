@@ -83,9 +83,7 @@ clientStatus Client::closeConnection(int reason) {
     _fullResponse = _response.getFullResponse();
     _responseSize = _fullResponse.size();
     updateEpoll(EPOLLIN | EPOLLOUT);
-    if (sendResponse() == CLOSE)
-        return CLIENT_CLOSE;
-    return CLIENT_KEEP;
+    return CLIENT_RESPONSE_READY;
 }
 
 clientStatus Client::sendResponse() {
