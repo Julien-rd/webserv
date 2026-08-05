@@ -88,7 +88,10 @@ UriResult HttpResponse::processURI(const std::string &uri) {
     const t_server &serverConfig = _config->servers.at(_sid);
     unsigned int    index = getLocation(uri, serverConfig);
     t_location      location = serverConfig.locations.at(index);
-    attachPrefix(uri, result.path, serverConfig, index); // TODO: should we not check first if the method is allowed?
+    attachPrefix(uri,
+                 result.path,
+                 serverConfig,
+                 index);  // TODO: should we not check first if the method is allowed?
     if (stat(result.path.c_str(), &stats) == -1) {
         if (!location.redirect.second.empty()) {
             result.httpCode = location.redirect.first;
@@ -96,15 +99,13 @@ UriResult HttpResponse::processURI(const std::string &uri) {
             return result;
         }
         result.httpCode = 404;
-    } else if (_method == "DELETE"){
-        if(methodAllowed(index, serverConfig.locations) == false){
+    } else if (_method == "DELETE") {
+        if (methodAllowed(index, serverConfig.locations) == false) {
             log(Level::WARNING, "method is not allowed.");
             result.httpCode = 405;
-        }
-        else
+        } else
             deletePath(result, stats);
-    }
-    else if (S_ISDIR(stats.st_mode)) {
+    } else if (S_ISDIR(stats.st_mode)) {
         if (!uri.empty() && uri[uri.size() - 1] != '/') {
             result.httpCode = 301;
             result.path = uri + '/';
@@ -229,7 +230,7 @@ std::string autoindex(const std::string &path, const std::string &uri) {
 bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
     std::string uri = request.getUri();
     std::string autoindexHtml;
-    if(_statusCode == 204){
+    if (_statusCode == 204) {
         _response += "\r\n";
         return 0;
     }
@@ -285,7 +286,7 @@ bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
 }
 
 void HttpResponse::addCacheHeaders() {
-    if(_method == "DELETE")
+    if (_method == "DELETE")
         return;
     else if (_responseClass == 2)
         _response += "Cache-Control: max-age=3600\r\n";
@@ -378,11 +379,10 @@ void HttpResponse::serveErrorPage(const HttpRequest &request) {
 }
 
 void HttpResponse::deletePath(UriResult &result, const struct stat &stats) {
-    if (!S_ISREG(stats.st_mode)){
+    if (!S_ISREG(stats.st_mode)) {
         log(Level::WARNING, "delete on a non regular file not allowed");
         result.httpCode = 403;
-    }
-    else if (std::remove(result.path.c_str()) == -1) {
+    } else if (std::remove(result.path.c_str()) == -1) {
         switch
             errno {
             case ENOENT:
@@ -400,9 +400,9 @@ void HttpResponse::deletePath(UriResult &result, const struct stat &stats) {
                 break;
             default:
                 result.httpCode = 500;
-            log(Level::WARNING, std::string("std::remove failed due to") + strerror(errno));
             }
-    } else{
+        log(Level::WARNING, std::string("std::remove failed due to") + strerror(errno));
+    } else {
         log(Level::INFO, "delete successful");
         result.httpCode = 204;
     }
