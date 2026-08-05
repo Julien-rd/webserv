@@ -230,7 +230,7 @@ bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
     std::string uri = request.getUri();
     std::string autoindexHtml;
     if(_statusCode == 204)
-        return true;
+        return false;
     if (result.autoindex == true) {
         autoindexHtml = autoindex(result.path, uri);
         std::stringstream here(autoindexHtml);
