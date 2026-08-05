@@ -58,7 +58,7 @@ class HttpResponse {
                                      const t_server    &location,
                                      unsigned int       index);
     UriResult           processURI(const std::string &uri);
-    void                deletePath(std::string path);
+    void                deletePath(UriResult &result, const struct stat &stats);
 
     virtual void addHeaders(const HttpRequest &request);
     void         addCacheHeaders();

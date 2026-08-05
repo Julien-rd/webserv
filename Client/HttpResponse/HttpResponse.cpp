@@ -88,7 +88,7 @@ UriResult HttpResponse::processURI(const std::string &uri) {
     const t_server &serverConfig = _config->servers.at(_sid);
     unsigned int    index = getLocation(uri, serverConfig);
     t_location      location = serverConfig.locations.at(index);
-    attachPrefix(uri, result.path, serverConfig, index);
+    attachPrefix(uri, result.path, serverConfig, index); // TODO: should we not check first if the method is allowed?
     if (stat(result.path.c_str(), &stats) == -1) {
         if (!location.redirect.second.empty()) {
             result.httpCode = location.redirect.first;
@@ -96,7 +96,15 @@ UriResult HttpResponse::processURI(const std::string &uri) {
             return result;
         }
         result.httpCode = 404;
-    } else if (S_ISDIR(stats.st_mode)) {
+    } else if (_method == "DELETE"){
+        if(methodAllowed(index, serverConfig.locations) == false){
+            log(Level::WARNING, "method is not allowed.");
+            result.httpCode = 405;
+        }
+        else
+            deletePath(result, stats);
+    }
+    else if (S_ISDIR(stats.st_mode)) {
         if (!uri.empty() && uri[uri.size() - 1] != '/') {
             result.httpCode = 301;
             result.path = uri + '/';
@@ -221,6 +229,8 @@ std::string autoindex(const std::string &path, const std::string &uri) {
 bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
     std::string uri = request.getUri();
     std::string autoindexHtml;
+    if(_statusCode == 204)
+        return true;
     if (result.autoindex == true) {
         autoindexHtml = autoindex(result.path, uri);
         std::stringstream here(autoindexHtml);
@@ -273,7 +283,9 @@ bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
 }
 
 void HttpResponse::addCacheHeaders() {
-    if (_responseClass == 2)
+    if(_method == "DELETE")
+        return;
+    else if (_responseClass == 2)
         _response += "Cache-Control: max-age=3600\r\n";
     else if (_responseClass == 3)
         _response += "Cache-Control: no-cache\r\n";
@@ -296,20 +308,18 @@ void HttpResponse::addConnectionHeader(const HttpRequest &request) {
 
     if (_statusCode == 400 || _statusCode == 408 || _statusCode == 413 || _statusCode == 501)
         _keepAlive = false;
-    else if (version == "HTTP/1.0"){
-        if(it != headers.end())
+    else if (version == "HTTP/1.0") {
+        if (it != headers.end())
             _keepAlive = (it->second == "keep-alive");
         else
             _keepAlive = false;
-    }
-    else
-    {
-        if(it != headers.end())
+    } else {
+        if (it != headers.end())
             _keepAlive = (it->second != "close");
         else
             _keepAlive = true;
     }
-    if(_keepAlive == true)
+    if (_keepAlive == true)
         _response += "Connection: keep-alive\r\n";
     else
         _response += "Connection: close\r\n";
@@ -365,11 +375,35 @@ void HttpResponse::serveErrorPage(const HttpRequest &request) {
     _response += htmlBody;
 }
 
-void HttpResponse::deletePath(std::string path) {
-    if (std::remove(path.c_str()) == 0) {
-        _statusCode = 204;
-    } else
-        _statusCode = 404;
+void HttpResponse::deletePath(UriResult &result, const struct stat &stats) {
+    if (!S_ISREG(stats.st_mode)){
+        log(Level::WARNING, "delete on a non regular file not allowed");
+        result.httpCode = 403;
+    }
+    else if (std::remove(result.path.c_str()) == -1) {
+        switch
+            errno {
+            case ENOENT:
+                result.httpCode = 404;
+                break;
+            case EACCES:
+            case EPERM:
+            case EROFS:
+                result.httpCode = 403;
+                break;
+            case EISDIR:
+            case ENOTEMPTY:
+            case EBUSY:
+                result.httpCode = 409;
+                break;
+            default:
+                result.httpCode = 500;
+            log(Level::WARNING, std::string("std::remove failed due to") + strerror(errno));
+            }
+    } else{
+        log(Level::INFO, "delete successful");
+        result.httpCode = 204;
+    }
 }
 
 void HttpResponse::build(HttpRequest &request) {
@@ -387,8 +421,6 @@ void HttpResponse::build(HttpRequest &request) {
     result = processURI(uri);
     _statusCode = result.httpCode;
 
-    // if (_method == "DELETE")
-    //     deletePath(result.path);
     buildStatusLine();
     addHeaders(request);
 
