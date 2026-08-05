@@ -215,7 +215,6 @@ void HttpRequest::reset() {
     _fieldName.clear();
     _fieldValue.clear();
     _contentLength = 0;
-    // _bytesRead = 0;
     _statusCode = 0;
     _parsingDone = false;
     _headers.clear();

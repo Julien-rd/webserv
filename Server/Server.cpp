@@ -178,27 +178,44 @@ void Server::handleServerEvent(void) {
     }
 }
 
-void Server::handleClientEvent(const int clientFd) {
+clientStatus Server::recvClientEvent(int &clientFd) {
     std::string recvBuffer(BUFFER_SIZE, '\0');
     ssize_t     bytesRead = 0;
-    _clients.at(clientFd).setLastActivity();
     bytesRead = recv(clientFd, &recvBuffer[0], BUFFER_SIZE, 0);
-    if (bytesRead == 0) {
-        closeConnection(clientFd);
-        return;
-    }
+    if (bytesRead == 0)
+        return CLIENT_CLOSE;
     if (bytesRead == -1) {
         error_msg(ERR_RECV);
-        closeConnection(clientFd);
-        return;
+        return CLIENT_CLOSE;
     }
     recvBuffer.resize(bytesRead);
-    int responseStatus = _clients.at(clientFd).loop(recvBuffer);
+    return _clients.at(clientFd).parseRecvBuffer(recvBuffer);
+}
 
-    if (responseStatus >= 1) {
-        closeConnection(clientFd);
-        return;
+clientStatus Server::sendClientEvent(int &clientFd) {
+    if (_clients.at(clientFd).sendResponse() == CLIENT_CLOSE)
+        return CLIENT_CLOSE;
+    return CLIENT_KEEP;
+}
+
+void Server::handleClientEvent(int &clientFd, unsigned int &event) {
+    if (event & (EPOLLHUP | EPOLLERR))
+        return closeConnection(clientFd);
+    _clients.at(clientFd).setLastActivity();
+    if (event & EPOLLIN) {
+        recvClientEvent(clientFd);
     }
+    if (event & EPOLLOUT) {
+        sendClientEvent(clientFd);
+    }
+    
+    // int responseStatus = recvClientEvent(clientFd);
+    // // sendClientEvent();
+
+    // if (responseStatus >= 1) {
+    //     closeConnection(clientFd);
+    //     return;
+    // }
 }
 
 int Server::getIdentifier(void) const { return _sid; }

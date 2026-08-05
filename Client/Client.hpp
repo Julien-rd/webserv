@@ -6,7 +6,9 @@
 #include <ctime>
 #include <string>
 
-class Client { 
+enum clientStatus { CLIENT_KEEP, CLIENT_CLOSE, CLIENT_RESPONSE_READY };
+
+class Client {
   public:
     Client();
     // Client(const Client &obj);
@@ -14,31 +16,40 @@ class Client {
     // Client(int epfd, const t_config &config, const int _sid);
     // Client &operator=(const Client &obj);
 
-    int    loop(std::string &recvBuffer);
-    void   init(int epfd, const t_config *config, const int sid, const int clientFd);
-    void   reset();
+    // int  loop(std::string &recvBuffer);
+
+    clientStatus parseRecvBuffer(std::string &recvBuffer);
+    clientStatus sendResponse();
+
+    void init(int epfd, const t_config *config, const int sid, const int clientFd);
+    void reset();
 
     // getters
     time_t getLastActivity();
     int    getFd() const;
-    CGI&    getCGI();
+    CGI   &getCGI();
 
     // setters
     void setLastActivity();
 
   private:
-    int          _fd;
-    int          _sid;
-    int          _epfd;
-    HttpRequest  _request;
-    HttpResponse _response;
-    size_t       _bytesRead;
-    time_t       _lastActivity;
+    int               _fd;
+    int               _sid;
+    int               _epfd;
+    HttpRequest       _request;
+    HttpResponse      _response;
+    std::vector<char> _fullResponse;
+    size_t            _bytesRead;
+    time_t            _lastActivity;
+    size_t            _bytesSent;
+    size_t            _responseSize;
+    std::string       _recvBuffer;
 
     const t_config *_config;
     CGI             _CGI;
 
-    void closeConnection(int reason);
-    void   doCGI();
-    void   handleCGI();
+    clientStatus closeConnection(int reason);
+    void         updateEpoll(const unsigned int &event);
+    void         doCGI();
+    void         handleCGI();
 };

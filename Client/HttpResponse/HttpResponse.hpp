@@ -16,14 +16,16 @@ enum responseClass { INFO = 1, SUCCESS = 2, REDIR = 3, CLIENT_ERR = 4, SERVER_ER
 class HttpResponse {
   public:
     HttpResponse();
-    virtual void      build(HttpRequest& request);
+    virtual void      build(HttpRequest &request);
     void              getReasonPhrase();
     const char       *getResponse();
     std::vector<char> getResponseBody();
+    std::vector<char> getFullResponse();
 
     void         init(const t_config *config, const int sid);
     virtual void reset();
     int          getTimeStamp();
+    void         setConnection(bool keepAlive);
     bool         keepConnection() const;
 
   protected:

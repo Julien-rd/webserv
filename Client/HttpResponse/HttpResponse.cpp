@@ -20,6 +20,8 @@
 
 bool HttpResponse::keepConnection() const { return _keepAlive; }
 
+void HttpResponse::setConnection(bool keepAlive) { _keepAlive = keepAlive; }
+
 unsigned int HttpResponse::getLocation(const std::string &match, const t_server &serverConfig) {
     unsigned int longestMatch = 0;
     unsigned int ret = 0;
@@ -149,6 +151,7 @@ HttpResponse::HttpResponse() : _config(NULL), _sid(-1) {
     _mimeTypes["ico"] = "image/x-icon";
     _mimeTypes["txt"] = "text/plain";
     _mimeTypes["application/json"] = "text/plain";
+    _keepAlive = true;
 }
 
 std::vector<char> HttpResponse::getResponseBody() { return _responseBody; }
@@ -169,6 +172,7 @@ void HttpResponse::reset() {
     _method.clear();
     _statusCode = 0;
     _responseClass = 0;
+    _keepAlive = true;
 }
 
 int HttpResponse::getTimeStamp() {
@@ -431,3 +435,10 @@ void HttpResponse::build(HttpRequest &request) {
 }
 
 const char *HttpResponse::getResponse() { return _response.c_str(); }
+
+std::vector<char> HttpResponse::getFullResponse() {
+    std::vector<char> fullResponse;
+    fullResponse.assign(_response.begin(), _response.end());
+    fullResponse.insert(fullResponse.end(), _responseBody.begin(), _responseBody.end());
+    return fullResponse;
+}
