@@ -229,8 +229,10 @@ std::string autoindex(const std::string &path, const std::string &uri) {
 bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
     std::string uri = request.getUri();
     std::string autoindexHtml;
-    if(_statusCode == 204)
+    if(_statusCode == 204){
+        _response += "\r\n";
         return 0;
+    }
     if (result.autoindex == true) {
         autoindexHtml = autoindex(result.path, uri);
         std::stringstream here(autoindexHtml);
