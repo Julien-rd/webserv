@@ -383,24 +383,23 @@ void HttpResponse::deletePath(UriResult &result, const struct stat &stats) {
         log(Level::WARNING, "delete on a non regular file not allowed");
         result.httpCode = 403;
     } else if (std::remove(result.path.c_str()) == -1) {
-        switch
-            errno {
-            case ENOENT:
-                result.httpCode = 404;
-                break;
-            case EACCES:
-            case EPERM:
-            case EROFS:
-                result.httpCode = 403;
-                break;
-            case EISDIR:
-            case ENOTEMPTY:
-            case EBUSY:
-                result.httpCode = 409;
-                break;
-            default:
-                result.httpCode = 500;
-            }
+        switch (errno) {
+        case ENOENT:
+            result.httpCode = 404;
+            break;
+        case EACCES:
+        case EPERM:
+        case EROFS:
+            result.httpCode = 403;
+            break;
+        case EISDIR:
+        case ENOTEMPTY:
+        case EBUSY:
+            result.httpCode = 409;
+            break;
+        default:
+            result.httpCode = 500;
+        }
         log(Level::WARNING, std::string("std::remove failed due to") + strerror(errno));
     } else {
         log(Level::INFO, "delete successful");
