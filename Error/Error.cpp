@@ -25,8 +25,8 @@ void Error::error_msg(ErrorType type) {
     case ERR_SETSOCKOPT:
         custom_perror("setsockopt: ", strerror(errno));
         break;
-    case ERR_EPOLL_CREATE1:
-        custom_perror("epoll_create1: ", strerror(errno));
+    case ERR_EPOLL_CREATE:
+        custom_perror("epoll_create: ", strerror(errno));
         break;
     case ERR_EPOLL_CTL:
         custom_perror("epoll_ctl: ", strerror(errno));

@@ -14,7 +14,6 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>

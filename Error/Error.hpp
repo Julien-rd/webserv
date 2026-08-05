@@ -5,7 +5,7 @@ enum ErrorType {
     ERR_ACCEPT,
     ERR_FCNTL,
     ERR_SETSOCKOPT,
-    ERR_EPOLL_CREATE1,
+    ERR_EPOLL_CREATE,
     ERR_EPOLL_CTL,
     ERR_BIND,
     ERR_LISTEN,
