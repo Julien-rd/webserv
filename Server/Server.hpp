@@ -28,9 +28,9 @@ class Server : public Error {
     void closeConnection(int clientFd);
     void handleServerEvent(void);
 
-    void         handleClientEvent(int &clientFd, unsigned int &event);
-    clientStatus recvClientEvent(int &clientFd);
-    clientStatus sendClientEvent(int &clientFd);
+    void         handleClientEvent(int clientFd, unsigned int event);
+    clientStatus recvClientEvent(Client &client);
+    clientStatus sendClientEvent(Client &client);
 
     int  start(void);
     void closeClientFds(void);

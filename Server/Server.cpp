@@ -178,10 +178,10 @@ void Server::handleServerEvent(void) {
     }
 }
 
-clientStatus Server::recvClientEvent(int &clientFd) {
+clientStatus Server::recvClientEvent(Client &client) {
     std::string recvBuffer(BUFFER_SIZE, '\0');
     ssize_t     bytesRead = 0;
-    bytesRead = recv(clientFd, &recvBuffer[0], BUFFER_SIZE, 0);
+    bytesRead = recv(client.getFd(), &recvBuffer[0], BUFFER_SIZE, 0);
     if (bytesRead == 0)
         return CLIENT_CLOSE;
     if (bytesRead == -1) {
@@ -189,26 +189,32 @@ clientStatus Server::recvClientEvent(int &clientFd) {
         return CLIENT_CLOSE;
     }
     recvBuffer.resize(bytesRead);
-    return _clients.at(clientFd).parseRecvBuffer(recvBuffer);
+    return client.parseRecvBuffer(recvBuffer);
 }
 
-clientStatus Server::sendClientEvent(int &clientFd) {
-    if (_clients.at(clientFd).sendResponse() == CLIENT_CLOSE)
+clientStatus Server::sendClientEvent(Client &client) {
+    if (client.sendResponse() == CLIENT_CLOSE)
         return CLIENT_CLOSE;
     return CLIENT_KEEP;
 }
 
-void Server::handleClientEvent(int &clientFd, unsigned int &event) {
+void Server::handleClientEvent(int clientFd, unsigned int event) {
+    Client client = _clients.at(clientFd);
+    std::string recvBuffer(BUFFER_SIZE, '\0');
+
     if (event & (EPOLLHUP | EPOLLERR))
         return closeConnection(clientFd);
-    _clients.at(clientFd).setLastActivity();
-    if (event & EPOLLIN) {
-        if (recvClientEvent(clientFd) == CLIENT_CLOSE)
-            return closeConnection(clientFd);
-    }
-    if (event & EPOLLOUT) {
-        if (sendClientEvent(clientFd) == CLIENT_CLOSE)
-            return closeConnection(clientFd);
+    client.setLastActivity();
+    bitte fixen sodass wenn noch etwas im buffer ist wieder in epollin reingeangen wird
+    while(recvBuffer.size() >= client.getBytesRead()){
+        if (event & EPOLLIN) {
+            if (recvClientEvent(client) == CLIENT_CLOSE)
+                return closeConnection(clientFd);
+        }
+        if (event & EPOLLOUT) {
+            if (sendClientEvent(client) == CLIENT_CLOSE)
+                return closeConnection(clientFd);
+        }
     }
 }
 
