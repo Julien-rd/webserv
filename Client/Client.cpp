@@ -111,11 +111,16 @@ clientStatus Client::sendResponse() {
     return CLIENT_KEEP;
 }
 
-void Client::updateEpoll(const unsigned int &event) {
+bool Client::updateEpoll(const unsigned int &event) {
     struct epoll_event ev;
+    std::memset(&ev, 0, sizeof(ev));
     ev.events = event;
     ev.data.fd = _fd;
-    epoll_ctl(_epfd, EPOLL_CTL_MOD, _fd, &ev);
+    if (epoll_ctl(_epfd, EPOLL_CTL_MOD, _fd, &ev) == -1) {
+        log(Level::WARNING, "epoll_ctl MOD failed");
+        return false;
+    }
+    return true;
 }
 
 clientStatus Client::parsePending() {

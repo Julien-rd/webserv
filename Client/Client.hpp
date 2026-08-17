@@ -29,7 +29,7 @@ class Client {
     time_t getLastActivity();
     int    getFd() const;
     CGI   &getCGI();
-    bool recvBufferIsParsed() const;
+    bool   recvBufferIsParsed() const;
 
     // setters
     void setLastActivity();
@@ -51,7 +51,7 @@ class Client {
     CGI             _CGI;
 
     clientStatus closeConnection(int reason);
-    void         updateEpoll(const unsigned int &event);
+    bool         updateEpoll(const unsigned int &event);
     void         doCGI();
     void         handleCGI();
 };
