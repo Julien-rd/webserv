@@ -28,6 +28,7 @@ class Client {
     time_t getLastActivity();
     int    getFd() const;
     CGI   &getCGI();
+    bool recvBufferIsParsed() const;
 
     // setters
     void setLastActivity();

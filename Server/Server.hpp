@@ -29,7 +29,7 @@ class Server : public Error {
     void handleServerEvent(void);
 
     void         handleClientEvent(int clientFd, unsigned int event);
-    clientStatus recvClientEvent(Client &client);
+    clientStatus recvClientEvent(Client &client, std::string &recvBuffer);
     clientStatus sendClientEvent(Client &client);
 
     int  start(void);

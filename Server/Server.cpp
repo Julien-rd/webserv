@@ -178,9 +178,8 @@ void Server::handleServerEvent(void) {
     }
 }
 
-clientStatus Server::recvClientEvent(Client &client) {
-    std::string recvBuffer(BUFFER_SIZE, '\0');
-    ssize_t     bytesRead = 0;
+clientStatus Server::recvClientEvent(Client &client, std::string &recvBuffer) {
+    ssize_t bytesRead = 0;
     bytesRead = recv(client.getFd(), &recvBuffer[0], BUFFER_SIZE, 0);
     if (bytesRead == 0)
         return CLIENT_CLOSE;
@@ -199,22 +198,22 @@ clientStatus Server::sendClientEvent(Client &client) {
 }
 
 void Server::handleClientEvent(int clientFd, unsigned int event) {
-    Client client = _clients.at(clientFd);
+    Client      client = _clients.at(clientFd);
     std::string recvBuffer(BUFFER_SIZE, '\0');
 
     if (event & (EPOLLHUP | EPOLLERR))
         return closeConnection(clientFd);
     client.setLastActivity();
-    bitte fixen sodass wenn noch etwas im buffer ist wieder in epollin reingeangen wird
-    while(recvBuffer.size() >= client.getBytesRead()){
-        if (event & EPOLLIN) {
-            if (recvClientEvent(client) == CLIENT_CLOSE)
-                return closeConnection(clientFd);
-        }
-        if (event & EPOLLOUT) {
-            if (sendClientEvent(client) == CLIENT_CLOSE)
-                return closeConnection(clientFd);
-        }
+    if (event & EPOLLIN) {
+        if (recvClientEvent(client, recvBuffer) == CLIENT_CLOSE)
+            return closeConnection(clientFd);
+    }
+     // TODO: does not make sense yet because it never returns client_close
+    if (event & EPOLLOUT) {
+        if (sendClientEvent(client) == CLIENT_CLOSE)
+            return closeConnection(clientFd);
+        if (client.recvBufferIsParsed() == false && client.parseRecvBuffer(recvBuffer) == CLIENT_CLOSE)
+            return closeConnection(clientFd); 
     }
 }
 

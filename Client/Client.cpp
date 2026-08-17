@@ -137,10 +137,12 @@ clientStatus Client::parseRecvBuffer(std::string &recvBuffer) {
     _fullResponse = _response.getFullResponse();
     _responseSize = _fullResponse.size();
     _request.reset();
-    if(_bytesRead > _recvBuffer.size() / 2){
+    if (_bytesRead > _recvBuffer.size() / 2) {
         _recvBuffer.erase(0, _bytesRead);
         _bytesRead = 0;
     }
     updateEpoll(EPOLLIN | EPOLLOUT);
     return CLIENT_RESPONSE_READY;
 }
+
+bool Client::recvBufferIsParsed() const { return _recvBuffer.size() == _bytesRead; }
