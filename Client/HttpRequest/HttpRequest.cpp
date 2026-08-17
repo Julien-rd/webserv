@@ -111,6 +111,8 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
         if (brokenSyntax(pos, max_pos))
             return 1;
         if (pos == std::string::npos) {
+            if (isTooLong(_bytesRead))
+                return 1;
             _method += recvBuffer.substr(_bytesRead);
             break;
         }
@@ -125,6 +127,8 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
         if (brokenSyntax(pos, max_pos))
             return 1;
         if (pos == std::string::npos) {
+            if (isTooLong(_bytesRead))
+                return 1;
             _uri += recvBuffer.substr(_bytesRead);
             break;
         }
@@ -137,6 +141,8 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
     case HTTP_VERSION:
         pos = recvBuffer.find("\r", _bytesRead);
         if (pos == std::string::npos) {
+            if (isTooLong(_bytesRead))
+                return 1;
             _httpVersion += recvBuffer.substr(_bytesRead);
             break;
         }
@@ -190,6 +196,8 @@ int HttpRequest::parseHeaders(std::string &recvBuffer) {
                 break;
             }
             if (pos == std::string::npos) {
+                if (isTooLong(_bytesRead))
+                    return 1;
                 _fieldName += recvBuffer.substr(_bytesRead);
                 return 0;
             }
@@ -204,6 +212,8 @@ int HttpRequest::parseHeaders(std::string &recvBuffer) {
         case FIELD_VALUE:
             pos = recvBuffer.find("\r", _bytesRead);
             if (pos == std::string::npos) {
+                if (isTooLong(_bytesRead))
+                    return 1;
                 _fieldValue += recvBuffer.substr(_bytesRead);
                 return 0;
             }

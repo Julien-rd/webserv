@@ -78,8 +78,8 @@ bool HttpRequest::isTooLong(size_t pending) {
 }
 
 bool HttpRequest::extractContent(std::string &recvBuffer, size_t pos) {
-    if (isTooLong(pos - _bytesRead))
-        return false;
+    if (isTooLong(_bytesRead))
+        return 1;
     switch (_currentState) {
     case METHOD:
         _method += recvBuffer.substr(_bytesRead, pos - _bytesRead);
@@ -100,7 +100,7 @@ bool HttpRequest::extractContent(std::string &recvBuffer, size_t pos) {
     default:;
     }
     _bytesRead = pos + 1;
-    return true;
+    return 0;
 }
 
 bool HttpRequest::brokenSyntax(size_t pos, size_t max_pos) {

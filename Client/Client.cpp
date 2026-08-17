@@ -82,34 +82,31 @@ void Client::reset() {  // Fix: maybe even add _cgi.reset? why is responsestream
     _bytesRead = 0;
 }
 
-clientStatus Client::closeConnection(int reason) {
+void Client::closeConnection(int reason) {
     _response.setConnection(false);
     if (reason == CLOSE_CLIENT_ERROR || reason == CLOSE_SERVER_ERROR)
         _response.build(_request);
     _fullResponse = _response.getFullResponse();
     _responseSize = _fullResponse.size();
     updateEpoll(EPOLLIN | EPOLLOUT);
-    return CLIENT_RESPONSE_READY;
 }
 
-clientStatus Client::sendResponse() {
+bool Client::sendResponse() {
     if (_fullResponse.empty())
-        return CLIENT_KEEP;
+        return 0;
     ssize_t n = send(_fd, &_fullResponse[_bytesSent], _responseSize - _bytesSent, 0);
-    if (n == -1) {
-        closeConnection(CLOSE_TRANSPORT_FAIL);
-        return CLIENT_CLOSE;
-    }
+    if (n == -1)
+        return 1;
     _bytesSent += n;
-    if (_bytesSent != _responseSize)
-        return CLIENT_KEEP;
-    if (_response.keepConnection() == false)
-        return CLIENT_CLOSE;
+    if (_bytesSent != _responseSize || _response.keepConnection())
+        return 0;
     updateEpoll(EPOLLIN);
+    if (keepConnection() == false)
+        return 1;
     _bytesSent = 0;
     _responseSize = 0;
     _response.reset();
-    return CLIENT_KEEP;
+    return 0;
 }
 
 bool Client::updateEpoll(const unsigned int &event) {
@@ -124,18 +121,16 @@ bool Client::updateEpoll(const unsigned int &event) {
     return true;
 }
 
-clientStatus Client::parsePending() {
-    if (_responseSize > 0)
-        return CLIENT_RESPONSE_READY;
-    if (recvBufferIsParsed() == true)
-        return CLIENT_KEEP;
+void Client::parsePending() {
+    if (_responseSize > 0 || recvBufferIsParsed() == true)
+        return;
     if (_request.parseHttpRequest(_recvBuffer, _bytesRead) == 1) {
         if (_request.getStatusCode() == 0)
             _request.setStatusCode(400);
         return closeConnection(CLOSE_CLIENT_ERROR);
     }
     if (_request.parsingDone() == false)
-        return CLIENT_KEEP;
+        return;
     _bytesRead = _request.getBytesRead();
     if (_request.parseURIContent() == 1)
         return closeConnection(CLOSE_CLIENT_ERROR);
@@ -145,7 +140,7 @@ clientStatus Client::parsePending() {
         //     _request.reset();  // fix: maybe unnecessary
         //     return CLOSE;
         _request.reset();
-        return CLIENT_KEEP;
+        return;
     }
     _response.build(_request);
     _fullResponse = _response.getFullResponse();
@@ -156,16 +151,18 @@ clientStatus Client::parsePending() {
         _bytesRead = 0;
     }
     updateEpoll(EPOLLIN | EPOLLOUT);
-    return CLIENT_RESPONSE_READY;
+    return;
 }
 
-clientStatus Client::parseRecvBuffer(std::string &recvBuffer) {
-    if(8192 - _recvBuffer.size() < recvBuffer.size()){
-         _request.setStatusCode(_request.parsingDone() ? 413 : 431);
-        return CLIENT_CLOSE;
+void Client::parseRecvBuffer(std::string &recvBuffer) {
+    if (_maxRecvBuffer - _recvBuffer.size() < recvBuffer.size()) {
+        _request.setStatusCode(_request.parsingDone() ? 413 : 431);
+        return closeConnection(CLOSE_CLIENT_ERROR);
     }
     _recvBuffer += recvBuffer;
     return parsePending();
 }
 
 bool Client::recvBufferIsParsed() const { return _recvBuffer.size() == _bytesRead; }
+
+bool Client::keepConnection() const { return _response.keepConnection(); }
