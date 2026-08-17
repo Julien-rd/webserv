@@ -96,7 +96,8 @@ class HttpRequest {
     bool validateMandatoryHeaders();
     void trim();
     void findSeperator(std::string &recvBuffer, char seperator, size_t &pos, size_t &max_pos);
-    void exctractContent(std::string &recvBuffer, size_t pos);
+    bool extractContent(std::string &recvBuffer, size_t pos);
     bool brokenSyntax(size_t pos, size_t max_pos);
     void addHeader();
+    bool isTooLong(size_t pending);
 };

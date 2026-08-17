@@ -27,9 +27,49 @@ void HttpRequest::trim() {
     if (pos != std::string::npos)
         _fieldValue.erase(pos + 1);
 }
+#include "../../Utils/Macros.hpp"
 
-void HttpRequest::exctractContent(std::string &recvBuffer, size_t pos) {
-    size_t skip = 1;
+bool HttpRequest::isTooLong(size_t pending) {
+    switch (_currentState) {
+    case METHOD:
+        if (pending > MAX_METHOD_LEN - _method.size()) {
+            _statusCode = 501;
+            return true;
+        }
+        break;
+    case URI:
+        if (pending > MAX_URI_LEN - _uri.size()) {
+            _statusCode = 414;
+            return true;
+        }
+        break;
+    case HTTP_VERSION:
+        if (pending > MAX_HTTP_LEN - _httpVersion.size()) {
+            _statusCode = 400;
+            return true;
+        }
+        break;
+    case FIELD_NAME:
+        if (pending > MAX_FIELD_LEN - _fieldName.size()) {
+            _statusCode = 431;
+            return true;
+        }
+        break;
+    case FIELD_VALUE:
+        if (pending > MAX_FIELD_LEN - _fieldValue.size()) {
+            _statusCode = 431;
+            return true;
+        }
+        break;
+    case CR:;
+    default:;
+    }
+    return false;
+}
+
+bool HttpRequest::extractContent(std::string &recvBuffer, size_t pos) {
+    if(isTooLong(pos - _bytesRead))
+        return false;
     switch (_currentState) {
     case METHOD:
         _method += recvBuffer.substr(_bytesRead, pos - _bytesRead);
@@ -39,20 +79,18 @@ void HttpRequest::exctractContent(std::string &recvBuffer, size_t pos) {
         break;
     case HTTP_VERSION:
         _httpVersion += recvBuffer.substr(_bytesRead, pos - _bytesRead);
-        // skip = 2;
         break;
     case FIELD_NAME:
         _fieldName += recvBuffer.substr(_bytesRead, pos - _bytesRead);
         break;
     case FIELD_VALUE:
         _fieldValue += recvBuffer.substr(_bytesRead, pos - _bytesRead);
-        // skip = 2;
         break;
-    case CR:
-        skip = 1;
+    case CR:;
     default:;
     }
-    _bytesRead = pos + skip;
+    _bytesRead = pos + 1;
+    return true;
 }
 
 bool HttpRequest::brokenSyntax(size_t pos, size_t max_pos) {
@@ -126,7 +164,8 @@ bool HttpRequest::validateURIPath(std::string &path) {
 #include <csignal>
 #include <cstdlib>
 bool HttpRequest::validHttpsVersion() {
-    if (_httpVersion != "HTTP/1.1" && _httpVersion != "HTTP/1.0") {  // TODO does HTTP/1.1 need to be backward compatible? in
+    if (_httpVersion != "HTTP/1.1" &&
+        _httpVersion != "HTTP/1.0") {  // TODO does HTTP/1.1 need to be backward compatible? in
                                        // that case maybe we can't make this check
         _statusCode = 400;
         log(Level::WARNING, "HTTP version not supported");
@@ -136,7 +175,7 @@ bool HttpRequest::validHttpsVersion() {
 }
 
 bool HttpRequest::hasHostHeader() {
-    if(_httpVersion == "HTTP/1.0")
+    if (_httpVersion == "HTTP/1.0")
         return true;
     std::map<std::string, std::string>::iterator it = _headers.find("host");
     if (it == _headers.end())
@@ -181,7 +220,7 @@ bool HttpRequest::isChunked() {
     std::map<std::string, std::string>::iterator it = _headers.find("transfer-encoding");
     if (it == _headers.end())
         return true;
-    if(_httpVersion == "HTTP/1.0"){
+    if (_httpVersion == "HTTP/1.0") {
         log(Level::WARNING, "transfer encoding not supported by http 1.0 .");
         return false;
     }

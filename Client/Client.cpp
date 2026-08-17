@@ -32,6 +32,7 @@ void Client::init(int epfd, const t_config *config, const int sid, const int cli
     _request.init(config->servers.at(sid).clientMaxBody);
     _response.init(config, sid);
     _CGI.init(&_request, _fd, _epfd, _sid, &_config->servers.at(_sid));
+    _maxRecvBuffer = config->servers.at(sid).clientMaxBody * MEGABYTE + HEADER_SLACK;
     setLastActivity();
 }
 
@@ -159,6 +160,10 @@ clientStatus Client::parsePending() {
 }
 
 clientStatus Client::parseRecvBuffer(std::string &recvBuffer) {
+    if(8192 - _recvBuffer.size() < recvBuffer.size()){
+         _request.setStatusCode(_request.parsingDone() ? 413 : 431);
+        return CLIENT_CLOSE;
+    }
     _recvBuffer += recvBuffer;
     return parsePending();
 }

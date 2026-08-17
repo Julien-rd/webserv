@@ -46,6 +46,7 @@ class Client {
     size_t            _bytesSent;
     size_t            _responseSize;
     std::string       _recvBuffer;
+    size_t            _maxRecvBuffer;
 
     const t_config *_config;
     CGI             _CGI;

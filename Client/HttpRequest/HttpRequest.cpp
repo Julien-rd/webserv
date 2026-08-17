@@ -110,7 +110,8 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
             _method += recvBuffer.substr(_bytesRead);
             break;
         }
-        exctractContent(recvBuffer, pos);
+        if (extractContent(recvBuffer, pos) == false)
+            return 1;
         if (validMethod() == false)
             return 1;
         _currentState = URI;
@@ -123,7 +124,8 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
             _uri += recvBuffer.substr(_bytesRead);
             break;
         }
-        exctractContent(recvBuffer, pos);
+        if (extractContent(recvBuffer, pos) == false)
+            return 1;
         if (validUri() == false)
             return 1;
         _currentState = HTTP_VERSION;
@@ -134,7 +136,8 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
             _httpVersion += recvBuffer.substr(_bytesRead);
             break;
         }
-        exctractContent(recvBuffer, pos);
+        if (extractContent(recvBuffer, pos) == false)
+            return 1;
         if (validHttpsVersion() == false)
             return 1;
         _currentState = CR;
@@ -145,7 +148,8 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
             return 0;
         if (validNewLine(recvBuffer) == 1)
             return 1;
-        exctractContent(recvBuffer, pos);
+        if (extractContent(recvBuffer, pos) == false)
+            return 1;
         _currentState = FIELD_NAME;
         Logger::getInstance().log(Level::DEBUG, "Requestline parsing done.");
     default:;
@@ -185,7 +189,8 @@ int HttpRequest::parseHeaders(std::string &recvBuffer) {
                 _fieldName += recvBuffer.substr(_bytesRead);
                 return 0;
             }
-            exctractContent(recvBuffer, pos);
+            if (extractContent(recvBuffer, pos) == false)
+                return 1;
             if (containsWhiteSpaces() == true) {
                 // print();
                 return 1;
@@ -198,7 +203,8 @@ int HttpRequest::parseHeaders(std::string &recvBuffer) {
                 _fieldValue += recvBuffer.substr(_bytesRead);
                 return 0;
             }
-            exctractContent(recvBuffer, pos);
+            if (extractContent(recvBuffer, pos) == false)
+                return 1;
             trim();
             addHeader();
             _currentState = CR;
@@ -209,7 +215,8 @@ int HttpRequest::parseHeaders(std::string &recvBuffer) {
                 return 0;
             if (validNewLine(recvBuffer) == 1)
                 return 1;
-            exctractContent(recvBuffer, pos);
+            if (extractContent(recvBuffer, pos) == false)
+                return 1;
             _currentState = FIELD_NAME;
             break;
         case EOH:  // TODO what if \r \n are sent seperatly
@@ -283,7 +290,8 @@ int HttpRequest::parseChunkedBody(std::string recvBuffer) {
             if (_body.size() >= _clientMaxBody || _bytesNeeded > _clientMaxBody - _body.size()) {
                 _parsingDone = true;
                 _statusCode = 413;
-                Logger::getInstance().log(Level::WARNING, "parseChunkedBody: body exceeds clientMaxBody.");
+                Logger::getInstance().log(Level::WARNING,
+                                          "parseChunkedBody: body exceeds clientMaxBody.");
                 return 1;
             }
             _buffer.erase(0, pos + 2);
@@ -308,7 +316,8 @@ int HttpRequest::parseChunkedBody(std::string recvBuffer) {
             if (_buffer[0] != '\r' || _buffer[1] != '\n') {
                 _parsingDone = true;
                 _statusCode = 400;
-                Logger::getInstance().log(Level::WARNING, "parseChunkedBody: malformed terminator.");
+                Logger::getInstance().log(Level::WARNING,
+                                          "parseChunkedBody: malformed terminator.");
                 return 1;
             }
             _buffer.erase(0, 2);
