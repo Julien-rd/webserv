@@ -16,7 +16,8 @@ HttpRequest::HttpRequest(size_t clientMaxBody)
         , _bytesRead(0)
         , _statusCode(0)
         , _parsingDone(false)
-        , _clientMaxBody(clientMaxBody) {}
+        , _clientMaxBody(clientMaxBody)
+        ,_headerBytes(0) {}
 
 HttpRequest::HttpRequest()
         : _currentState(METHOD)
@@ -27,7 +28,8 @@ HttpRequest::HttpRequest()
         , _bytesRead(0)
         , _statusCode(0)
         , _parsingDone(false)
-        , _clientMaxBody(2) {}
+        , _clientMaxBody(2)
+        ,_headerBytes(0) {}
 
 const std::vector<char> &HttpRequest::getBody() const { return _body; }
 
@@ -49,6 +51,7 @@ HttpRequest::HttpRequest(const HttpRequest &obj) {
     _clientMaxBody = obj._clientMaxBody;
     _buffer = obj._buffer;
     _bytesNeeded = obj._bytesNeeded;
+    _headerBytes = obj._headerBytes;
 }
 
 const HttpRequest &HttpRequest::operator=(const HttpRequest &obj) {
@@ -72,6 +75,7 @@ const HttpRequest &HttpRequest::operator=(const HttpRequest &obj) {
     _clientMaxBody = obj._clientMaxBody;
     _buffer = obj._buffer;
     _bytesNeeded = obj._bytesNeeded;
+    _headerBytes = obj._headerBytes;
     return *this;
 }
 
@@ -206,7 +210,8 @@ int HttpRequest::parseHeaders(std::string &recvBuffer) {
             if (extractContent(recvBuffer, pos) == false)
                 return 1;
             trim();
-            addHeader();
+            if (addHeader() == false)
+                return 1;
             _currentState = CR;
             /* fall through */
         case CR:

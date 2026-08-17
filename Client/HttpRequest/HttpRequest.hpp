@@ -75,6 +75,7 @@ class HttpRequest {
     bool                               _parsingDone;
     std::vector<char>                  _body;
     size_t                             _clientMaxBody;
+    size_t                             _headerBytes;
 
     // size_t _bytes_read implent bytes_read!!! erase is to inefficient
 
@@ -98,6 +99,6 @@ class HttpRequest {
     void findSeperator(std::string &recvBuffer, char seperator, size_t &pos, size_t &max_pos);
     bool extractContent(std::string &recvBuffer, size_t pos);
     bool brokenSyntax(size_t pos, size_t max_pos);
-    void addHeader();
+    bool addHeader();
     bool isTooLong(size_t pending);
 };

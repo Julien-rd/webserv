@@ -1,10 +1,20 @@
 #include "../../Logger/Logger.hpp"
+#include "../../Utils/Macros.hpp"
 #include "HttpRequest.hpp"
 
 #include <cctype>
 #include <string>
 
-void HttpRequest::addHeader() {
+bool HttpRequest::addHeader() {
+    if (_headers.size() == MAX_HEADERS) {
+        _statusCode = 431;
+        return false;
+    }
+    _headerBytes += _fieldName.size() + _fieldValue.size();
+    if (_headerBytes > MAX_HEADER_SUM) {
+        _statusCode = 431;
+        return false;
+    }
     std::string fieldNameToLow = _fieldName;
     for (size_t it = 0; it < _fieldName.size(); ++it)
         fieldNameToLow[it] = tolower(_fieldName[it]);
@@ -14,6 +24,7 @@ void HttpRequest::addHeader() {
         _headers[fieldNameToLow] = _fieldValue;
     _fieldName.clear();
     _fieldValue.clear();
+    return true;
 }
 
 void HttpRequest::setStatusCode(int status) { _statusCode = status; }
@@ -27,7 +38,6 @@ void HttpRequest::trim() {
     if (pos != std::string::npos)
         _fieldValue.erase(pos + 1);
 }
-#include "../../Utils/Macros.hpp"
 
 bool HttpRequest::isTooLong(size_t pending) {
     switch (_currentState) {
@@ -68,7 +78,7 @@ bool HttpRequest::isTooLong(size_t pending) {
 }
 
 bool HttpRequest::extractContent(std::string &recvBuffer, size_t pos) {
-    if(isTooLong(pos - _bytesRead))
+    if (isTooLong(pos - _bytesRead))
         return false;
     switch (_currentState) {
     case METHOD:
@@ -161,8 +171,6 @@ bool HttpRequest::validateURIPath(std::string &path) {
     return true;
 }
 
-#include <csignal>
-#include <cstdlib>
 bool HttpRequest::validHttpsVersion() {
     if (_httpVersion != "HTTP/1.1" &&
         _httpVersion != "HTTP/1.0") {  // TODO does HTTP/1.1 need to be backward compatible? in
@@ -265,4 +273,5 @@ void HttpRequest::reset() {
     _uriData.pathInfo.clear();
     _uriData.query.clear();
     _uriData.extension.clear();
+    _headerBytes = 0;
 }
