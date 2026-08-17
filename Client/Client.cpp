@@ -155,7 +155,7 @@ void Client::parsePending() {
 }
 
 void Client::parseRecvBuffer(std::string &recvBuffer) {
-    if (_maxRecvBuffer - _recvBuffer.size() < recvBuffer.size()) {
+    if (_maxRecvBuffer - _recvBuffer.size() < recvBuffer.size() || 1) {
         _request.setStatusCode(_request.parsingDone() ? 413 : 431);
         return closeConnection(CLOSE_CLIENT_ERROR);
     }
