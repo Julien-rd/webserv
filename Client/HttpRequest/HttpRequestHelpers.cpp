@@ -70,9 +70,11 @@ void HttpRequest::findSeperator(std::string &recvBuffer,
     max_pos = recvBuffer.find("\r", _bytesRead);
     pos = recvBuffer.find(seperator, _bytesRead);
 }
-
+#include <iostream>
 bool HttpRequest::validMethod() {
     if (!(_method == "GET" || _method == "POST" || _method == "DELETE")) {
+        std::cout << "_method: " << _method << "\n";
+        std::cout << "_method Size: " << _method.size() << "\n";
         log(Level::WARNING, "invalid method");
         _statusCode = 501;
         return false;

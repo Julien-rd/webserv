@@ -19,6 +19,7 @@ class Client {
     // int  loop(std::string &recvBuffer);
 
     clientStatus parseRecvBuffer(std::string &recvBuffer);
+    clientStatus parsePending();
     clientStatus sendResponse();
 
     void init(int epfd, const t_config *config, const int sid, const int clientFd);

@@ -312,6 +312,8 @@ void HttpResponse::addConnectionHeader(const HttpRequest &request) {
     std::map<std::string, std::string>           headers = request.getHeaders();
     std::map<std::string, std::string>::iterator it = headers.find("connection");
 
+    if (_keepAlive == false)
+        return;
     if (_statusCode == 400 || _statusCode == 408 || _statusCode == 413 || _statusCode == 501)
         _keepAlive = false;
     else if (version == "HTTP/1.0") {
