@@ -33,7 +33,7 @@ void Client::init(int epfd, const t_config *config, const int sid, const int cli
     _request.init(config->servers.at(sid).clientMaxBody);
     _response.init(config, sid);
     _CGI.init(&_request, _fd, _epfd, _sid, &_config->servers.at(_sid));
-    _maxRecvBuffer = config->servers.at(sid).clientMaxBody * MEGABYTE + HEADER_SLACK;
+    _maxRecvBuffer = config->servers.at(sid).clientMaxBody + HEADER_SLACK;
     setLastActivity();
 }
 
@@ -149,8 +149,10 @@ bool Client::parsePending() {
         return closeConnection(CLOSE_CLIENT_ERROR);
     }
     _bytesRead = _request.getBytesRead();
-    if (_request.parsingDone() == false)
+    if (_request.parsingDone() == false) {
+        log(Level::INFO, "parsing not done");
         return true;
+    }
     if (_request.parseURIContent() == 1)
         return closeConnection(CLOSE_CLIENT_ERROR);
     if (_CGI.isCGIRequest(_request)) {
@@ -178,6 +180,7 @@ bool Client::parsePending() {
 bool Client::parseRecvBuffer(std::string &recvBuffer) {
     if (_maxRecvBuffer - _recvBuffer.size() < recvBuffer.size()) {
         _request.setStatusCode(_request.parsingDone() ? 413 : 431);
+        log(Level::INFO, "recvBuffer too big");
         return closeConnection(CLOSE_CLIENT_ERROR);
     }
     _recvBuffer += recvBuffer;
