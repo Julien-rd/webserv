@@ -17,6 +17,8 @@ const size_t MAX_FIELD_LEN = 8192;
 const size_t MAX_HEADERS = 100;
 const size_t MAX_HEADER_SUM = 32768;
 const size_t HEADER_SLACK = 16384;
+const size_t MAX_CHUNK_LINE = 64;
+const size_t MAX_TRAILER_SUM = 8192;
 
 enum e_closeReason {
     CLOSE_CLEAN,          // normal keep-alive end, client done, no error to report

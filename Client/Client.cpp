@@ -132,9 +132,9 @@ bool Client::parsePending() {
             _request.setStatusCode(400);
         return closeConnection(CLOSE_CLIENT_ERROR);
     }
+    _bytesRead = _request.getBytesRead();
     if (_request.parsingDone() == false)
         return true;
-    _bytesRead = _request.getBytesRead();
     if (_request.parseURIContent() == 1)
         return closeConnection(CLOSE_CLIENT_ERROR);
     if (_CGI.isCGIRequest(_request)) {

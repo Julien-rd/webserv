@@ -92,7 +92,7 @@ class HttpRequest {
     int  parseRequestLine(std::string &recvBuffer);
     int  bodyMode(std::string recvBuffer);
     void parseBody(std::string recvBuffer);
-    int  parseChunkedBody(std::string recvBuffer);
+    int  parseChunkedBody(const std::string &recvBuffer);
     bool saveData();
     bool validateMandatoryHeaders();
     void trim();

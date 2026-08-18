@@ -1,6 +1,7 @@
 #include "HttpRequest.hpp"
 
 #include "../../Logger/Logger.hpp"
+#include "../../Utils/Macros.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -107,7 +108,6 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
     size_t max_pos;
     switch (_currentState) {
     case METHOD:
-        log(Level::INFO, "METHOD");
         findSeperator(recvBuffer, ' ', pos, max_pos);
         if (brokenSyntax(pos, max_pos))
             return 1;
@@ -115,6 +115,7 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
             if (isTooLong(recvBuffer.size() - _bytesRead) == true)
                 return 1;
             _method += recvBuffer.substr(_bytesRead);
+            _bytesRead = recvBuffer.size();
             break;
         }
         if (extractContent(recvBuffer, pos) == false)
@@ -123,8 +124,7 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
             return 1;
         _currentState = URI;
         /* fall through */
-    case URI:
-        log(Level::INFO, "URI");
+    case URI:;
         findSeperator(recvBuffer, ' ', pos, max_pos);
         if (brokenSyntax(pos, max_pos))
             return 1;
@@ -132,6 +132,7 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
             if (isTooLong(recvBuffer.size() - _bytesRead) == true)
                 return 1;
             _uri += recvBuffer.substr(_bytesRead);
+            _bytesRead = recvBuffer.size();
             break;
         }
         if (extractContent(recvBuffer, pos) == false)
@@ -141,12 +142,12 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
         _currentState = HTTP_VERSION;
         /* fall through */
     case HTTP_VERSION:
-        log(Level::INFO, "HTTP_VERSION");
         pos = recvBuffer.find("\r", _bytesRead);
         if (pos == std::string::npos) {
             if (isTooLong(recvBuffer.size() - _bytesRead) == true)
                 return 1;
             _httpVersion += recvBuffer.substr(_bytesRead);
+            _bytesRead = recvBuffer.size();
             break;
         }
         if (extractContent(recvBuffer, pos) == false)
@@ -156,7 +157,6 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
         _currentState = CR;
         /* fall through */
     case CR:
-        log(Level::INFO, "CR");
         pos = recvBuffer.find("\n", _bytesRead);
         if (_bytesRead >= recvBuffer.size())
             return 0;
@@ -193,8 +193,7 @@ int HttpRequest::parseHeaders(std::string &recvBuffer) {
         switch (_currentState) {
         case FIELD_NAME:
             findSeperator(recvBuffer, ':', pos, max_pos);
-            if (pos > max_pos) {
-                // TODO add safguard to check if it is really last line so \r\n
+            if (_bytesRead < recvBuffer.size() && recvBuffer[_bytesRead] == '\r') {
                 _bytesRead += 1;
                 _currentState = EOH;
                 break;
@@ -203,14 +202,13 @@ int HttpRequest::parseHeaders(std::string &recvBuffer) {
                 if (isTooLong(recvBuffer.size() - _bytesRead) == true)
                     return 1;
                 _fieldName += recvBuffer.substr(_bytesRead);
+                _bytesRead = recvBuffer.size();
                 return 0;
             }
             if (extractContent(recvBuffer, pos) == false)
                 return 1;
-            if (containsWhiteSpaces() == true) {
-                // print();
+            if (containsWhiteSpaces() == true)
                 return 1;
-            }
             _currentState = FIELD_VALUE;
             /* fall through */
         case FIELD_VALUE:
@@ -219,6 +217,7 @@ int HttpRequest::parseHeaders(std::string &recvBuffer) {
                 if (isTooLong(recvBuffer.size() - _bytesRead) == true)
                     return 1;
                 _fieldValue += recvBuffer.substr(_bytesRead);
+                _bytesRead = recvBuffer.size();
                 return 0;
             }
             if (extractContent(recvBuffer, pos) == false)
@@ -241,8 +240,10 @@ int HttpRequest::parseHeaders(std::string &recvBuffer) {
         case EOH:  // TODO what if \r \n are sent seperatly
             if (_bytesRead >= recvBuffer.size())
                 return 0;
-            if (validNewLine(recvBuffer) == 1)
+            if (validNewLine(recvBuffer) == 1) {
+                log(Level::WARNING, "parseHttpRequest: parseHeaders");
                 return 1;
+            }
             ++_bytesRead;
             _currentState = BODY;
             Logger::getInstance().log(Level::DEBUG, "Header parsing done.");
@@ -293,24 +294,43 @@ void HttpRequest::parseBody(std::string recvBuffer) {
     }
 }
 
-int HttpRequest::parseChunkedBody(std::string recvBuffer) {
+int HttpRequest::parseChunkedBody(const std::string &recvBuffer) {
+    size_t trailerBytes = 0;
+
     _buffer += recvBuffer.substr(_bytesRead);
+    _bytesRead = recvBuffer.size();
+
     while (true) {
         if (_chunkedBodyState == BYTES) {
             size_t pos = _buffer.find("\r\n");
-            if (pos == std::string::npos)
+            if (pos == std::string::npos) {
+                if (_buffer.size() > MAX_CHUNK_LINE) {
+                    _parsingDone = true;
+                    _statusCode = 400;
+                    log(Level::WARNING, "parseChunkedBody: chunk size line too long.");
+                    return 1;
+                }
                 return 0;
-            if (parseHexSize(_buffer.substr(0, pos), _bytesNeeded) == false) {
+            }
+            if (pos > MAX_CHUNK_LINE) {
                 _parsingDone = true;
                 _statusCode = 400;
-                Logger::getInstance().log(Level::WARNING, "parseChunkedBody: invalid chunk size.");
+                log(Level::WARNING, "parseChunkedBody: chunk size line too long.");
+                return 1;
+            }
+            size_t cutOff = _buffer.find(";");
+            if (cutOff == std::string::npos || cutOff > pos)
+                cutOff = pos;
+            if (parseHexSize(_buffer.substr(0, cutOff), _bytesNeeded) == false) {
+                _parsingDone = true;
+                _statusCode = 400;
+                log(Level::WARNING, "parseChunkedBody: invalid chunk size.");
                 return 1;
             }
             if (_body.size() >= _clientMaxBody || _bytesNeeded > _clientMaxBody - _body.size()) {
                 _parsingDone = true;
                 _statusCode = 413;
-                Logger::getInstance().log(Level::WARNING,
-                                          "parseChunkedBody: body exceeds clientMaxBody.");
+                log(Level::WARNING, "parseChunkedBody: body exceeds clientMaxBody.");
                 return 1;
             }
             _buffer.erase(0, pos + 2);
@@ -321,29 +341,39 @@ int HttpRequest::parseChunkedBody(std::string recvBuffer) {
             if (_buffer[_bytesNeeded] != '\r' || _buffer[_bytesNeeded + 1] != '\n') {
                 _parsingDone = true;
                 _statusCode = 400;
-                Logger::getInstance().log(Level::WARNING,
-                                          "parseChunkedBody: bytes announced != bytes received.");
+                log(Level::WARNING, "parseChunkedBody: bytes announced != bytes received.");
                 return 1;
             }
             _body.insert(_body.end(), _buffer.begin(), _buffer.begin() + _bytesNeeded);
             _buffer.erase(0, _bytesNeeded + 2);
             _chunkedBodyState = BYTES;
         } else if (_chunkedBodyState == _EOF) {
-            std::cout << "[" << _buffer << "]\n";
-            if (_buffer.size() < 2)
+            size_t pos = _buffer.find("\r\n");
+            if (pos == std::string::npos) {
+                if (_buffer.size() > MAX_TRAILER_SUM) {
+                    _parsingDone = true;
+                    _statusCode = 400;
+                    log(Level::WARNING, "parseChunkedBody: trailer block too long.");
+                    return 1;
+                }
                 return 0;
-            if (_buffer[0] != '\r' || _buffer[1] != '\n') {
+            }
+            if (pos == 0) {
+                _buffer.erase(0, 2);
+                _bytesRead = recvBuffer.size() - _buffer.size();
+                _parsingDone = true;
+                _statusCode = 200;
+                log(Level::DEBUG, "parseChunkedBody: body parsing done.");
+                return 0;
+            }
+            if (pos > MAX_TRAILER_SUM - trailerBytes) {
                 _parsingDone = true;
                 _statusCode = 400;
-                Logger::getInstance().log(Level::WARNING,
-                                          "parseChunkedBody: malformed terminator.");
+                log(Level::WARNING, "parseChunkedBody: trailer block too long.");
                 return 1;
             }
-            _buffer.erase(0, 2);
-            _parsingDone = true;
-            _statusCode = 200;
-            Logger::getInstance().log(Level::DEBUG, "parseChunkedBody: body parsing done.");
-            return 0;
+            trailerBytes += pos;
+            _buffer.erase(0, pos + 2);
         }
     }
 }
@@ -366,7 +396,7 @@ int HttpRequest::parseHttpRequest(std::string &recvBuffer, size_t bytes_read) {
         return 1;
     }
     if (parseHeaders(recvBuffer) == 1) {
-        log(Level::WARNING, "parseHttpRequest: parseHEADERS");
+        log(Level::WARNING, "parseHttpRequest: parseHeaders");
         return 1;
     }
     if (bodyMode(recvBuffer) == 1) {

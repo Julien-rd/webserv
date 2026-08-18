@@ -10,11 +10,12 @@ bool HttpRequest::addHeader() {
         _statusCode = 431;
         return false;
     }
-    _headerBytes += _fieldName.size() + _fieldValue.size();
-    if (_headerBytes > MAX_HEADER_SUM) {
-        _statusCode = 431;
-        return false;
+    size_t bytesToAdd = _fieldName.size() + _fieldValue.size();
+    if (bytesToAdd > MAX_HEADER_SUM - _headerBytes) {
+                _statusCode = 431;
+                return false;
     }
+    _headerBytes += bytesToAdd;
     std::string fieldNameToLow = _fieldName;
     for (size_t it = 0; it < _fieldName.size(); ++it)
         fieldNameToLow[it] = tolower(_fieldName[it]);
