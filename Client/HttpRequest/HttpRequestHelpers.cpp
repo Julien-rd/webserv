@@ -78,7 +78,7 @@ bool HttpRequest::isTooLong(size_t pending) {
 }
 
 bool HttpRequest::extractContent(std::string &recvBuffer, size_t pos) {
-    if (isTooLong(_bytesRead))
+    if (isTooLong(pos - _bytesRead))
         return 1;
     switch (_currentState) {
     case METHOD:

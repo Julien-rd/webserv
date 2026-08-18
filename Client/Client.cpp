@@ -95,21 +95,21 @@ bool Client::closeConnection(int reason) {
 
 bool Client::sendResponse() {
     if (_fullResponse.empty())
-        return 0;
+        return true;
     ssize_t n = send(_fd, &_fullResponse[_bytesSent], _responseSize - _bytesSent, 0);
     if (n == -1)
-        return 1;
+        return false;
     _bytesSent += n;
-    if (_bytesSent != _responseSize || _response.keepConnection())
-        return 0;
-    if (updateEpoll(EPOLLIN) == false)
-        return 1;
-    if (keepConnection() == false)
-        return 1;
+    if (_bytesSent != _responseSize)
+        return true;
+    if (_response.keepConnection() == false)
+        return false;
+    _fullResponse.clear();
     _bytesSent = 0;
     _responseSize = 0;
+    _request.reset();
     _response.reset();
-    return 0;
+    return updateEpoll(EPOLLIN);
 }
 
 bool Client::updateEpoll(const unsigned int &event) {

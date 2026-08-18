@@ -185,7 +185,7 @@ bool Server::recvClientEvent(Client &client) {
     if (bytesRead <= 0) {
         if (bytesRead == -1)
             error_msg(ERR_RECV);
-        return 1;
+        return false;
     }
     recvBuffer.resize(bytesRead);
     return client.parseRecvBuffer(recvBuffer);
@@ -198,17 +198,15 @@ void Server::handleClientEvent(int clientFd, unsigned int event) {
         return closeConnection(clientFd);
     client.setLastActivity();
 
-    if (event & EPOLLIN && client.keepConnection() == true) {
-        if (recvClientEvent(client) == 1)
+    if (event & EPOLLIN) {
+        if (recvClientEvent(client) == false)
             return closeConnection(clientFd);
     }
     if (event & EPOLLOUT) {
-        if (client.sendResponse() == 1)
+        if (client.sendResponse() == false)
             return closeConnection(clientFd);
-        if (client.keepConnection() == true) {
-            if (client.parsePending() == false)
-                return closeConnection(clientFd);
-        }
+        if (client.parsePending() == false)
+            return closeConnection(clientFd);
     }
 }
 
