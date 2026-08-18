@@ -24,12 +24,14 @@ class Client {
 
     void init(int epfd, const t_config *config, const int sid, const int clientFd);
     void reset();
+    bool recvBufferIsParsed() const;
+    void         updateEpoll(const unsigned int &event);
+    int        prepareSendCGI(int pipeReadFd);
 
     // getters
     time_t getLastActivity();
     int    getFd() const;
     CGI   &getCGI();
-    bool recvBufferIsParsed() const;
 
     // setters
     void setLastActivity();
@@ -51,7 +53,6 @@ class Client {
     CGI             _CGI;
 
     clientStatus closeConnection(int reason);
-    void         updateEpoll(const unsigned int &event);
     void         doCGI();
     void         handleCGI();
 };

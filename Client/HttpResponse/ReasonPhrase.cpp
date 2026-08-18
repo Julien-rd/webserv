@@ -137,7 +137,7 @@ void HttpResponse::getReasonPhraseServerErr() {
     }
 }
 
-void HttpResponse::getReasonPhrase() {
+void HttpResponse::getReasonPhrase()  {
     switch (_responseClass) {
     case INFO:
         getReasonPhraseInfo();

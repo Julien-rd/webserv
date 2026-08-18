@@ -154,7 +154,7 @@ HttpResponse::HttpResponse() : _config(NULL), _sid(-1) {
     _keepAlive = true;
 }
 
-std::vector<char> HttpResponse::getResponseBody() { return _responseBody; }
+std::vector<char> HttpResponse::getResponseBody() const { return _responseBody; }
 
 void HttpResponse::init(const t_config *config, const int sid) {
     _config = config;
@@ -362,7 +362,7 @@ void HttpResponse::buildStatusLine() {
     _response += "\r\n";
 }
 
-void HttpResponse::serveErrorPage(const HttpRequest &request) {
+void HttpResponse::errorPage(const HttpRequest &request) {
     std::ostringstream ss;
     std::stringstream  st;
     st << _statusCode;
@@ -421,7 +421,7 @@ void HttpResponse::build(HttpRequest &request) {
 
     _statusCode = request.getStatusCode();
     if (_statusCode >= 400) {
-        serveErrorPage(request);
+        errorPage(request);
         return;
     }
 
@@ -435,12 +435,12 @@ void HttpResponse::build(HttpRequest &request) {
     if (_statusCode > 299 && _statusCode < 400)
         addRedirectHeaders(result.path);
     else if (_statusCode >= 400 || addBody(request, result) == 1)
-        serveErrorPage(request);
+        errorPage(request);
 }
 
-const char *HttpResponse::getResponse() { return _response.c_str(); }
+const char *HttpResponse::getResponse() const { return _response.c_str(); }
 
-std::vector<char> HttpResponse::getFullResponse() {
+std::vector<char> HttpResponse::getFullResponse() const{
     std::vector<char> fullResponse;
     fullResponse.assign(_response.begin(), _response.end());
     fullResponse.insert(fullResponse.end(), _responseBody.begin(), _responseBody.end());

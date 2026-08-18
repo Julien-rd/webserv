@@ -18,13 +18,13 @@ class HttpResponse {
     HttpResponse();
     virtual void      build(HttpRequest &request);
     void              getReasonPhrase();
-    const char       *getResponse();
-    std::vector<char> getResponseBody();
-    std::vector<char> getFullResponse();
+    const char       *getResponse() const;
+    std::vector<char> getResponseBody() const;
+    std::vector<char> getFullResponse() const ;
 
     void         init(const t_config *config, const int sid);
     virtual void reset();
-    int          getTimeStamp();
+    int          getTimeStamp()  ;
     void         setConnection(bool keepAlive);
     bool         keepConnection() const;
 
@@ -51,7 +51,7 @@ class HttpResponse {
     void                buildStatusLine();
     int                 extractContentType(std::string path);
     void                extractContentLength();
-    void                serveErrorPage(const HttpRequest &request);
+    void                errorPage(const HttpRequest &request);
     void                addRedirectHeaders(const std::string &path);
     virtual bool        addBody(HttpRequest request, const UriResult &result);
     static unsigned int getLocation(const std::string &match, const t_server &serverConfig);

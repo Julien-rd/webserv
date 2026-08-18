@@ -111,10 +111,12 @@ void ServerManager::loopReadyEvents(void) {
             _servers.at(fd).handleServerEvent();
         } else if (_clientToServerMap.find(fd) != _clientToServerMap.end()) {
             _servers.at(_clientToServerMap[fd]).handleClientEvent(fd, _triggeredEvents[i].events);
-        } else {         /* is CGI's pipe fd */
-            int fds[2]; 
+        } else { /* is CGI's pipe fd */
+            int fds[2];
             pp_memcpy(fds, &_triggeredEvents[i].data.u64, sizeof(uint64_t));
-            _clients.at(fds[1]).getCGI().buildResponse(fds[0]);
+            if (_clients.at(fds[1]).prepareSendCGI(fds[0]) == RESPONSE_ERR) {
+                //fix: handle error here
+            }
         }
     }
 }

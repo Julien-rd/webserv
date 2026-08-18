@@ -147,7 +147,7 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
             return 1;
         exctractContent(recvBuffer, pos);
         _currentState = FIELD_NAME;
-        Logger::getInstance().log(Level::DEBUG, "Requestline parsing done.");
+        log(Level::DEBUG, "Requestline parsing done.");
     default:;
     }
     return 0;
@@ -219,7 +219,7 @@ int HttpRequest::parseHeaders(std::string &recvBuffer) {
                 return 1;
             ++_bytesRead;
             _currentState = BODY;
-            Logger::getInstance().log(Level::DEBUG, "Header parsing done.");
+            log(Level::DEBUG, "Header parsing done.");
             if (validateMandatoryHeaders() == false)
                 return 1;
             /* fall through */
@@ -277,13 +277,13 @@ int HttpRequest::parseChunkedBody(std::string recvBuffer) {
             if (parseHexSize(_buffer.substr(0, pos), _bytesNeeded) == false) {
                 _parsingDone = true;
                 _statusCode = 400;
-                Logger::getInstance().log(Level::WARNING, "parseChunkedBody: invalid chunk size.");
+                log(Level::WARNING, "parseChunkedBody: invalid chunk size.");
                 return 1;
             }
             if (_body.size() >= _clientMaxBody || _bytesNeeded > _clientMaxBody - _body.size()) {
                 _parsingDone = true;
                 _statusCode = 413;
-                Logger::getInstance().log(Level::WARNING, "parseChunkedBody: body exceeds clientMaxBody.");
+                log(Level::WARNING, "parseChunkedBody: body exceeds clientMaxBody.");
                 return 1;
             }
             _buffer.erase(0, pos + 2);
@@ -294,7 +294,7 @@ int HttpRequest::parseChunkedBody(std::string recvBuffer) {
             if (_buffer[_bytesNeeded] != '\r' || _buffer[_bytesNeeded + 1] != '\n') {
                 _parsingDone = true;
                 _statusCode = 400;
-                Logger::getInstance().log(Level::WARNING,
+                log(Level::WARNING,
                                           "parseChunkedBody: bytes announced != bytes received.");
                 return 1;
             }
@@ -308,13 +308,13 @@ int HttpRequest::parseChunkedBody(std::string recvBuffer) {
             if (_buffer[0] != '\r' || _buffer[1] != '\n') {
                 _parsingDone = true;
                 _statusCode = 400;
-                Logger::getInstance().log(Level::WARNING, "parseChunkedBody: malformed terminator.");
+                log(Level::WARNING, "parseChunkedBody: malformed terminator.");
                 return 1;
             }
             _buffer.erase(0, 2);
             _parsingDone = true;
             _statusCode = 200;
-            Logger::getInstance().log(Level::DEBUG, "parseChunkedBody: body parsing done.");
+            log(Level::DEBUG, "parseChunkedBody: body parsing done.");
             return 0;
         }
     }

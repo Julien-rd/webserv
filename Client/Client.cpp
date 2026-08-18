@@ -35,6 +35,21 @@ void Client::init(int epfd, const t_config *config, const int sid, const int cli
     setLastActivity();
 }
 
+int Client::prepareSendCGI(int pipeReadFd) {
+    int status = _CGI.buildResponse(pipeReadFd);
+    if (status == RESPONSE_PENDING)
+        return RESPONSE_PENDING;
+    if (status == RESPONSE_READY) {
+        _fullResponse = _CGI.getResponse().getFullResponse();
+        _responseSize = _fullResponse.size();
+        updateEpoll(EPOLLIN | EPOLLOUT);
+    } else if (status == RESPONSE_ERR) {
+        // fix: error message?
+    }
+    _CGI.reset();
+    return status;
+}
+
 // Client::Client(const Client &obj)
 //         : _fd(obj._fd)
 //         , _sid(obj._sid)

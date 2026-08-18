@@ -67,7 +67,10 @@ void CGIResponse::addCGIBody(HttpRequest request) {
     size_t bodyStart = separatorPos + sepLen;
     size_t bodyLen = _CGIResponseStr.size() - bodyStart;
 
-    _responseBody = _CGIResponseStr.substr(bodyStart, bodyLen);
+    _responseBody.assign(
+        _CGIResponseStr.begin() + bodyStart,
+        _CGIResponseStr.begin() + bodyStart + bodyLen
+    );
 
     std::string        headerBlock = _CGIResponseStr.substr(0, separatorPos);
     std::istringstream hs(headerBlock);
@@ -89,7 +92,6 @@ void CGIResponse::addCGIBody(HttpRequest request) {
     _response += "Content-Length: " + ss.str() + "\r\n";
 
     _response += "\r\n";
-    _response.append(_responseBody.data(), _responseBody.size());
 }
 
 void CGIResponse::addRules(const HttpRequest &request) {
@@ -106,7 +108,7 @@ void CGIResponse::addRules(const HttpRequest &request) {
 void CGIResponse::build(HttpRequest &request) { //fix: detonate this function request ist completely empty, build from scratch
     _statusCode = request.getStatusCode();
     if (_statusCode >= 400) {
-        serveErrorPage(request);
+        errorPage(request);
         return;
     }
     if (_CGIResponseLen == 0)
@@ -118,8 +120,8 @@ void CGIResponse::build(HttpRequest &request) { //fix: detonate this function re
     addRules(request);
     if (_statusCode < 400)
         addCGIBody(request);
-    if (_statusCode >= 400)
-        serveErrorPage(request);
+    else
+        errorPage(request);
 }
 
 void CGIResponse::setCGIResponseStr(const std::string &CGIResponseStr) {
