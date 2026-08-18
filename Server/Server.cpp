@@ -205,6 +205,7 @@ void Server::handleClientEvent(int clientFd, unsigned int event) {
     if (event & EPOLLOUT) {
         if (client.sendResponse() == false)
             return closeConnection(clientFd);
+        
         if (client.parsePending() == false)
             return closeConnection(clientFd);
     }

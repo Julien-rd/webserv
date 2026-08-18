@@ -154,7 +154,6 @@ bool Client::parsePending() {
     if (_request.parseURIContent() == 1)
         return closeConnection(CLOSE_CLIENT_ERROR);
     if (_CGI.isCGIRequest(_request)) {
-        std::cout << "wha" << std::endl;
         if (!_CGI.handleCGI())
             return closeConnection(CLOSE_SERVER_ERROR);
         //     _request.reset();  // fix: maybe unnecessary
