@@ -44,30 +44,35 @@ bool HttpRequest::isTooLong(size_t pending) {
     case METHOD:
         if (pending > MAX_METHOD_LEN - _method.size()) {
             _statusCode = 501;
+            log(Level::WARNING, "isTooLong: METHOD");
             return true;
         }
         break;
     case URI:
         if (pending > MAX_URI_LEN - _uri.size()) {
             _statusCode = 414;
+            log(Level::WARNING, "isTooLong: URI");
             return true;
         }
         break;
     case HTTP_VERSION:
         if (pending > MAX_HTTP_LEN - _httpVersion.size()) {
             _statusCode = 400;
+            log(Level::WARNING, "isTooLong: HTTP_VERSION");
             return true;
         }
         break;
     case FIELD_NAME:
         if (pending > MAX_FIELD_LEN - _fieldName.size()) {
             _statusCode = 431;
+            log(Level::WARNING, "isTooLong: FIELD_NAME");
             return true;
         }
         break;
     case FIELD_VALUE:
         if (pending > MAX_FIELD_LEN - _fieldValue.size()) {
             _statusCode = 431;
+            log(Level::WARNING, "isTooLong: FIELD_VALUE");
             return true;
         }
         break;
@@ -78,8 +83,8 @@ bool HttpRequest::isTooLong(size_t pending) {
 }
 
 bool HttpRequest::extractContent(std::string &recvBuffer, size_t pos) {
-    if (isTooLong(pos - _bytesRead))
-        return 1;
+    if (isTooLong(pos - _bytesRead) == true)
+        return false;
     switch (_currentState) {
     case METHOD:
         _method += recvBuffer.substr(_bytesRead, pos - _bytesRead);
@@ -100,7 +105,7 @@ bool HttpRequest::extractContent(std::string &recvBuffer, size_t pos) {
     default:;
     }
     _bytesRead = pos + 1;
-    return 0;
+    return true;
 }
 
 bool HttpRequest::brokenSyntax(size_t pos, size_t max_pos) {

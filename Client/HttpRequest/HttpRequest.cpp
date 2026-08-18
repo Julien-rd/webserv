@@ -17,7 +17,7 @@ HttpRequest::HttpRequest(size_t clientMaxBody)
         , _statusCode(0)
         , _parsingDone(false)
         , _clientMaxBody(clientMaxBody)
-        ,_headerBytes(0) {}
+        , _headerBytes(0) {}
 
 HttpRequest::HttpRequest()
         : _currentState(METHOD)
@@ -29,7 +29,7 @@ HttpRequest::HttpRequest()
         , _statusCode(0)
         , _parsingDone(false)
         , _clientMaxBody(2)
-        ,_headerBytes(0) {}
+        , _headerBytes(0) {}
 
 const std::vector<char> &HttpRequest::getBody() const { return _body; }
 
@@ -107,11 +107,12 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
     size_t max_pos;
     switch (_currentState) {
     case METHOD:
+        log(Level::INFO, "METHOD");
         findSeperator(recvBuffer, ' ', pos, max_pos);
         if (brokenSyntax(pos, max_pos))
             return 1;
         if (pos == std::string::npos) {
-            if (isTooLong(recvBuffer.size() - _bytesRead))
+            if (isTooLong(recvBuffer.size() - _bytesRead) == true)
                 return 1;
             _method += recvBuffer.substr(_bytesRead);
             break;
@@ -123,11 +124,12 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
         _currentState = URI;
         /* fall through */
     case URI:
+        log(Level::INFO, "URI");
         findSeperator(recvBuffer, ' ', pos, max_pos);
         if (brokenSyntax(pos, max_pos))
             return 1;
         if (pos == std::string::npos) {
-            if (isTooLong(recvBuffer.size() - _bytesRead))
+            if (isTooLong(recvBuffer.size() - _bytesRead) == true)
                 return 1;
             _uri += recvBuffer.substr(_bytesRead);
             break;
@@ -139,9 +141,10 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
         _currentState = HTTP_VERSION;
         /* fall through */
     case HTTP_VERSION:
+        log(Level::INFO, "HTTP_VERSION");
         pos = recvBuffer.find("\r", _bytesRead);
         if (pos == std::string::npos) {
-            if (isTooLong(recvBuffer.size() - _bytesRead))
+            if (isTooLong(recvBuffer.size() - _bytesRead) == true)
                 return 1;
             _httpVersion += recvBuffer.substr(_bytesRead);
             break;
@@ -153,6 +156,7 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
         _currentState = CR;
         /* fall through */
     case CR:
+        log(Level::INFO, "CR");
         pos = recvBuffer.find("\n", _bytesRead);
         if (_bytesRead >= recvBuffer.size())
             return 0;
@@ -196,7 +200,7 @@ int HttpRequest::parseHeaders(std::string &recvBuffer) {
                 break;
             }
             if (pos == std::string::npos) {
-                if (isTooLong(recvBuffer.size() - _bytesRead))
+                if (isTooLong(recvBuffer.size() - _bytesRead) == true)
                     return 1;
                 _fieldName += recvBuffer.substr(_bytesRead);
                 return 0;
@@ -212,7 +216,7 @@ int HttpRequest::parseHeaders(std::string &recvBuffer) {
         case FIELD_VALUE:
             pos = recvBuffer.find("\r", _bytesRead);
             if (pos == std::string::npos) {
-                if (isTooLong(recvBuffer.size() - _bytesRead))
+                if (isTooLong(recvBuffer.size() - _bytesRead) == true)
                     return 1;
                 _fieldValue += recvBuffer.substr(_bytesRead);
                 return 0;
@@ -357,12 +361,18 @@ int HttpRequest::bodyMode(std::string recvBuffer) {
 int HttpRequest::parseHttpRequest(std::string &recvBuffer, size_t bytes_read) {
     _bytesRead = bytes_read;
     _parsingDone = false;
-    if (parseRequestLine(recvBuffer) == 1)
+    if (parseRequestLine(recvBuffer) == 1) {
+        log(Level::WARNING, "parseHttpRequest: parseRequestLine");
         return 1;
-    if (parseHeaders(recvBuffer) == 1)
+    }
+    if (parseHeaders(recvBuffer) == 1) {
+        log(Level::WARNING, "parseHttpRequest: parseHEADERS");
         return 1;
-    if (bodyMode(recvBuffer) == 1)
+    }
+    if (bodyMode(recvBuffer) == 1) {
+        log(Level::WARNING, "parseHttpRequest: body no tea");
         return 1;
+    }
     return 0;
 }
 
