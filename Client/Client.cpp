@@ -11,7 +11,6 @@
 #include <cstring>
 #include <ctime>
 #include <fcntl.h>
-#include <iostream>
 #include <netinet/in.h>
 #include <poll.h>
 #include <sys/epoll.h>
