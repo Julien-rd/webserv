@@ -6,7 +6,7 @@
 #include <ctime>
 #include <string>
 
-enum clientStatus { CLIENT_KEEP, CLIENT_CLOSE, CLIENT_RESPONSE_READY };
+// enum clientStatus { CLIENT_KEEP, CLIENT_CLOSE};
 
 class Client {
   public:
@@ -18,15 +18,15 @@ class Client {
 
     // int  loop(std::string &recvBuffer);
 
-    clientStatus parseRecvBuffer(std::string &recvBuffer);
-    clientStatus parsePending();
-    clientStatus sendResponse();
+    bool parseRecvBuffer(std::string &recvBuffer);
+    bool parsePending();
+    bool sendResponse();
 
     void init(int epfd, const t_config *config, const int sid, const int clientFd);
     void reset();
     bool recvBufferIsParsed() const;
-    void         updateEpoll(const unsigned int &event);
     int        prepareSendCGI(int pipeReadFd);
+    bool keepConnection() const;
 
     // getters
     time_t getLastActivity();
@@ -48,11 +48,13 @@ class Client {
     size_t            _bytesSent;
     size_t            _responseSize;
     std::string       _recvBuffer;
+    size_t            _maxRecvBuffer;
 
     const t_config *_config;
     CGI             _CGI;
 
-    clientStatus closeConnection(int reason);
-    void         doCGI();
-    void         handleCGI();
+    bool closeConnection(int reason);
+    bool updateEpoll(const unsigned int &event);
+    void doCGI();
+    void handleCGI();
 };

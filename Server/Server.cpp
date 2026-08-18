@@ -177,14 +177,15 @@ void Server::handleServerEvent(void) {
         newClient(clientFd);
     }
 }
-clientStatus Server::recvClientEvent(Client &client) {
+
+bool Server::recvClientEvent(Client &client) {
     std::string recvBuffer(BUFFER_SIZE, '\0');
     ssize_t     bytesRead = recv(client.getFd(), &recvBuffer[0], BUFFER_SIZE, 0);
 
     if (bytesRead <= 0) {
         if (bytesRead == -1)
             error_msg(ERR_RECV);
-        return CLIENT_CLOSE;
+        return false;
     }
     recvBuffer.resize(bytesRead);
     return client.parseRecvBuffer(recvBuffer);
@@ -198,13 +199,13 @@ void Server::handleClientEvent(int clientFd, unsigned int event) {
     client.setLastActivity();
 
     if (event & EPOLLIN) {
-        if (recvClientEvent(client) == CLIENT_CLOSE)
+        if (recvClientEvent(client) == false)
             return closeConnection(clientFd);
     }
     if (event & EPOLLOUT) {
-        if (client.sendResponse() == CLIENT_CLOSE)
+        if (client.sendResponse() == false)
             return closeConnection(clientFd);
-        if (client.parsePending() == CLIENT_CLOSE)
+        if (client.parsePending() == false)
             return closeConnection(clientFd);
     }
 }

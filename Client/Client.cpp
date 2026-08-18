@@ -11,6 +11,7 @@
 #include <cstring>
 #include <ctime>
 #include <fcntl.h>
+#include <iostream>
 #include <netinet/in.h>
 #include <poll.h>
 #include <sys/epoll.h>
@@ -32,6 +33,7 @@ void Client::init(int epfd, const t_config *config, const int sid, const int cli
     _request.init(config->servers.at(sid).clientMaxBody);
     _response.init(config, sid);
     _CGI.init(&_request, _fd, _epfd, _sid, &_config->servers.at(_sid));
+    _maxRecvBuffer = config->servers.at(sid).clientMaxBody * MEGABYTE + HEADER_SLACK;
     setLastActivity();
 }
 
@@ -96,65 +98,69 @@ void Client::reset() {  // Fix: maybe even add _cgi.reset? why is responsestream
     _bytesRead = 0;
 }
 
-clientStatus Client::closeConnection(int reason) {
+bool Client::closeConnection(int reason) {
     _response.setConnection(false);
     if (reason == CLOSE_CLIENT_ERROR || reason == CLOSE_SERVER_ERROR)
         _response.build(_request);
     _fullResponse = _response.getFullResponse();
     _responseSize = _fullResponse.size();
-    updateEpoll(EPOLLIN | EPOLLOUT);
-    return CLIENT_RESPONSE_READY;
+    if (updateEpoll(EPOLLIN | EPOLLOUT) == false)
+        return false;
+    return true;
 }
 
-clientStatus Client::sendResponse() {
+bool Client::sendResponse() {
     if (_fullResponse.empty())
-        return CLIENT_KEEP;
+        return true;
     ssize_t n = send(_fd, &_fullResponse[_bytesSent], _responseSize - _bytesSent, 0);
-    if (n == -1) {
-        closeConnection(CLOSE_TRANSPORT_FAIL);
-        return CLIENT_CLOSE;
-    }
+    if (n == -1)
+        return false;
     _bytesSent += n;
     if (_bytesSent != _responseSize)
-        return CLIENT_KEEP;
+        return true;
     if (_response.keepConnection() == false)
-        return CLIENT_CLOSE;
-    updateEpoll(EPOLLIN);
+        return false;
+    _fullResponse.clear();
     _bytesSent = 0;
     _responseSize = 0;
+    _request.reset();
     _response.reset();
-    return CLIENT_KEEP;
+    return updateEpoll(EPOLLIN);
 }
 
-void Client::updateEpoll(const unsigned int &event) {
+bool Client::updateEpoll(const unsigned int &event) {
     struct epoll_event ev;
+    std::memset(&ev, 0, sizeof(ev));
     ev.events = event;
     ev.data.fd = _fd;
-    epoll_ctl(_epfd, EPOLL_CTL_MOD, _fd, &ev);
+    if (epoll_ctl(_epfd, EPOLL_CTL_MOD, _fd, &ev) == -1) {
+        log(Level::WARNING, "epoll_ctl MOD failed");
+        return false;
+    }
+    return true;
 }
 
-clientStatus Client::parsePending() {
-    if (_responseSize > 0)
-        return CLIENT_RESPONSE_READY;
-    if (recvBufferIsParsed() == true)
-        return CLIENT_KEEP;
+bool Client::parsePending() {
+    if (_responseSize > 0 || recvBufferIsParsed() == true)
+        return true;
     if (_request.parseHttpRequest(_recvBuffer, _bytesRead) == 1) {
         if (_request.getStatusCode() == 0)
             _request.setStatusCode(400);
         return closeConnection(CLOSE_CLIENT_ERROR);
     }
-    if (_request.parsingDone() == false)
-        return CLIENT_KEEP;
     _bytesRead = _request.getBytesRead();
+    if (_request.parsingDone() == false)
+        return true;
     if (_request.parseURIContent() == 1)
         return closeConnection(CLOSE_CLIENT_ERROR);
     if (_CGI.isCGIRequest(_request)) {
+        std::cout << "wha" << std::endl;
         if (!_CGI.handleCGI())
             return closeConnection(CLOSE_SERVER_ERROR);
         //     _request.reset();  // fix: maybe unnecessary
         //     return CLOSE;
         _request.reset();
-        return CLIENT_KEEP;
+        return true;
     }
     _response.build(_request);
     _fullResponse = _response.getFullResponse();
@@ -164,13 +170,20 @@ clientStatus Client::parsePending() {
         _recvBuffer.erase(0, _bytesRead);
         _bytesRead = 0;
     }
-    updateEpoll(EPOLLIN | EPOLLOUT);
-    return CLIENT_RESPONSE_READY;
+    if (updateEpoll(EPOLLIN | EPOLLOUT) == false)
+        return false;
+    return true;
 }
 
-clientStatus Client::parseRecvBuffer(std::string &recvBuffer) {
+bool Client::parseRecvBuffer(std::string &recvBuffer) {
+    if (_maxRecvBuffer - _recvBuffer.size() < recvBuffer.size()) {
+        _request.setStatusCode(_request.parsingDone() ? 413 : 431);
+        return closeConnection(CLOSE_CLIENT_ERROR);
+    }
     _recvBuffer += recvBuffer;
     return parsePending();
 }
 
 bool Client::recvBufferIsParsed() const { return _recvBuffer.size() == _bytesRead; }
+
+bool Client::keepConnection() const { return _response.keepConnection(); }
