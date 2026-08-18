@@ -188,7 +188,7 @@ bool Server::recvClientEvent(Client &client) {
         return 1;
     }
     recvBuffer.resize(bytesRead);
-    return client.parseRecvBuffer(recvBuffer), 0;
+    return client.parseRecvBuffer(recvBuffer);
 }
 
 void Server::handleClientEvent(int clientFd, unsigned int event) {
@@ -205,8 +205,10 @@ void Server::handleClientEvent(int clientFd, unsigned int event) {
     if (event & EPOLLOUT) {
         if (client.sendResponse() == 1)
             return closeConnection(clientFd);
-        if (client.keepConnection() == true)
-            client.parsePending();
+        if (client.keepConnection() == true) {
+            if (client.parsePending() == false)
+                return closeConnection(clientFd);
+        }
     }
 }
 

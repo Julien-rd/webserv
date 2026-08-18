@@ -18,8 +18,8 @@ class Client {
 
     // int  loop(std::string &recvBuffer);
 
-    void parseRecvBuffer(std::string &recvBuffer);
-    void parsePending();
+    bool parseRecvBuffer(std::string &recvBuffer);
+    bool parsePending();
     bool sendResponse();
 
     void init(int epfd, const t_config *config, const int sid, const int clientFd);
@@ -52,7 +52,7 @@ class Client {
     const t_config *_config;
     CGI             _CGI;
 
-    void closeConnection(int reason);
+    bool closeConnection(int reason);
     bool updateEpoll(const unsigned int &event);
     void doCGI();
     void handleCGI();

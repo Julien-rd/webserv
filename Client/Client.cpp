@@ -82,13 +82,15 @@ void Client::reset() {  // Fix: maybe even add _cgi.reset? why is responsestream
     _bytesRead = 0;
 }
 
-void Client::closeConnection(int reason) {
+bool Client::closeConnection(int reason) {
     _response.setConnection(false);
     if (reason == CLOSE_CLIENT_ERROR || reason == CLOSE_SERVER_ERROR)
         _response.build(_request);
     _fullResponse = _response.getFullResponse();
     _responseSize = _fullResponse.size();
-    updateEpoll(EPOLLIN | EPOLLOUT);
+    if (updateEpoll(EPOLLIN | EPOLLOUT) == false)
+        return false;
+    return true;
 }
 
 bool Client::sendResponse() {
@@ -100,7 +102,8 @@ bool Client::sendResponse() {
     _bytesSent += n;
     if (_bytesSent != _responseSize || _response.keepConnection())
         return 0;
-    updateEpoll(EPOLLIN);
+    if (updateEpoll(EPOLLIN) == false)
+        return 1;
     if (keepConnection() == false)
         return 1;
     _bytesSent = 0;
@@ -121,16 +124,16 @@ bool Client::updateEpoll(const unsigned int &event) {
     return true;
 }
 
-void Client::parsePending() {
+bool Client::parsePending() {
     if (_responseSize > 0 || recvBufferIsParsed() == true)
-        return;
+        return true;
     if (_request.parseHttpRequest(_recvBuffer, _bytesRead) == 1) {
         if (_request.getStatusCode() == 0)
             _request.setStatusCode(400);
         return closeConnection(CLOSE_CLIENT_ERROR);
     }
     if (_request.parsingDone() == false)
-        return;
+        return true;
     _bytesRead = _request.getBytesRead();
     if (_request.parseURIContent() == 1)
         return closeConnection(CLOSE_CLIENT_ERROR);
@@ -140,7 +143,7 @@ void Client::parsePending() {
         //     _request.reset();  // fix: maybe unnecessary
         //     return CLOSE;
         _request.reset();
-        return;
+        return true;
     }
     _response.build(_request);
     _fullResponse = _response.getFullResponse();
@@ -150,11 +153,12 @@ void Client::parsePending() {
         _recvBuffer.erase(0, _bytesRead);
         _bytesRead = 0;
     }
-    updateEpoll(EPOLLIN | EPOLLOUT);
-    return;
+    if (updateEpoll(EPOLLIN | EPOLLOUT) == false)
+        return false;
+    return true;
 }
 
-void Client::parseRecvBuffer(std::string &recvBuffer) {
+bool Client::parseRecvBuffer(std::string &recvBuffer) {
     if (_maxRecvBuffer - _recvBuffer.size() < recvBuffer.size()) {
         _request.setStatusCode(_request.parsingDone() ? 413 : 431);
         return closeConnection(CLOSE_CLIENT_ERROR);
