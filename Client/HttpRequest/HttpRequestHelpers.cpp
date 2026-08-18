@@ -12,8 +12,8 @@ bool HttpRequest::addHeader() {
     }
     size_t bytesToAdd = _fieldName.size() + _fieldValue.size();
     if (bytesToAdd > MAX_HEADER_SUM - _headerBytes) {
-                _statusCode = 431;
-                return false;
+        _statusCode = 431;
+        return false;
     }
     _headerBytes += bytesToAdd;
     std::string fieldNameToLow = _fieldName;
@@ -178,10 +178,15 @@ bool HttpRequest::validateURIPath(std::string &path) {
 }
 
 bool HttpRequest::validHttpsVersion() {
-    if (_httpVersion != "HTTP/1.1" &&
-        _httpVersion != "HTTP/1.0") {  // TODO does HTTP/1.1 need to be backward compatible? in
-                                       // that case maybe we can't make this check
+    if (_httpVersion.size() != 8 || _httpVersion.compare(0, 5, "HTTP/") != 0 ||
+        !isdigit(static_cast<unsigned char>(_httpVersion[5])) || _httpVersion[6] != '.' ||
+        !isdigit(static_cast<unsigned char>(_httpVersion[7]))) {
         _statusCode = 400;
+        log(Level::WARNING, "HTTP version wrong format");
+        return false;
+    }
+    if (_httpVersion != "HTTP/1.1" && _httpVersion != "HTTP/1.0") {
+        _statusCode = 505;
         log(Level::WARNING, "HTTP version not supported");
         return false;
     }
