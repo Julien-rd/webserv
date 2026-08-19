@@ -472,6 +472,7 @@ void HttpResponse::build(HttpRequest &request) {
     _statusCode = request.getStatusCode();
     if (_statusCode >= 400) {
         errorPage(request);
+        _allowedMethods.clear();
         return;
     }
 
@@ -486,6 +487,7 @@ void HttpResponse::build(HttpRequest &request) {
         addRedirectHeaders(result.path);
     else if (_statusCode >= 400 || addBody(request, result) == 1)
         errorPage(request);
+    _allowedMethods.clear();
 }
 
 const char *HttpResponse::getResponse() const { return _response.c_str(); }
