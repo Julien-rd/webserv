@@ -11,12 +11,13 @@
 #include <cstdlib>
 #include <exception>
 
-volatile bool gSignal = true;
+volatile sig_atomic_t gSignal = 1;
 
 void signalHandler(int sig) {
     (void) sig;
-    write(1, "\nShutting server down\n", 22);
-    gSignal = false;
+    const char msg[] = "\nShutting server down\n";
+    write(1, msg, sizeof(msg) - 1);
+    gSignal = 0;
 }
 
 static bool parseLogLevelArg(const std::string &arg, Level::Value &outLevel) {
@@ -69,6 +70,7 @@ bool validConfigFile(char *fileName) {
 
 int main(int argc, char **argv) {
     signal(SIGINT, signalHandler);
+    signal(SIGTERM, signalHandler);
     signal(SIGPIPE, SIG_IGN);
     t_config config;
 
@@ -110,7 +112,7 @@ int main(int argc, char **argv) {
     if (serverManager.init())
         return 1;
 
-    while (gSignal == true) {
+    while (gSignal) {
         try {
             poller.epollWait();
             serverManager.loopReadyEvents();

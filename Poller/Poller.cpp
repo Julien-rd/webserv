@@ -1,8 +1,8 @@
 #include "Poller.hpp"
 
-#include <unistd.h>
-
 #include "../Logger/Logger.hpp"
+
+#include <unistd.h>
 
 #define MAX_EVENTS 2048
 
@@ -30,8 +30,9 @@ int Poller::epollWait(void) {
                                    1000);  // NEXT TODO: 1000ms timeout and check for client last
                                            // activity over 10 difference to time()
     if (_readyEventsCount == -1) {
+        if (errno == EINTR)
+            return 0;
         log(Level::ERROR, "epoll_wait: " + std::string(strerror(errno)));
-        // perror(strerror(errno));
         return -1;
     }
     return _readyEventsCount;
