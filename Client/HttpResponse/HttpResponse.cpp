@@ -209,18 +209,30 @@ void HttpResponse::extractContentLength() {
     _response += "Content-Length: " + ss.str() + "\r\n";
 }
 
-std::string escapeHtml(const std::string& str) {
+std::string escapeHtml(const std::string &str) {
     std::string result;
     result.reserve(str.size() * 1.1);
 
-    for (char c : str) {
-        switch (c) {
-            case '&':  result.append("&amp;");  break;
-            case '<':  result.append("&lt;");   break;
-            case '>':  result.append("&gt;");   break;
-            case '"':  result.append("&quot;"); break;
-            case '\'': result.append("&#39;");  break;
-            default:   result.push_back(c);     break;
+    for (std::string::const_iterator it = str.begin(); it != str.end(); ++it) {
+        switch (*it) {
+        case '&':
+            result.append("&amp;");
+            break;
+        case '<':
+            result.append("&lt;");
+            break;
+        case '>':
+            result.append("&gt;");
+            break;
+        case '"':
+            result.append("&quot;");
+            break;
+        case '\'':
+            result.append("&#39;");
+            break;
+        default:
+            result.push_back(*it);
+            break;
         }
     }
     return result;
@@ -236,7 +248,7 @@ std::string autoindex(const std::string &path, const std::string &uri) {
     DIR *dir = opendir(path.c_str());
     if (!dir) {
         log(Level::WARNING, std::string("autoindex failed: ") + strerror(errno));
-        return std::string(); 
+        return std::string();
     }
     struct dirent *dr = readdir(dir);
     while (dr) {
@@ -261,7 +273,7 @@ bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
     if (result.autoindex == true) {
         autoindexHtml = autoindex(result.path, uri);
         if (!autoindexHtml.size()) {
-            _statusCode = 404; //fix: maybe overdoing but 403 for forbidden and 404 for not found
+            _statusCode = 404;  // fix: maybe overdoing but 403 for forbidden and 404 for not found
             return 1;
         }
         std::stringstream here(autoindexHtml);
@@ -337,7 +349,7 @@ void HttpResponse::addConnectionHeader(const HttpRequest &request) {
     std::map<std::string, std::string>           headers = request.getHeaders();
     std::map<std::string, std::string>::iterator it = headers.find("connection");
 
-    if (_keepAlive == false){
+    if (_keepAlive == false) {
         _response += "Connection: close\r\n";
         return;
     }
@@ -465,7 +477,7 @@ void HttpResponse::build(HttpRequest &request) {
 
 const char *HttpResponse::getResponse() const { return _response.c_str(); }
 
-std::vector<char> HttpResponse::getFullResponse() const{
+std::vector<char> HttpResponse::getFullResponse() const {
     std::vector<char> fullResponse;
     fullResponse.assign(_response.begin(), _response.end());
     fullResponse.insert(fullResponse.end(), _responseBody.begin(), _responseBody.end());
