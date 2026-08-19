@@ -115,8 +115,8 @@ void CGIResponse::build(HttpRequest &request) { //fix: detonate this function re
         return;
     extractStatus();
     buildStatusLine();
-    if (getTimeStamp() == 1)
-        return;
+    if (getTimeStamp() != 1)
+        _response += "Date: " + _timeStamp + "\r\n";
     addRules(request);
     if (_statusCode < 400)
         addCGIBody(request);
