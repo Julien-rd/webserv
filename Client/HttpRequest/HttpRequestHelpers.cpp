@@ -1,10 +1,21 @@
 #include "../../Logger/Logger.hpp"
+#include "../../Utils/Macros.hpp"
 #include "HttpRequest.hpp"
 
 #include <cctype>
 #include <string>
 
-void HttpRequest::addHeader() {
+bool HttpRequest::addHeader() {
+    if (_headers.size() == MAX_HEADERS) {
+        _statusCode = 431;
+        return false;
+    }
+    size_t bytesToAdd = _fieldName.size() + _fieldValue.size();
+    if (bytesToAdd > MAX_HEADER_SUM - _headerBytes) {
+        _statusCode = 431;
+        return false;
+    }
+    _headerBytes += bytesToAdd;
     std::string fieldNameToLow = _fieldName;
     for (size_t it = 0; it < _fieldName.size(); ++it)
         fieldNameToLow[it] = tolower(_fieldName[it]);
@@ -14,6 +25,7 @@ void HttpRequest::addHeader() {
         _headers[fieldNameToLow] = _fieldValue;
     _fieldName.clear();
     _fieldValue.clear();
+    return true;
 }
 
 void HttpRequest::setStatusCode(int status) { _statusCode = status; }
@@ -28,8 +40,52 @@ void HttpRequest::trim() {
         _fieldValue.erase(pos + 1);
 }
 
-void HttpRequest::exctractContent(std::string &recvBuffer, size_t pos) {
-    size_t skip = 1;
+bool HttpRequest::isTooLong(size_t pending) {
+    switch (_currentState) {
+    case METHOD:
+        if (_method.size() >= MAX_METHOD_LEN || pending > MAX_METHOD_LEN - _method.size()) {
+            _statusCode = 501;
+            log(Level::WARNING, "isTooLong: METHOD");
+            return true;
+        }
+        break;
+    case URI:
+        if (_uri.size() >= MAX_URI_LEN || pending > MAX_URI_LEN - _uri.size()) {
+            _statusCode = 414;
+            log(Level::WARNING, "isTooLong: URI");
+            return true;
+        }
+        break;
+    case HTTP_VERSION:
+        if (_httpVersion.size() >= MAX_HTTP_LEN || pending > MAX_HTTP_LEN - _httpVersion.size()) {
+            _statusCode = 400;
+            log(Level::WARNING, "isTooLong: HTTP_VERSION");
+            return true;
+        }
+        break;
+    case FIELD_NAME:
+        if (_fieldName.size() >= MAX_FIELD_LEN || pending > MAX_FIELD_LEN - _fieldName.size()) {
+            _statusCode = 431;
+            log(Level::WARNING, "isTooLong: FIELD_NAME");
+            return true;
+        }
+        break;
+    case FIELD_VALUE:
+        if (_fieldValue.size() >= MAX_FIELD_LEN || pending > MAX_FIELD_LEN - _fieldValue.size()) {
+            _statusCode = 431;
+            log(Level::WARNING, "isTooLong: FIELD_VALUE");
+            return true;
+        }
+        break;
+    case CR:;
+    default:;
+    }
+    return false;
+}
+
+bool HttpRequest::extractContent(std::string &recvBuffer, size_t pos) {
+    if (isTooLong(pos - _bytesRead) == true)
+        return false;
     switch (_currentState) {
     case METHOD:
         _method += recvBuffer.substr(_bytesRead, pos - _bytesRead);
@@ -39,20 +95,18 @@ void HttpRequest::exctractContent(std::string &recvBuffer, size_t pos) {
         break;
     case HTTP_VERSION:
         _httpVersion += recvBuffer.substr(_bytesRead, pos - _bytesRead);
-        // skip = 2;
         break;
     case FIELD_NAME:
         _fieldName += recvBuffer.substr(_bytesRead, pos - _bytesRead);
         break;
     case FIELD_VALUE:
         _fieldValue += recvBuffer.substr(_bytesRead, pos - _bytesRead);
-        // skip = 2;
         break;
-    case CR:
-        skip = 1;
+    case CR:;
     default:;
     }
-    _bytesRead = pos + skip;
+    _bytesRead = pos + 1;
+    return true;
 }
 
 bool HttpRequest::brokenSyntax(size_t pos, size_t max_pos) {
@@ -123,12 +177,16 @@ bool HttpRequest::validateURIPath(std::string &path) {
     return true;
 }
 
-#include <csignal>
-#include <cstdlib>
 bool HttpRequest::validHttpsVersion() {
-    if (_httpVersion != "HTTP/1.1" && _httpVersion != "HTTP/1.0") {  // TODO does HTTP/1.1 need to be backward compatible? in
-                                       // that case maybe we can't make this check
+    if (_httpVersion.size() != 8 || _httpVersion.compare(0, 5, "HTTP/") != 0 ||
+        !isdigit(static_cast<unsigned char>(_httpVersion[5])) || _httpVersion[6] != '.' ||
+        !isdigit(static_cast<unsigned char>(_httpVersion[7]))) {
         _statusCode = 400;
+        log(Level::WARNING, "HTTP version wrong format");
+        return false;
+    }
+    if (_httpVersion != "HTTP/1.1" && _httpVersion != "HTTP/1.0") {
+        _statusCode = 505;
         log(Level::WARNING, "HTTP version not supported");
         return false;
     }
@@ -136,7 +194,7 @@ bool HttpRequest::validHttpsVersion() {
 }
 
 bool HttpRequest::hasHostHeader() {
-    if(_httpVersion == "HTTP/1.0")
+    if (_httpVersion == "HTTP/1.0")
         return true;
     std::map<std::string, std::string>::iterator it = _headers.find("host");
     if (it == _headers.end())
@@ -181,7 +239,7 @@ bool HttpRequest::isChunked() {
     std::map<std::string, std::string>::iterator it = _headers.find("transfer-encoding");
     if (it == _headers.end())
         return true;
-    if(_httpVersion == "HTTP/1.0"){
+    if (_httpVersion == "HTTP/1.0") {
         log(Level::WARNING, "transfer encoding not supported by http 1.0 .");
         return false;
     }
@@ -215,7 +273,6 @@ void HttpRequest::reset() {
     _fieldName.clear();
     _fieldValue.clear();
     _contentLength = 0;
-    // _bytesRead = 0;
     _statusCode = 0;
     _parsingDone = false;
     _headers.clear();
@@ -227,4 +284,5 @@ void HttpRequest::reset() {
     _uriData.pathInfo.clear();
     _uriData.query.clear();
     _uriData.extension.clear();
+    _headerBytes = 0;
 }

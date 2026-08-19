@@ -112,6 +112,10 @@ void HttpResponse::getReasonPhraseClientErr() {
         break;
     case (417):
         _reasonPhrase = "Expectation Failed";
+        break ;
+    case (431):
+        _reasonPhrase = "Request Header Fields Too Large";
+    break;
     }
 }
 
@@ -137,7 +141,7 @@ void HttpResponse::getReasonPhraseServerErr() {
     }
 }
 
-void HttpResponse::getReasonPhrase() {
+void HttpResponse::getReasonPhrase()  {
     switch (_responseClass) {
     case INFO:
         getReasonPhraseInfo();

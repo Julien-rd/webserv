@@ -16,40 +16,43 @@ enum responseClass { INFO = 1, SUCCESS = 2, REDIR = 3, CLIENT_ERR = 4, SERVER_ER
 class HttpResponse {
   public:
     HttpResponse();
-    virtual void      build(HttpRequest& request);
+    virtual void      build(HttpRequest &request);
     void              getReasonPhrase();
-    const char       *getResponse();
-    std::vector<char> getResponseBody();
+    const char       *getResponse() const;
+    std::vector<char> getResponseBody() const;
+    std::vector<char> getFullResponse() const;
 
     void         init(const t_config *config, const int sid);
     virtual void reset();
     int          getTimeStamp();
+    void         setConnection(bool keepAlive);
     bool         keepConnection() const;
 
   protected:
     // Fix: should be extracted out of conf file
     std::map<std::string, std::string> _mimeTypes;
     // what does this comment mean or what does it lead to? : except status code 204
-    size_t                             _contentLength;
     std::string                        _contentType;
     std::string                        _timeStamp;
-    size_t                             _responseClass;
     std::string                        _reasonPhrase;
     static const std::string           _httpVersion;
     const t_config                    *_config;
     int                                _sid;
+    size_t                             _statusCode;
+    size_t                             _responseClass;
+    size_t                             _contentLength;
     std::string                        _response;
     std::vector<char>                  _responseBody;
-    size_t                             _statusCode;
     std::string                        _method;
     std::string                        _statusCodeStr;
+    std::string                        _allowedMethods;
     bool                               _keepAlive;
 
     bool                methodAllowed(unsigned int index, const std::vector<t_location> &locations);
     void                buildStatusLine();
-    int                 extractContentType(std::string path);
+    void                extractContentType(std::string path);
     void                extractContentLength();
-    void                serveErrorPage(const HttpRequest &request);
+    void                errorPage(const HttpRequest &request);
     void                addRedirectHeaders(const std::string &path);
     virtual bool        addBody(HttpRequest request, const UriResult &result);
     static unsigned int getLocation(const std::string &match, const t_server &serverConfig);

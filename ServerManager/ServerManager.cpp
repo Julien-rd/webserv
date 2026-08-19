@@ -106,19 +106,17 @@ void ServerManager::timeoutClients() {
 void ServerManager::loopReadyEvents(void) {
     timeoutClients();
     for (int i = 0; i < _readyEventsCount; ++i) {
-        int fd = _triggeredEvents[i].data.fd;  // if it's Server or Client event, data union
-        // will have Server or Client fd in fd. if its a
-        // CGI event, data union will save two ints
-        // (pipefd & clientFd) in u64 (or ptr)
-        // std::cout << "fd in loop is: " << fd << std::endl;
+        int fd = _triggeredEvents[i].data.fd;
         if (_servers.find(fd) != _servers.end()) {
             _servers.at(fd).handleServerEvent();
         } else if (_clientToServerMap.find(fd) != _clientToServerMap.end()) {
-            _servers.at(_clientToServerMap[fd]).handleClientEvent(fd);
-        } else {         /* is CGI's pipe fd */
-            int fds[2];  // fds[0] is the pipefd. fds[1] is the owning client's fd.
+            _servers.at(_clientToServerMap[fd]).handleClientEvent(fd, _triggeredEvents[i].events);
+        } else { /* is CGI's pipe fd */
+            int fds[2];
             pp_memcpy(fds, &_triggeredEvents[i].data.u64, sizeof(uint64_t));
-            _clients.at(fds[1]).getCGI().buildResponse(fds[0]);
+            if (_clients.at(fds[1]).prepareSendCGI(fds[0]) == RESPONSE_ERR) {
+                //fix: handle error here
+            }
         }
     }
 }

@@ -20,6 +20,8 @@
 
 bool HttpResponse::keepConnection() const { return _keepAlive; }
 
+void HttpResponse::setConnection(bool keepAlive) { _keepAlive = keepAlive; }
+
 unsigned int HttpResponse::getLocation(const std::string &match, const t_server &serverConfig) {
     unsigned int longestMatch = 0;
     unsigned int ret = 0;
@@ -53,20 +55,33 @@ void HttpResponse::attachPrefix(const std::string &uri,
 bool HttpResponse::methodAllowed(unsigned int index, const std::vector<t_location> &locations) {
     bool rootEmpty = !(*locations.begin()).allowMethods.size();
     bool currentEmpty = !locations.at(index).allowMethods.size();
+    bool found = false;
 
     if (!currentEmpty) {
         const t_location &current = locations.at(index);
-        return std::find(current.allowMethods.begin(), current.allowMethods.end(), _method) !=
-                       current.allowMethods.end()
-                   ? 1
-                   : 0;
+        for (std::vector<std::string>::const_iterator it = current.allowMethods.begin();
+             it != current.allowMethods.end();
+             ++it) {
+            if (*it == _method)
+                found = true;
+            _allowedMethods += *it;
+            if (it + 1 != current.allowMethods.end())
+                _allowedMethods += ", ";
+        }
+        return found;
     }
     if (!rootEmpty) {
         const t_location &root = *locations.begin();
-        return std::find(root.allowMethods.begin(), root.allowMethods.end(), _method) !=
-                       root.allowMethods.end()
-                   ? 1
-                   : 0;
+        for (std::vector<std::string>::const_iterator it = root.allowMethods.begin();
+             it != root.allowMethods.end();
+             ++it) {
+            if (*it == _method)
+                found = true;
+            _allowedMethods += *it;
+            if (it + 1 != root.allowMethods.end())
+                _allowedMethods += ", ";
+        }
+        return found;
     }
     return true;
 }
@@ -138,7 +153,13 @@ UriResult HttpResponse::processURI(const std::string &uri) {
 
 const std::string HttpResponse::_httpVersion = "HTTP/1.1";
 
-HttpResponse::HttpResponse() : _config(NULL), _sid(-1) {
+HttpResponse::HttpResponse()
+        : _config(NULL)
+        , _sid(-1)
+        , _statusCode(0)
+        , _responseClass(CLIENT_ERR)
+        , _contentLength(0)
+        , _keepAlive(true) {
     _mimeTypes["html"] = "text/html";
     _mimeTypes["htm"] = "text/html";
     _mimeTypes["css"] = "text/css";
@@ -148,10 +169,15 @@ HttpResponse::HttpResponse() : _config(NULL), _sid(-1) {
     _mimeTypes["jpeg"] = "image/jpeg";
     _mimeTypes["ico"] = "image/x-icon";
     _mimeTypes["txt"] = "text/plain";
-    _mimeTypes["application/json"] = "text/plain";
+    _mimeTypes["json"] = "application/json";
+    _mimeTypes["gif"]  = "image/gif";
+    _mimeTypes["svg"]  = "image/svg+xml";
+    _mimeTypes["pdf"]  = "application/pdf";
+    _mimeTypes["xml"]  = "application/xml";
+    _keepAlive = true;
 }
 
-std::vector<char> HttpResponse::getResponseBody() { return _responseBody; }
+std::vector<char> HttpResponse::getResponseBody() const { return _responseBody; }
 
 void HttpResponse::init(const t_config *config, const int sid) {
     _config = config;
@@ -167,8 +193,10 @@ void HttpResponse::reset() {
     _responseBody.clear();
     _statusCodeStr.clear();
     _method.clear();
+    _allowedMethods.clear();
     _statusCode = 0;
     _responseClass = 0;
+    _keepAlive = true;
 }
 
 int HttpResponse::getTimeStamp() {
@@ -184,25 +212,51 @@ int HttpResponse::getTimeStamp() {
     return 0;
 }
 
-int HttpResponse::extractContentType(std::string path) {
-    size_t pos = path.find_last_of('.');
-    if (pos == std::string::npos || pos == 0 || path[pos - 1] == '/')
-        return 1;
-    std::string                                  contentType = path.substr(pos + 1);
-    std::map<std::string, std::string>::iterator it = _mimeTypes.find(contentType);
-    if (it == _mimeTypes.end()) {  // TODO: fix, infinitely loads on fail
-        return 1;
+void HttpResponse::extractContentType(std::string path) {
+    size_t      pos = path.find_last_of('.');
+    std::string type = "application/octet-stream";
+
+    if (pos != std::string::npos && pos != 0 && path[pos - 1] != '/') {
+        std::map<std::string, std::string>::iterator it = _mimeTypes.find(path.substr(pos + 1));
+        if (it != _mimeTypes.end())
+            type = it->second;
     }
-    _response += "Content-Type: ";
-    _response += it->second;
-    _response += "\r\n";
-    return 0;
+    _response += "Content-Type: " + type + "\r\n";
 }
 
 void HttpResponse::extractContentLength() {
     std::ostringstream ss;
     ss << _responseBody.size();
     _response += "Content-Length: " + ss.str() + "\r\n";
+}
+
+std::string escapeHtml(const std::string &str) {
+    std::string result;
+    result.reserve(str.size() * 1.1);
+
+    for (std::string::const_iterator it = str.begin(); it != str.end(); ++it) {
+        switch (*it) {
+        case '&':
+            result.append("&amp;");
+            break;
+        case '<':
+            result.append("&lt;");
+            break;
+        case '>':
+            result.append("&gt;");
+            break;
+        case '"':
+            result.append("&quot;");
+            break;
+        case '\'':
+            result.append("&#39;");
+            break;
+        default:
+            result.push_back(*it);
+            break;
+        }
+    }
+    return result;
 }
 
 std::string autoindex(const std::string &path, const std::string &uri) {
@@ -213,12 +267,16 @@ std::string autoindex(const std::string &path, const std::string &uri) {
            "<h1>Index of " +
            uri + "</h1>\r\n";
     DIR *dir = opendir(path.c_str());
-    if (!dir)
-        return NULL;  // TODO: std::string cannot return NULL > UB
+    if (!dir) {
+        log(Level::WARNING, std::string("autoindex failed: ") + strerror(errno));
+        return std::string();
+    }
     struct dirent *dr = readdir(dir);
     while (dr) {
-        if (std::string(".").compare(dr->d_name))
-            file += "<p><a href=\"" + uri + dr->d_name + "\">" + dr->d_name + "</a></p>\r\n";
+        if (std::string(".").compare(dr->d_name)) {
+            std::string entry = escapeHtml(dr->d_name);
+            file += "<p><a href=\"" + uri + entry + "\">" + entry + "</a></p>\r\n";
+        }
         dr = readdir(dir);
     }
     file += "\r\n\r\n</body>\r\n</html>";
@@ -235,6 +293,10 @@ bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
     }
     if (result.autoindex == true) {
         autoindexHtml = autoindex(result.path, uri);
+        if (!autoindexHtml.size()) {
+            _statusCode = 404;  // fix: maybe overdoing but 403 for forbidden and 404 for not found
+            return 1;
+        }
         std::stringstream here(autoindexHtml);
         _responseBody.resize(autoindexHtml.size());
         here.read(&_responseBody[0], autoindexHtml.size());
@@ -273,11 +335,7 @@ bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
         }
         close(fd);
         _responseBody.resize(total);
-        if (extractContentType(result.path) == 1) {
-            log(Level::WARNING, "Content-Type not supported");
-            _statusCode = 415;
-            return 1;
-        }
+        extractContentType(result.path);
     }
     extractContentLength();
     _response += "\r\n";
@@ -308,7 +366,12 @@ void HttpResponse::addConnectionHeader(const HttpRequest &request) {
     std::map<std::string, std::string>           headers = request.getHeaders();
     std::map<std::string, std::string>::iterator it = headers.find("connection");
 
-    if (_statusCode == 400 || _statusCode == 408 || _statusCode == 413 || _statusCode == 501)
+    if (_keepAlive == false) {
+        _response += "Connection: close\r\n";
+        return;
+    }
+    if (_statusCode == 400 || _statusCode == 408 || _statusCode == 413 || _statusCode == 414 ||
+        _statusCode == 431 || _statusCode == 501 || _statusCode == 505)
         _keepAlive = false;
     else if (version == "HTTP/1.0") {
         if (it != headers.end())
@@ -332,6 +395,8 @@ void HttpResponse::addHeaders(const HttpRequest &request) {
         _response += "Date: " + _timeStamp + "\r\n";
     addConnectionHeader(request);
     addCacheHeaders();
+    if (_statusCode == 405)
+        _response += "Allow: " + _allowedMethods + "\r\n";
     addSecurityHeaders();
 }
 
@@ -354,7 +419,7 @@ void HttpResponse::buildStatusLine() {
     _response += "\r\n";
 }
 
-void HttpResponse::serveErrorPage(const HttpRequest &request) {
+void HttpResponse::errorPage(const HttpRequest &request) {
     std::ostringstream ss;
     std::stringstream  st;
     st << _statusCode;
@@ -413,7 +478,8 @@ void HttpResponse::build(HttpRequest &request) {
 
     _statusCode = request.getStatusCode();
     if (_statusCode >= 400) {
-        serveErrorPage(request);
+        errorPage(request);
+        _allowedMethods.clear();
         return;
     }
 
@@ -427,7 +493,15 @@ void HttpResponse::build(HttpRequest &request) {
     if (_statusCode > 299 && _statusCode < 400)
         addRedirectHeaders(result.path);
     else if (_statusCode >= 400 || addBody(request, result) == 1)
-        serveErrorPage(request);
+        errorPage(request);
+    _allowedMethods.clear();
 }
 
-const char *HttpResponse::getResponse() { return _response.c_str(); }
+const char *HttpResponse::getResponse() const { return _response.c_str(); }
+
+std::vector<char> HttpResponse::getFullResponse() const {
+    std::vector<char> fullResponse;
+    fullResponse.assign(_response.begin(), _response.end());
+    fullResponse.insert(fullResponse.end(), _responseBody.begin(), _responseBody.end());
+    return fullResponse;
+}

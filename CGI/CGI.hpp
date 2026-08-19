@@ -10,6 +10,8 @@
 
 class Client;
 
+enum status { RESPONSE_READY, RESPONSE_PENDING, RESPONSE_ERR};
+
 enum envStates { PYTHON, PHP, METHOD_GET, METHOD_POST };
 
 typedef struct s_metaVariables {
@@ -41,13 +43,14 @@ class CGI {
     ~CGI(void);
 
     bool handleCGI(void);
-    void buildResponse(int pipeReadFd);
+    int buildResponse(int pipeReadFd);
     bool isCGIRequest(const HttpRequest &request);
     void init(HttpRequest *request, int clientFd, int epfd, int sid, const t_server *serverConfig);
     void reset();
 
     // getters
     pid_t getPid(void) const;
+    const CGIResponse &getResponse();
 
   private:
     std::string _CGIResponseStream;

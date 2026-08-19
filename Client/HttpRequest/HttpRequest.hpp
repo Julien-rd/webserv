@@ -75,6 +75,7 @@ class HttpRequest {
     bool                               _parsingDone;
     std::vector<char>                  _body;
     size_t                             _clientMaxBody;
+    size_t                             _headerBytes;
 
     // size_t _bytes_read implent bytes_read!!! erase is to inefficient
 
@@ -91,12 +92,13 @@ class HttpRequest {
     int  parseRequestLine(std::string &recvBuffer);
     int  bodyMode(std::string recvBuffer);
     void parseBody(std::string recvBuffer);
-    int  parseChunkedBody(std::string recvBuffer);
+    int  parseChunkedBody(const std::string &recvBuffer);
     bool saveData();
     bool validateMandatoryHeaders();
     void trim();
     void findSeperator(std::string &recvBuffer, char seperator, size_t &pos, size_t &max_pos);
-    void exctractContent(std::string &recvBuffer, size_t pos);
+    bool extractContent(std::string &recvBuffer, size_t pos);
     bool brokenSyntax(size_t pos, size_t max_pos);
-    void addHeader();
+    bool addHeader();
+    bool isTooLong(size_t pending);
 };

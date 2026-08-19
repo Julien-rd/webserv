@@ -15,7 +15,7 @@ Poller::~Poller(void) {
 }
 
 bool Poller::createEpoll(void) {
-    _epfd = epoll_create(0);
+    _epfd = epoll_create(1);
     if (_epfd == -1) {
         log(Level::ERROR, "epoll_create: " + std::string(strerror(errno)));
         return 1;

@@ -5,16 +5,16 @@
 #include "../Utils/Macros.hpp"
 
 #include <cstdio>
-#include <sstream>
 #include <cstring>
 #include <dirent.h>
-#include <iostream>
 #include <errno.h>
 #include <fcntl.h>
+#include <iostream>
+#include <sstream>
 #include <stdio.h>
 #include <sys/epoll.h>
-#include <sys/stat.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -101,13 +101,10 @@ bool CGI::initCGI(void) {  // fix: would be nice to add a little map with extens
     if (_request->getUriData().extension == ".py") {
         if (!initScript(PYTHON))
             return false;
-        // std::cout << "initialized python CGI" << std::endl;
     } else if (_request->getUriData().extension == ".php") {
         if (!initScript(PHP))
             return false;
-        // std::cout << "initialized php CGI" << std::endl;
     } else {
-        // initUnkownExtension();
         log(Level::WARNING, "initialized CGI with unknown extension");
         return false;
     }
@@ -274,7 +271,8 @@ bool CGI::isCGIRequest(const HttpRequest &request) {
     return false;
 }
 
-void CGI::init(HttpRequest *request, int clientFd, int epfd, int sid, const t_server *serverConfig) {
+void CGI::init(
+    HttpRequest *request, int clientFd, int epfd, int sid, const t_server *serverConfig) {
 
     _request = request;
     _epfd = epfd;
@@ -291,6 +289,10 @@ void CGI::init(HttpRequest *request, int clientFd, int epfd, int sid, const t_se
 void CGI::reset(void) {
     // _clientFd = -1; //fix: was buggy but where does this happen instead or does it just get
     // overwritten anyways
+    _CGIResponseLen = 0;
+    _CGIResponse.reset();
+    _CGIResponseStr.erase();
+    _CGIResponseStream.erase();
     _scriptName.erase();
     _executable.erase();
     _argv.clear();
@@ -312,7 +314,7 @@ bool CGI::doCGI(void) {
     if (!spawnProcess()) {
         return false;
     }
-    _CGIPid = getPid(); //oops
+    _CGIPid = getPid();  // oops
     return true;
 }
 
@@ -328,7 +330,11 @@ bool CGI::handleCGI() {
     _CGIResponseLen = 0;
     return true;
 }
-void CGI::buildResponse(int pipeReadFd) {  // ALL OF THE ERRORS HERE CAUSE INFINITE LOADING AND CRASH THE SERVER
+
+const CGIResponse &CGI::getResponse() { return _CGIResponse; }
+
+int CGI::buildResponse(
+    int pipeReadFd) {  // ALL OF THE ERRORS HERE CAUSE INFINITE LOADING AND CRASH THE SERVER
 
     std::string buf(BUFFER_SIZE, '\0');
     ssize_t     bytesRead;
@@ -338,15 +344,16 @@ void CGI::buildResponse(int pipeReadFd) {  // ALL OF THE ERRORS HERE CAUSE INFIN
         _CGIResponseLen = 0;
         _CGIResponseStream.erase();
         log(Level::WARNING, "read() failed in Client::handleCGIResponse()");
-        return;  // NOTFINISHED: i have no idea whats open here and what this function is
-                 // responsible for
+        return RESPONSE_ERR;  // NOTFINISHED: i have no idea whats open here and what this function
+                              // is responsible for
     }
     if (bytesRead == 0) {
         int res = waitpid(_CGIPid, NULL, WNOHANG);
         if (res == -1) {
             log(Level::WARNING, "waitpid() failed in Client::handleCGIResponse()");
-            return;  // NOTFINISHED: i have no idea whats open here and what this function is
-                     // responsible for // needs to have the epoll del everywhere
+            return RESPONSE_ERR;  // NOTFINISHED: i have no idea whats open here and what this
+                                  // function is responsible for // needs to have the epoll del
+                                  // everywhere
         }
         if (res == 0) {
             kill(_CGIPid, SIGKILL);
@@ -354,7 +361,7 @@ void CGI::buildResponse(int pipeReadFd) {  // ALL OF THE ERRORS HERE CAUSE INFIN
         }
         if (epoll_ctl(_epfd, EPOLL_CTL_DEL, pipeReadFd, NULL) == -1) {
             log(Level::WARNING, "epoll_ctl() DEL failed in readCGIPipe()");
-            return;
+            return RESPONSE_ERR;
         }
         close(pipeReadFd);
         _CGIResponse.setCGIResponseStr(_CGIResponseStream);
@@ -362,29 +369,11 @@ void CGI::buildResponse(int pipeReadFd) {  // ALL OF THE ERRORS HERE CAUSE INFIN
         std::cout << _request->getMethod() << std::endl;
         std::cout << _request->getUri() << std::endl;
         _CGIResponse.build(*_request);
-        const char *response = _CGIResponse.getResponse();
-        if (send(_clientFd, response, strlen(response), 0) == -1) {
-            log(Level::WARNING, "send() failed in readCGIPipe()");
-            return;  // NOTFINISHED: i have no idea whats open here and what this function is
-                     // responsible for
-        }
-        if (_CGIResponse.getResponseBody().size() != 0) {
-            std::vector<char> responseBody = _CGIResponse.getResponseBody();
-            if (send(_clientFd, &responseBody[0], responseBody.size(), 0) == -1) {
-                log(Level::WARNING, "send() failed in readCGIPipe()");
-                return;  // NOTFINISHED: i have no idea whats open here and what this function is
-                         // responsible for
-            }
-        }
-        _request->reset();
-        _CGIResponse.reset();
-        reset();
-        _CGIResponseStream.erase();
-        _CGIResponseLen = 0;
-        _CGIResponseStr.erase();
+        return RESPONSE_READY;
     } else {
         buf.resize(bytesRead);
         _CGIResponseLen += bytesRead;
         _CGIResponseStream.append(buf.data(), bytesRead);
+        return RESPONSE_PENDING;
     }
 }

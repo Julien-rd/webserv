@@ -54,9 +54,7 @@ void Server::updateClientsMap(e_mapOperation op, const int clientFd) {
     case ADD: {
         _clientToServerMap.insert(std::pair<int, int>(clientFd, _serverSocket));
         Client &client = _clients[clientFd];
-        // std::cout << "here1\n";
         client.init(_epfd, &_config, _sid, clientFd);
-        // std::cout << "here2\n";
         _serverToClientsMap.at(_serverSocket).insert(clientFd);
         break;
     }
@@ -178,26 +176,36 @@ void Server::handleServerEvent(void) {
     }
 }
 
-void Server::handleClientEvent(const int clientFd) {
+bool Server::recvClientEvent(Client &client) {
     std::string recvBuffer(BUFFER_SIZE, '\0');
-    ssize_t     bytesRead = 0;
-    _clients.at(clientFd).setLastActivity();
-    bytesRead = recv(clientFd, &recvBuffer[0], BUFFER_SIZE, 0);
-    if (bytesRead == 0) {
-        closeConnection(clientFd);
-        return;
-    }
-    if (bytesRead == -1) {
-        error_msg(ERR_RECV);
-        closeConnection(clientFd);
-        return;
+    ssize_t     bytesRead = recv(client.getFd(), &recvBuffer[0], BUFFER_SIZE, 0);
+
+    if (bytesRead <= 0) {
+        if (bytesRead == -1)
+            error_msg(ERR_RECV);
+        return false;
     }
     recvBuffer.resize(bytesRead);
-    int responseStatus = _clients.at(clientFd).loop(recvBuffer);
+    return client.parseRecvBuffer(recvBuffer);
+}
 
-    if (responseStatus >= 1) {
-        closeConnection(clientFd);
-        return;
+void Server::handleClientEvent(int clientFd, unsigned int event) {
+    Client &client = _clients.at(clientFd);
+
+    if (event & (EPOLLHUP | EPOLLERR))
+        return closeConnection(clientFd);
+    client.setLastActivity();
+
+    if (event & EPOLLIN) {
+        if (recvClientEvent(client) == false)
+            return closeConnection(clientFd);
+    }
+    if (event & EPOLLOUT) {
+        if (client.sendResponse() == false)
+            return closeConnection(clientFd);
+        
+        if (client.parsePending() == false)
+            return closeConnection(clientFd);
     }
 }
 

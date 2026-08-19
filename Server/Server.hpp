@@ -27,7 +27,9 @@ class Server : public Error {
     int  checkClientCap(void);
     void closeConnection(int clientFd);
     void handleServerEvent(void);
-    void handleClientEvent(int clientFd);
+
+    void handleClientEvent(int clientFd, unsigned int event);
+    bool recvClientEvent(Client &client);
 
     int  start(void);
     void closeClientFds(void);

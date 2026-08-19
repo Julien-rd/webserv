@@ -19,20 +19,36 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-
-Client::Client() {
-    _fd = -1;
-}
+Client::Client() { _fd = -1; }
 
 void Client::init(int epfd, const t_config *config, const int sid, const int clientFd) {
     _config = config;
     _epfd = epfd;
     _sid = sid;
     _fd = clientFd;
+    _bytesSent = 0;
+    _bytesRead = 0;
+    _responseSize = 0;
     _request.init(config->servers.at(sid).clientMaxBody);
     _response.init(config, sid);
     _CGI.init(&_request, _fd, _epfd, _sid, &_config->servers.at(_sid));
+    _maxRecvBuffer = config->servers.at(sid).clientMaxBody + HEADER_SLACK;
     setLastActivity();
+}
+
+int Client::prepareSendCGI(int pipeReadFd) {
+    int status = _CGI.buildResponse(pipeReadFd);
+    if (status == RESPONSE_PENDING)
+        return RESPONSE_PENDING;
+    if (status == RESPONSE_READY) {
+        _fullResponse = _CGI.getResponse().getFullResponse();
+        _responseSize = _fullResponse.size();
+        updateEpoll(EPOLLIN | EPOLLOUT);
+    } else if (status == RESPONSE_ERR) {
+        // fix: error message?
+    }
+    _CGI.reset();
+    return status;
 }
 
 // Client::Client(const Client &obj)
@@ -66,7 +82,7 @@ time_t Client::getLastActivity() { return _lastActivity; }
 
 int Client::getFd() const { return _fd; }
 
-CGI& Client::getCGI()  { return _CGI; }
+CGI &Client::getCGI() { return _CGI; }
 
 void Client::reset() {  // Fix: maybe even add _cgi.reset? why is responsestream and cgiresponselen
                         // taken to client??
@@ -74,61 +90,99 @@ void Client::reset() {  // Fix: maybe even add _cgi.reset? why is responsestream
     _request.reset();
     _response.reset();
     _CGI.reset();
+    _recvBuffer.clear();
+    _fullResponse.clear();
+    _bytesSent = 0;
+    _responseSize = 0;
+    _bytesRead = 0;
 }
 
-void Client::closeConnection(int reason) {
+bool Client::closeConnection(int reason) {
+    _response.setConnection(false);
     if (reason == CLOSE_CLIENT_ERROR || reason == CLOSE_SERVER_ERROR)
         _response.build(_request);
-    const char *response = _response.getResponse();
-    if (send(_fd, response, strlen(response), 0) == -1)
-        log(Level::WARNING, "send() failed in Client::closeConnection");
-    // NOTFINISHED: i have no idea whats open here and what this function is responsible for
-    return;
+    _fullResponse = _response.getFullResponse();
+    _responseSize = _fullResponse.size();
+    if (updateEpoll(EPOLLIN | EPOLLOUT) == false)
+        return false;
+    return true;
 }
 
+bool Client::sendResponse() {
+    if (_fullResponse.empty())
+        return true;
+    ssize_t n = send(_fd, &_fullResponse[_bytesSent], _responseSize - _bytesSent, 0);
+    if (n == -1)
+        return false;
+    _bytesSent += n;
+    if (_bytesSent != _responseSize)
+        return true;
+    if (_response.keepConnection() == false)
+        return false;
+    _fullResponse.clear();
+    _bytesSent = 0;
+    _responseSize = 0;
+    _request.reset();
+    _response.reset();
+    return updateEpoll(EPOLLIN);
+}
 
-
-int Client::loop(std::string &recvBuffer) {
-    _bytesRead = 0;
-    unsigned int bufferLen = recvBuffer.length();
-    while (_bytesRead < bufferLen) {
-        if (_request.parseHttpRequest(recvBuffer, _bytesRead) == 1) {
-            if (_request.getStatusCode() == 0)
-                _request.setStatusCode(400);
-            closeConnection(CLOSE_CLIENT_ERROR);
-            return CLOSE;
-        }
-        if (_request.parsingDone() == false)
-            return KEEP;
-        _bytesRead = _request.getBytesRead();
-        if (_request.parseURIContent() == 1) {
-            closeConnection(CLOSE_CLIENT_ERROR);
-            return CLOSE;
-        }
-        if (_CGI.isCGIRequest(_request)) {
-            if (!_CGI.handleCGI()) {
-                closeConnection(CLOSE_SERVER_ERROR);
-                _request.reset(); //fix: maybe unnecessary
-                return CLOSE;
-            }
-            _request.reset();
-            return KEEP;
-        }
-        _response.build(_request);
-        const char *response = _response.getResponse();
-        if (send(_fd, response, strlen(response), 0) == -1) {
-            closeConnection(CLOSE_TRANSPORT_FAIL);
-            return CLOSE;
-        }
-        std::vector<char> responseBody = _response.getResponseBody();
-        if (!responseBody.empty() && send(_fd, &responseBody[0], responseBody.size(), 0) == -1) {
-            closeConnection(CLOSE_TRANSPORT_FAIL);
-            return CLOSE;
-        }
-        if (_response.keepConnection() == false)
-            return CLOSE;
-        _request.reset();
-        _response.reset();
+bool Client::updateEpoll(const unsigned int &event) {
+    struct epoll_event ev;
+    std::memset(&ev, 0, sizeof(ev));
+    ev.events = event;
+    ev.data.fd = _fd;
+    if (epoll_ctl(_epfd, EPOLL_CTL_MOD, _fd, &ev) == -1) {
+        log(Level::WARNING, "epoll_ctl MOD failed");
+        return false;
     }
-    return KEEP;
+    return true;
 }
+
+bool Client::parsePending() {
+    if (_responseSize > 0 || recvBufferIsParsed() == true)
+        return true;
+    if (_request.parseHttpRequest(_recvBuffer, _bytesRead) == 1) {
+        if (_request.getStatusCode() == 0)
+            _request.setStatusCode(400);
+        return closeConnection(CLOSE_CLIENT_ERROR);
+    }
+    _bytesRead = _request.getBytesRead();
+    if (_request.parsingDone() == false)
+        return true;
+    if (_request.parseURIContent() == 1)
+        return closeConnection(CLOSE_CLIENT_ERROR);
+    if (_CGI.isCGIRequest(_request)) {
+        if (!_CGI.handleCGI())
+            return closeConnection(CLOSE_SERVER_ERROR);
+        //     _request.reset();  // fix: maybe unnecessary
+        //     return CLOSE;
+        _request.reset();
+        return true;
+    }
+    _response.build(_request);
+    _fullResponse = _response.getFullResponse();
+    _responseSize = _fullResponse.size();
+    _request.reset();
+    if (_bytesRead > _recvBuffer.size() / 2) {
+        _recvBuffer.erase(0, _bytesRead);
+        _bytesRead = 0;
+    }
+    if (updateEpoll(EPOLLIN | EPOLLOUT) == false)
+        return false;
+    return true;
+}
+
+bool Client::parseRecvBuffer(std::string &recvBuffer) {
+    if (_maxRecvBuffer - _recvBuffer.size() < recvBuffer.size()) {
+        _request.setStatusCode(_request.parsingDone() ? 413 : 431);
+        log(Level::INFO, "recvBuffer too big");
+        return closeConnection(CLOSE_CLIENT_ERROR);
+    }
+    _recvBuffer += recvBuffer;
+    return parsePending();
+}
+
+bool Client::recvBufferIsParsed() const { return _recvBuffer.size() == _bytesRead; }
+
+bool Client::keepConnection() const { return _response.keepConnection(); }

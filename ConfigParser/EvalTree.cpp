@@ -1,5 +1,6 @@
 #include "Parser.hpp"
 #include "Structs.hpp"
+#include "../Utils/Macros.hpp"
 
 #include <cstring>
 
@@ -71,7 +72,7 @@ void evalDirective(Node *tree, t_config &evalData) {
 }
 
 void setServer(t_server &server) {
-    server.clientMaxBody = 2;
+    server.clientMaxBody = 2 * MEGABYTE;
     server.ip = "0.0.0.0";
     server.port = "8080";
     server.localhost = false;
