@@ -55,7 +55,7 @@ void HttpResponse::attachPrefix(const std::string &uri,
 bool HttpResponse::methodAllowed(unsigned int index, const std::vector<t_location> &locations) {
     bool rootEmpty = !(*locations.begin()).allowMethods.size();
     bool currentEmpty = !locations.at(index).allowMethods.size();
-    bool found;
+    bool found = false;
 
     if (!currentEmpty) {
         const t_location &current = locations.at(index);
