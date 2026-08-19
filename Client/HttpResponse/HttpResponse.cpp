@@ -353,7 +353,8 @@ void HttpResponse::addConnectionHeader(const HttpRequest &request) {
         _response += "Connection: close\r\n";
         return;
     }
-    if (_statusCode == 400 || _statusCode == 408 || _statusCode == 413 || _statusCode == 501)
+    if (_statusCode == 400 || _statusCode == 408 || _statusCode == 413 || _statusCode == 414 ||
+        _statusCode == 431 || _statusCode == 501 || _statusCode == 505)
         _keepAlive = false;
     else if (version == "HTTP/1.0") {
         if (it != headers.end())

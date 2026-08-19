@@ -43,35 +43,35 @@ void HttpRequest::trim() {
 bool HttpRequest::isTooLong(size_t pending) {
     switch (_currentState) {
     case METHOD:
-        if (pending > MAX_METHOD_LEN - _method.size()) {
+        if (_method.size() >= MAX_METHOD_LEN || pending > MAX_METHOD_LEN - _method.size()) {
             _statusCode = 501;
             log(Level::WARNING, "isTooLong: METHOD");
             return true;
         }
         break;
     case URI:
-        if (pending > MAX_URI_LEN - _uri.size()) {
+        if (_uri.size() >= MAX_URI_LEN || pending > MAX_URI_LEN - _uri.size()) {
             _statusCode = 414;
             log(Level::WARNING, "isTooLong: URI");
             return true;
         }
         break;
     case HTTP_VERSION:
-        if (pending > MAX_HTTP_LEN - _httpVersion.size()) {
+        if (_httpVersion.size() >= MAX_HTTP_LEN || pending > MAX_HTTP_LEN - _httpVersion.size()) {
             _statusCode = 400;
             log(Level::WARNING, "isTooLong: HTTP_VERSION");
             return true;
         }
         break;
     case FIELD_NAME:
-        if (pending > MAX_FIELD_LEN - _fieldName.size()) {
+        if (_fieldName.size() >= MAX_FIELD_LEN || pending > MAX_FIELD_LEN - _fieldName.size()) {
             _statusCode = 431;
             log(Level::WARNING, "isTooLong: FIELD_NAME");
             return true;
         }
         break;
     case FIELD_VALUE:
-        if (pending > MAX_FIELD_LEN - _fieldValue.size()) {
+        if (_fieldValue.size() >= MAX_FIELD_LEN || pending > MAX_FIELD_LEN - _fieldValue.size()) {
             _statusCode = 431;
             log(Level::WARNING, "isTooLong: FIELD_VALUE");
             return true;
