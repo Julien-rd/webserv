@@ -54,9 +54,7 @@ void Server::updateClientsMap(e_mapOperation op, const int clientFd) {
     case ADD: {
         _clientToServerMap.insert(std::pair<int, int>(clientFd, _serverSocket));
         Client &client = _clients[clientFd];
-        // std::cout << "here1\n";
         client.init(_epfd, &_config, _sid, clientFd);
-        // std::cout << "here2\n";
         _serverToClientsMap.at(_serverSocket).insert(clientFd);
         break;
     }

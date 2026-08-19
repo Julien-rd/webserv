@@ -55,20 +55,29 @@ void HttpResponse::attachPrefix(const std::string &uri,
 bool HttpResponse::methodAllowed(unsigned int index, const std::vector<t_location> &locations) {
     bool rootEmpty = !(*locations.begin()).allowMethods.size();
     bool currentEmpty = !locations.at(index).allowMethods.size();
+    bool found;
 
     if (!currentEmpty) {
         const t_location &current = locations.at(index);
-        return std::find(current.allowMethods.begin(), current.allowMethods.end(), _method) !=
-                       current.allowMethods.end()
-                   ? 1
-                   : 0;
+        for(std::vector<std::string>::const_iterator it = current.allowMethods.begin(); it != current.allowMethods.end(); ++it){
+            if(*it == _method)
+                found = true;
+            _allowedMethods += *it;
+            if(it + 1 != current.allowMethods.end())
+                _allowedMethods += ", ";
+        }
+        return found;
     }
     if (!rootEmpty) {
         const t_location &root = *locations.begin();
-        return std::find(root.allowMethods.begin(), root.allowMethods.end(), _method) !=
-                       root.allowMethods.end()
-                   ? 1
-                   : 0;
+        for(std::vector<std::string>::const_iterator it = root.allowMethods.begin(); it != root.allowMethods.end(); ++it){
+            if(*it == _method)
+                found = true;
+            _allowedMethods += *it;
+            if(it + 1 != root.allowMethods.end())
+                _allowedMethods += ", ";
+        }
+        return found;
     }
     return true;
 }
@@ -170,6 +179,7 @@ void HttpResponse::reset() {
     _responseBody.clear();
     _statusCodeStr.clear();
     _method.clear();
+    _allowedMethods.clear();
     _statusCode = 0;
     _responseClass = 0;
     _keepAlive = true;
@@ -378,6 +388,8 @@ void HttpResponse::addHeaders(const HttpRequest &request) {
         _response += "Date: " + _timeStamp + "\r\n";
     addConnectionHeader(request);
     addCacheHeaders();
+    if(_statusCode == 405)
+        _response +=  "Allow: " +  _allowedMethods + "\r\n";
     addSecurityHeaders();
 }
 

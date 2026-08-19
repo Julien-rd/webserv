@@ -101,13 +101,10 @@ bool CGI::initCGI(void) {  // fix: would be nice to add a little map with extens
     if (_request->getUriData().extension == ".py") {
         if (!initScript(PYTHON))
             return false;
-        // std::cout << "initialized python CGI" << std::endl;
     } else if (_request->getUriData().extension == ".php") {
         if (!initScript(PHP))
             return false;
-        // std::cout << "initialized php CGI" << std::endl;
     } else {
-        // initUnkownExtension();
         log(Level::WARNING, "initialized CGI with unknown extension");
         return false;
     }

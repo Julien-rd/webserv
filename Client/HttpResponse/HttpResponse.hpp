@@ -45,6 +45,7 @@ class HttpResponse {
     size_t                             _statusCode;
     std::string                        _method;
     std::string                        _statusCodeStr;
+    std::string                        _allowedMethods;
     bool                               _keepAlive;
 
     bool                methodAllowed(unsigned int index, const std::vector<t_location> &locations);
