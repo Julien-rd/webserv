@@ -148,11 +148,8 @@ bool Client::parsePending() {
         return closeConnection(CLOSE_CLIENT_ERROR);
     }
     _bytesRead = _request.getBytesRead();
-    if (_request.parsingDone() == false) {
-        log(Level::INFO, "parsing not done");
+    if (_request.parsingDone() == false)
         return true;
-    }
-    log(Level::INFO, "parsing done");
     if (_request.parseURIContent() == 1)
         return closeConnection(CLOSE_CLIENT_ERROR);
     if (_CGI.isCGIRequest(_request)) {
