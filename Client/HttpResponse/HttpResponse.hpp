@@ -20,11 +20,11 @@ class HttpResponse {
     void              getReasonPhrase();
     const char       *getResponse() const;
     std::vector<char> getResponseBody() const;
-    std::vector<char> getFullResponse() const ;
+    std::vector<char> getFullResponse() const;
 
     void         init(const t_config *config, const int sid);
     virtual void reset();
-    int          getTimeStamp()  ;
+    int          getTimeStamp();
     void         setConnection(bool keepAlive);
     bool         keepConnection() const;
 
@@ -32,17 +32,17 @@ class HttpResponse {
     // Fix: should be extracted out of conf file
     std::map<std::string, std::string> _mimeTypes;
     // what does this comment mean or what does it lead to? : except status code 204
-    size_t                             _contentLength;
     std::string                        _contentType;
     std::string                        _timeStamp;
-    size_t                             _responseClass;
     std::string                        _reasonPhrase;
     static const std::string           _httpVersion;
     const t_config                    *_config;
     int                                _sid;
+    size_t                             _statusCode;
+    size_t                             _responseClass;
+    size_t                             _contentLength;
     std::string                        _response;
     std::vector<char>                  _responseBody;
-    size_t                             _statusCode;
     std::string                        _method;
     std::string                        _statusCodeStr;
     std::string                        _allowedMethods;
@@ -50,7 +50,7 @@ class HttpResponse {
 
     bool                methodAllowed(unsigned int index, const std::vector<t_location> &locations);
     void                buildStatusLine();
-    int                 extractContentType(std::string path);
+    void                extractContentType(std::string path);
     void                extractContentLength();
     void                errorPage(const HttpRequest &request);
     void                addRedirectHeaders(const std::string &path);

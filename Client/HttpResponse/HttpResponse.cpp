@@ -59,22 +59,26 @@ bool HttpResponse::methodAllowed(unsigned int index, const std::vector<t_locatio
 
     if (!currentEmpty) {
         const t_location &current = locations.at(index);
-        for(std::vector<std::string>::const_iterator it = current.allowMethods.begin(); it != current.allowMethods.end(); ++it){
-            if(*it == _method)
+        for (std::vector<std::string>::const_iterator it = current.allowMethods.begin();
+             it != current.allowMethods.end();
+             ++it) {
+            if (*it == _method)
                 found = true;
             _allowedMethods += *it;
-            if(it + 1 != current.allowMethods.end())
+            if (it + 1 != current.allowMethods.end())
                 _allowedMethods += ", ";
         }
         return found;
     }
     if (!rootEmpty) {
         const t_location &root = *locations.begin();
-        for(std::vector<std::string>::const_iterator it = root.allowMethods.begin(); it != root.allowMethods.end(); ++it){
-            if(*it == _method)
+        for (std::vector<std::string>::const_iterator it = root.allowMethods.begin();
+             it != root.allowMethods.end();
+             ++it) {
+            if (*it == _method)
                 found = true;
             _allowedMethods += *it;
-            if(it + 1 != root.allowMethods.end())
+            if (it + 1 != root.allowMethods.end())
                 _allowedMethods += ", ";
         }
         return found;
@@ -149,7 +153,13 @@ UriResult HttpResponse::processURI(const std::string &uri) {
 
 const std::string HttpResponse::_httpVersion = "HTTP/1.1";
 
-HttpResponse::HttpResponse() : _config(NULL), _sid(-1) {
+HttpResponse::HttpResponse()
+        : _config(NULL)
+        , _sid(-1)
+        , _statusCode(0)
+        , _responseClass(CLIENT_ERR)
+        , _contentLength(0)
+        , _keepAlive(true) {
     _mimeTypes["html"] = "text/html";
     _mimeTypes["htm"] = "text/html";
     _mimeTypes["css"] = "text/css";
@@ -159,7 +169,11 @@ HttpResponse::HttpResponse() : _config(NULL), _sid(-1) {
     _mimeTypes["jpeg"] = "image/jpeg";
     _mimeTypes["ico"] = "image/x-icon";
     _mimeTypes["txt"] = "text/plain";
-    _mimeTypes["application/json"] = "text/plain";
+    _mimeTypes["json"] = "application/json";
+    _mimeTypes["gif"]  = "image/gif";
+    _mimeTypes["svg"]  = "image/svg+xml";
+    _mimeTypes["pdf"]  = "application/pdf";
+    _mimeTypes["xml"]  = "application/xml";
     _keepAlive = true;
 }
 
@@ -198,19 +212,16 @@ int HttpResponse::getTimeStamp() {
     return 0;
 }
 
-int HttpResponse::extractContentType(std::string path) {
-    size_t pos = path.find_last_of('.');
-    if (pos == std::string::npos || pos == 0 || path[pos - 1] == '/')
-        return 1;
-    std::string                                  contentType = path.substr(pos + 1);
-    std::map<std::string, std::string>::iterator it = _mimeTypes.find(contentType);
-    if (it == _mimeTypes.end()) {  // TODO: fix, infinitely loads on fail
-        return 1;
+void HttpResponse::extractContentType(std::string path) {
+    size_t      pos = path.find_last_of('.');
+    std::string type = "application/octet-stream";
+
+    if (pos != std::string::npos && pos != 0 && path[pos - 1] != '/') {
+        std::map<std::string, std::string>::iterator it = _mimeTypes.find(path.substr(pos + 1));
+        if (it != _mimeTypes.end())
+            type = it->second;
     }
-    _response += "Content-Type: ";
-    _response += it->second;
-    _response += "\r\n";
-    return 0;
+    _response += "Content-Type: " + type + "\r\n";
 }
 
 void HttpResponse::extractContentLength() {
@@ -324,11 +335,7 @@ bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
         }
         close(fd);
         _responseBody.resize(total);
-        if (extractContentType(result.path) == 1) {
-            log(Level::WARNING, "Content-Type not supported");
-            _statusCode = 415;
-            return 1;
-        }
+        extractContentType(result.path);
     }
     extractContentLength();
     _response += "\r\n";
@@ -388,8 +395,8 @@ void HttpResponse::addHeaders(const HttpRequest &request) {
         _response += "Date: " + _timeStamp + "\r\n";
     addConnectionHeader(request);
     addCacheHeaders();
-    if(_statusCode == 405)
-        _response +=  "Allow: " +  _allowedMethods + "\r\n";
+    if (_statusCode == 405)
+        _response += "Allow: " + _allowedMethods + "\r\n";
     addSecurityHeaders();
 }
 
