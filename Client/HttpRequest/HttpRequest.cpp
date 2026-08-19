@@ -391,18 +391,12 @@ int HttpRequest::bodyMode(std::string recvBuffer) {
 int HttpRequest::parseHttpRequest(std::string &recvBuffer, size_t bytes_read) {
     _bytesRead = bytes_read;
     _parsingDone = false;
-    if (parseRequestLine(recvBuffer) == 1) {
-        log(Level::WARNING, "parseHttpRequest: parseRequestLine");
+    if (parseRequestLine(recvBuffer) == 1)
         return 1;
-    }
-    if (parseHeaders(recvBuffer) == 1) {
-        log(Level::WARNING, "parseHttpRequest: parseHeaders");
+    if (parseHeaders(recvBuffer) == 1) 
         return 1;
-    }
-    if (bodyMode(recvBuffer) == 1) {
-        log(Level::WARNING, "parseHttpRequest: body no tea");
+    if (bodyMode(recvBuffer) == 1)
         return 1;
-    }
     return 0;
 }
 

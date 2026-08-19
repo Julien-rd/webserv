@@ -10,18 +10,13 @@
 #include <csignal>
 #include <cstdlib>
 #include <exception>
-#include <iostream>
 
-/* TODO Claude says: In a single-process, non-blocking architecture, the rule is
-simple: Any fd you need to wait on must go through epoll. Waiting on it any
-other way blocks the loop. This applies to sockets, pipes, timers (timerfd),
-signals (signalfd) — anything. CGI pipes are no exception. */
+volatile bool gSignal = true;
+
 void signalHandler(int sig) {
-    std::cout << "Exiting with signal: " << sig << std::endl;  // fix how to log here? should we?
-    // _exit(sig);
-    throw std::exception();  // TODO we shouldn't use exceptions for normal
-                             // logic
-                             // routes, except that ctrl+c is not normal??? idk
+    (void) sig;
+    write(1, "\nShutting server down\n", 22);
+    gSignal = false;
 }
 
 static bool parseLogLevelArg(const std::string &arg, Level::Value &outLevel) {
@@ -115,7 +110,7 @@ int main(int argc, char **argv) {
     if (serverManager.init())
         return 1;
 
-    while (1) {
+    while (gSignal == true) {
         try {
             poller.epollWait();
             serverManager.loopReadyEvents();
