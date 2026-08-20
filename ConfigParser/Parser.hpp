@@ -15,6 +15,7 @@ void parseAutoindex(const std::vector<std::string> &args, t_location &location);
 void parseLocalhost(const std::vector<std::string> &args, t_server &server);
 void parseNumberGlobal(const std::vector<std::string> &args, unsigned int *number);
 void parseMaxBody(const std::vector<std::string> &args, t_server &server);
+void parseErrorPages(const std::vector<std::string> &args, t_server &server);
 void parseListen(const std::vector<std::string> &args, t_server &server);
 void allowMethods(const std::vector<std::string> &args, t_location &location);
 void parseRoot(const std::vector<std::string> &args, t_location &location);

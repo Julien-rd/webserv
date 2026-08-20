@@ -3,6 +3,7 @@
 #include "Structs.hpp"
 
 #include <algorithm>
+#include <utility>
 #include <vector>
 
 void parseLogLvl(const std::vector<std::string> &args, Level::Value &logLvl) {
@@ -49,6 +50,18 @@ void parseNumberGlobal(const std::vector<std::string> &args, unsigned int *numbe
     if (*end != 0 || val < 0 || val > 5000 || args.size() != 1)
         throw std::runtime_error("Global directive invalid");
     *number = (int) val;
+}
+
+void parseErrorPages(const std::vector<std::string> &args, t_server &server) {
+    if (args.size() != 2)
+        throw std::runtime_error("error_page directive invalid");
+    char *end;
+    long  val = strtol(args.at(0).c_str(), &end, 10);
+    if (*end != 0 || val < 0 || val > 599)
+        throw std::runtime_error("error_page directive invalid");
+    int errCode = val;
+    std::string path = args.at(1);
+    server.errorPages.insert(std::pair<int, std::string>(errCode, path));
 }
 
 void parseMaxBody(const std::vector<std::string> &args, t_server &server) {

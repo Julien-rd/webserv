@@ -86,6 +86,7 @@ Node *context(Tokenizer &stream, std::vector<std::string> &args) {
 }
 
 void initDefaults(void) {
+    d.push_back(std::pair<std::string, int>("error_page", ERRORPAGE));
     d.push_back(std::pair<std::string, int>("log_level", LOGLVL));
     d.push_back(std::pair<std::string, int>("return", RETURN));
     d.push_back(std::pair<std::string, int>("try_files", TRYFILES));

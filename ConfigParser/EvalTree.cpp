@@ -54,6 +54,9 @@ void evalDirective(Node *tree, t_config &evalData) {
     switch (tree->tag) {
     // case SERVER_NAME: evalData.servers.back().server_name = tree->args[0];
     // break;
+    case ERRORPAGE:
+        parseErrorPages(tree->args, evalData.servers.back());
+        break;
     case CLIENT_MAX_BODY_SIZE:
         parseMaxBody(tree->args, evalData.servers.back());
         break;

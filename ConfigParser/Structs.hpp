@@ -2,6 +2,7 @@
 
 #include "../Logger/Logger.hpp"
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -14,6 +15,7 @@ struct Node {
 enum types { CONTEXT, DIRECTIVE, BASE };
 
 enum d_tags {
+    ERRORPAGE,
     LOGLVL,
     INDEX,
     TRYFILES,
@@ -54,6 +56,7 @@ typedef struct s_server {
     // std::string server_name;
     std::string               ip;
     std::string               port;
+    std::map<int, std::string> errorPages;
     unsigned int              clientMaxBody;
     std::vector<t_location>   locations;
     std::vector<t_cgi_config> cgiConfigs;

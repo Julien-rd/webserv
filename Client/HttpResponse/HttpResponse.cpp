@@ -4,6 +4,7 @@
 #include "HttpResponse.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <csignal>
 #include <cstddef>
 #include <cstdlib>
@@ -11,6 +12,7 @@
 #include <ctime>
 #include <dirent.h>
 #include <fcntl.h>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -170,10 +172,10 @@ HttpResponse::HttpResponse()
     _mimeTypes["ico"] = "image/x-icon";
     _mimeTypes["txt"] = "text/plain";
     _mimeTypes["json"] = "application/json";
-    _mimeTypes["gif"]  = "image/gif";
-    _mimeTypes["svg"]  = "image/svg+xml";
-    _mimeTypes["pdf"]  = "application/pdf";
-    _mimeTypes["xml"]  = "application/xml";
+    _mimeTypes["gif"] = "image/gif";
+    _mimeTypes["svg"] = "image/svg+xml";
+    _mimeTypes["pdf"] = "application/pdf";
+    _mimeTypes["xml"] = "application/xml";
     _keepAlive = true;
 }
 
@@ -428,13 +430,34 @@ void HttpResponse::errorPage(const HttpRequest &request) {
     _response.clear();
     buildStatusLine();
     addHeaders(request);
-    std::string htmlBody = "<!DOCTYPE html>\r\n"
-                           "<html>\r\n"
-                           "    <body>\r\n<h1>" +
-                           _statusCodeStr + " " + _reasonPhrase +
-                           "</h1>\r\n"
-                           "    </body>\r\n"
-                           "</html>\r\n";
+
+    std::string                       htmlBody;
+    bool                              done = false;
+    const std::map<int, std::string> &errPages = _config->servers.at(_sid).errorPages;
+    if (errPages.find(_statusCode) != errPages.end()) {
+        std::string fileName = ROOT_FOLDER"/" + errPages.at(_statusCode);
+        std::ifstream errPage(fileName.c_str());
+        if (!errPage.is_open()) {
+            log(Level::WARNING,
+                "error page file couldn't be opened: " + errPages.at(_statusCode) +
+                    " (fallback to default error page)");
+        } else {
+            std::stringstream buf;
+            buf << errPage.rdbuf();
+            htmlBody = buf.str();
+            errPage.close();
+            done = true;
+        }
+    }
+    if (!done) {
+        htmlBody = "<!DOCTYPE html>\r\n"
+                   "<html>\r\n"
+                   "    <body>\r\n<h1>" +
+                   _statusCodeStr + " " + _reasonPhrase +
+                   "</h1>\r\n"
+                   "    </body>\r\n"
+                   "</html>\r\n";
+    }
     _response += "Content-Type: text/html\r\n";
     ss << htmlBody.length();
     _response += "Content-Length: " + ss.str() + "\r\n";

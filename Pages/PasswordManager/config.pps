@@ -2,6 +2,7 @@
 client_timeout 50;
 log_level info;
 server {
+    error_page 404 PasswordManager/errorpages/error404.html;
   client_max_body_size        1;
 
   cgi_config .py /usr/bin/python3;

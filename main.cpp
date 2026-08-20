@@ -15,8 +15,6 @@ volatile sig_atomic_t gSignal = 1;
 
 void signalHandler(int sig) {
     (void) sig;
-    const char msg[] = "\nShutting server down\n";
-    write(1, msg, sizeof(msg) - 1);
     gSignal = 0;
 }
 
@@ -121,4 +119,6 @@ int main(int argc, char **argv) {
             return 1;
         }
     }
+    log(Level::INFO, "Shutting Webserver down");
+    //fix: maybe catch child processes, close all file descriptors etc?
 }
