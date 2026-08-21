@@ -15,6 +15,7 @@ volatile sig_atomic_t gSignal = 1;
 
 void signalHandler(int sig) {
     (void) sig;
+    write(1, "\n", 1);
     gSignal = 0;
 }
 
