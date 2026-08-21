@@ -34,9 +34,8 @@ Server::Server(const Server &obj)
         , _addrInfo(NULL) {}
 
 Server::~Server(void) {
-    if (_addrInfo) {
+    if (_addrInfo)
         freeaddrinfo(_addrInfo);
-    }
 }
 
 void Server::closeClientFds(void) {
@@ -137,10 +136,18 @@ void Server::bindAndListen(void) {
 }
 
 int Server::start(void) {
-    initServerSocket();
-    setServerSockAddr();
-    addSocketToEpoll(_serverSocket);
-    bindAndListen();
+    try {
+        initServerSocket();
+        setServerSockAddr();
+        bindAndListen();
+        addSocketToEpoll(_serverSocket);
+    } catch (...) {
+        if (_serverSocket != -1) {
+            close(_serverSocket);
+            _serverSocket = -1;
+        }
+        throw;
+    }
     return _serverSocket;
 }
 
