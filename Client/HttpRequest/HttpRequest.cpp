@@ -281,7 +281,7 @@ void HttpRequest::parseBody(const std::string &recvBuffer) {
     _bytesNeeded = _contentLength - _body.size();
     std::string::const_iterator start = recvBuffer.begin() + _bytesRead;
     std::string::const_iterator end = recvBuffer.end();
-    size_t                len = recvBuffer.length() - _bytesRead;
+    size_t                      len = recvBuffer.length() - _bytesRead;
     if (_bytesNeeded > len) {
         _body.insert(_body.end(), start, end);
         _bytesRead += len;
@@ -393,7 +393,7 @@ int HttpRequest::parseHttpRequest(std::string &recvBuffer, size_t bytes_read) {
     _parsingDone = false;
     if (parseRequestLine(recvBuffer) == 1)
         return 1;
-    if (parseHeaders(recvBuffer) == 1) 
+    if (parseHeaders(recvBuffer) == 1)
         return 1;
     if (bodyMode(recvBuffer) == 1)
         return 1;
@@ -404,9 +404,14 @@ std::string percentDecode(const std::string &encoded, bool isQuery) {
     std::string result;
     for (size_t i = 0; i < encoded.size(); ++i) {
         if (encoded[i] == '%' && i + 2 < encoded.size()) {
+            const std::string s = encoded.substr(i + 1, 2);
+            if (s.size() != 2 || s[0] == '+' || s[0] == '-')
+                return "";
             int                val;
-            std::istringstream hex(encoded.substr(i + 1, 2));
-            hex >> std::hex >> val;
+            std::istringstream hex(s);
+            hex >> std::noskipws >> std::hex >> val;
+            if (hex.fail() || !hex.eof())
+                return "";
             result += static_cast<char>(val);
             i += 2;
         } else if (isQuery && encoded[i] == '+') {

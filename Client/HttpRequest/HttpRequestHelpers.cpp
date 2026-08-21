@@ -166,6 +166,10 @@ bool HttpRequest::validUri() {
 }
 
 bool HttpRequest::validateURIPath(std::string &path) {
+    if(path.empty()){
+        log(Level::WARNING, "invalid hex");
+        return false;
+    }
     if (*(path.begin()) != '/') {
         log(Level::WARNING, "path doesn't begin with '/'");
         return false;
