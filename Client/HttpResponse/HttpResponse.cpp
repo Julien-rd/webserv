@@ -54,38 +54,59 @@ void HttpResponse::attachPrefix(const std::string &uri,
         path = ROOT_FOLDER + uri;
 }
 
-bool HttpResponse::methodAllowed(unsigned int index, const std::vector<t_location> &locations) {
+ bool HttpResponse::methodAllowed(unsigned int index, const std::vector<t_location> &locations) {
     bool rootEmpty = !(*locations.begin()).allowMethods.size();
     bool currentEmpty = !locations.at(index).allowMethods.size();
-    bool found = false;
 
     if (!currentEmpty) {
         const t_location &current = locations.at(index);
-        for (std::vector<std::string>::const_iterator it = current.allowMethods.begin();
-             it != current.allowMethods.end();
-             ++it) {
-            if (*it == _method)
-                found = true;
-            _allowedMethods += *it;
-            if (it + 1 != current.allowMethods.end())
-                _allowedMethods += ", ";
-        }
-        return found;
+        return std::find(current.allowMethods.begin(), current.allowMethods.end(), _method) !=
+                       current.allowMethods.end() ? 1 : 0;
     }
     if (!rootEmpty) {
         const t_location &root = *locations.begin();
+        return std::find(root.allowMethods.begin(), root.allowMethods.end(), _method) !=
+                       root.allowMethods.end() ? 1 : 0;
+    }
+    return true;
+}
+
+void HttpResponse::buildAllowedMethodsHeader(const HttpRequest &request) {
+    std::string uri = request.getUri();
+    const t_server &serverConfig = _config->servers.at(_sid);
+    unsigned int    index = getLocation(uri, serverConfig);
+    const std::vector<t_location> &locations = serverConfig.locations;
+
+
+    bool rootEmpty = !(*locations.begin()).allowMethods.size();
+    bool currentEmpty = !locations.at(index).allowMethods.size();
+
+    if (!currentEmpty) {
+        const t_location &current = locations.at(index);
+        _response += "Allow: ";
+        for (std::vector<std::string>::const_iterator it = current.allowMethods.begin();
+             it != current.allowMethods.end();
+             ++it) {
+            _response += *it;
+            if (it + 1 != current.allowMethods.end())
+                _response += ", ";
+        }
+        _response += "\r\n";
+        return ;
+    }
+    if (!rootEmpty) {
+        const t_location &root = *locations.begin();
+        _response += "Allow: ";
         for (std::vector<std::string>::const_iterator it = root.allowMethods.begin();
              it != root.allowMethods.end();
              ++it) {
-            if (*it == _method)
-                found = true;
-            _allowedMethods += *it;
+            _response += *it;
             if (it + 1 != root.allowMethods.end())
-                _allowedMethods += ", ";
+                _response += ", ";
         }
-        return found;
+        _response += "\r\n";
+        return ;
     }
-    return true;
 }
 
 /**
@@ -195,7 +216,6 @@ void HttpResponse::reset() {
     _responseBody.clear();
     _statusCodeStr.clear();
     _method.clear();
-    _allowedMethods.clear();
     _statusCode = 0;
     _responseClass = 0;
     _keepAlive = true;
@@ -398,7 +418,7 @@ void HttpResponse::addHeaders(const HttpRequest &request) {
     addConnectionHeader(request);
     addCacheHeaders();
     if (_statusCode == 405)
-        _response += "Allow: " + _allowedMethods + "\r\n";
+        buildAllowedMethodsHeader(request);
     addSecurityHeaders();
 }
 
@@ -435,7 +455,7 @@ void HttpResponse::errorPage(const HttpRequest &request) {
     bool                              done = false;
     const std::map<int, std::string> &errPages = _config->servers.at(_sid).errorPages;
     if (errPages.find(_statusCode) != errPages.end()) {
-        std::string fileName = ROOT_FOLDER"/" + errPages.at(_statusCode);
+        std::string   fileName = ROOT_FOLDER "/" + errPages.at(_statusCode);
         std::ifstream errPage(fileName.c_str());
         if (!errPage.is_open()) {
             log(Level::WARNING,
@@ -500,11 +520,9 @@ void HttpResponse::build(HttpRequest &request) {
     std::string uri = request.getUri();
 
     _statusCode = request.getStatusCode();
-    if (_statusCode >= 400) {
-        errorPage(request);
-        _allowedMethods.clear();
-        return;
-    }
+
+    if (_statusCode >= 400)
+        return errorPage(request);
 
     _method = request.getMethod();
     result = processURI(uri);
@@ -517,7 +535,6 @@ void HttpResponse::build(HttpRequest &request) {
         addRedirectHeaders(result.path);
     else if (_statusCode >= 400 || addBody(request, result) == 1)
         errorPage(request);
-    _allowedMethods.clear();
 }
 
 const char *HttpResponse::getResponse() const { return _response.c_str(); }

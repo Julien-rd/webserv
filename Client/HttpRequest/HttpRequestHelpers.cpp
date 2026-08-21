@@ -126,9 +126,16 @@ void HttpRequest::findSeperator(std::string &recvBuffer,
 }
 
 bool HttpRequest::validMethod() {
-    if (!(_method == "GET" || _method == "POST" || _method == "DELETE")) {
+    if (!(_method == "GET" || _method == "HEAD" || _method == "POST" || _method == "PUT" ||
+          _method == "DELETE" || _method == "CONNECT" || _method == "OPTIONS" ||
+          _method == "TRACE" || _method == "PATCH")) {
         log(Level::WARNING, "invalid method");
         _statusCode = 501;
+        return false;
+    }
+    if(!(_method == "GET" || _method == "POST" || _method == "DELETE")){
+        log(Level::WARNING, "method not supported");
+        _statusCode = 405;
         return false;
     }
     return true;

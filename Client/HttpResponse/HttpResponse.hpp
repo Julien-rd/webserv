@@ -45,7 +45,6 @@ class HttpResponse {
     std::vector<char>                  _responseBody;
     std::string                        _method;
     std::string                        _statusCodeStr;
-    std::string                        _allowedMethods;
     bool                               _keepAlive;
 
     bool                methodAllowed(unsigned int index, const std::vector<t_location> &locations);
@@ -67,6 +66,7 @@ class HttpResponse {
     void         addCacheHeaders();
     void         addSecurityHeaders();
     void         addConnectionHeader(const HttpRequest &request);
+    void         buildAllowedMethodsHeader(const HttpRequest &request);
 
     // Http Phrase getters
     void getReasonPhraseInfo();
