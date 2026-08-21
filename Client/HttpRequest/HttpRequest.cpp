@@ -277,10 +277,10 @@ bool parseHexSize(std::string s, size_t &out) {
     return true;
 }
 
-void HttpRequest::parseBody(std::string recvBuffer) {
+void HttpRequest::parseBody(const std::string &recvBuffer) {
     _bytesNeeded = _contentLength - _body.size();
-    std::string::iterator start = recvBuffer.begin() + _bytesRead;
-    std::string::iterator end = recvBuffer.end();
+    std::string::const_iterator start = recvBuffer.begin() + _bytesRead;
+    std::string::const_iterator end = recvBuffer.end();
     size_t                len = recvBuffer.length() - _bytesRead;
     if (_bytesNeeded > len) {
         _body.insert(_body.end(), start, end);
@@ -378,7 +378,7 @@ int HttpRequest::parseChunkedBody(const std::string &recvBuffer) {
     }
 }
 
-int HttpRequest::bodyMode(std::string recvBuffer) {
+int HttpRequest::bodyMode(const std::string &recvBuffer) {
     if (_currentState == BODY)
         parseBody(recvBuffer);
     if (_currentState == BODY_CHUNKED) {

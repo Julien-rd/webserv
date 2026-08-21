@@ -54,7 +54,7 @@ void CGIResponse::extractStatus(void) {
     _statusCode = 200;
 }
 
-void CGIResponse::addCGIBody(HttpRequest request) {
+void CGIResponse::addCGIBody(const HttpRequest &request) {
     (void) request;
 
     size_t sepLen = 0;

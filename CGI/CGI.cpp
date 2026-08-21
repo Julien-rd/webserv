@@ -366,8 +366,6 @@ int CGI::buildResponse(
         close(pipeReadFd);
         _CGIResponse.setCGIResponseStr(_CGIResponseStream);
         _CGIResponse.setCGIResponseLen(_CGIResponseLen);
-        std::cout << _request->getMethod() << std::endl;
-        std::cout << _request->getUri() << std::endl;
         _CGIResponse.build(*_request);
         return RESPONSE_READY;
     } else {

@@ -306,7 +306,7 @@ std::string autoindex(const std::string &path, const std::string &uri) {
     return file;
 }
 
-bool HttpResponse::addBody(HttpRequest request, const UriResult &result) {
+bool HttpResponse::addBody(const HttpRequest &request, const UriResult &result) {
     std::string uri = request.getUri();
     std::string autoindexHtml;
     if (_statusCode == 204) {

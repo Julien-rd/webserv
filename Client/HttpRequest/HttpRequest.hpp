@@ -90,8 +90,8 @@ class HttpRequest {
     bool containsWhiteSpaces();
     int  parseHeaders(std::string &recvBuffer);
     int  parseRequestLine(std::string &recvBuffer);
-    int  bodyMode(std::string recvBuffer);
-    void parseBody(std::string recvBuffer);
+    int  bodyMode(const std::string &recvBuffer);
+    void parseBody(const std::string &recvBuffer);
     int  parseChunkedBody(const std::string &recvBuffer);
     bool saveData();
     bool validateMandatoryHeaders();
