@@ -1,5 +1,6 @@
 #!/bin/bash
 # Usage: ./methods.sh [http://host:port] [pfad]
+# valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes --trace-children=no --child-silent-after-fork=yes ./webserv Pages/PasswordManager/config.pps
 BASE=${1:-http://127.0.0.1:7070}
 P=${2:-/login/}
 c() { curl -s -o /dev/null -m 5 -w '%{http_code}' "$@" 2>/dev/null || echo "---"; }
