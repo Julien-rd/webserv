@@ -139,6 +139,27 @@ bool Client::updateEpoll(const unsigned int &event) {
     return true;
 }
 
+bool Client::setUpResponse() {
+    _response.build(_request);
+    _fullResponse = _response.getFullResponse();
+    _responseSize = _fullResponse.size();
+    _request.reset();
+    if (_bytesRead > _recvBuffer.size() / 2) {
+        _recvBuffer.erase(0, _bytesRead);
+        _bytesRead = 0;
+    }
+    if (updateEpoll(EPOLLIN | EPOLLOUT) == false)
+        return false;
+    return true;
+}
+
+bool Client::setUpCGI() {
+    if (!_CGI.handleCGI())
+        return closeConnection(CLOSE_SERVER_ERROR);
+    _request.reset();
+    return true;
+}
+
 bool Client::parsePending() {
     if (_responseSize > 0 || recvBufferIsParsed() == true)
         return true;
@@ -152,25 +173,9 @@ bool Client::parsePending() {
         return true;
     if (_request.parseURIContent() == 1)
         return closeConnection(CLOSE_CLIENT_ERROR);
-    if (_CGI.isCGIRequest(_request)) {
-        if (!_CGI.handleCGI())
-            return closeConnection(CLOSE_SERVER_ERROR);
-        //     _request.reset();  // fix: maybe unnecessary
-        //     return CLOSE;
-        _request.reset();
-        return true;
-    }
-    _response.build(_request);
-    _fullResponse = _response.getFullResponse();
-    _responseSize = _fullResponse.size();
-    _request.reset();
-    if (_bytesRead > _recvBuffer.size() / 2) {
-        _recvBuffer.erase(0, _bytesRead);
-        _bytesRead = 0;
-    }
-    if (updateEpoll(EPOLLIN | EPOLLOUT) == false)
-        return false;
-    return true;
+    if (_CGI.isCGIRequest(_request))
+        setUpCGI();
+    return setUpResponse();
 }
 
 bool Client::parseRecvBuffer(std::string &recvBuffer) {

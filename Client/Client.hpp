@@ -55,6 +55,8 @@ class Client {
 
     bool closeConnection(int reason);
     bool updateEpoll(const unsigned int &event);
+    bool setUpResponse();
+    bool setUpCGI();
     void doCGI();
     void handleCGI();
 };
