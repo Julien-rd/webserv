@@ -165,22 +165,14 @@ void Server::newClient(int clientFd) {
 void Server::handleServerEvent(void) {
     int clientFd;
 
-    while (true) {
-        clientFd = accept(_serverSocket, NULL, NULL);
-        if (clientFd == -1) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                return;
-            } else {
-                error_msg(ERR_ACCEPT);
-                return;
-            }
-        }
-        if (checkClientCap() == ERR) {
-            close(clientFd);
-            return;
-        }
-        newClient(clientFd);
+    clientFd = accept(_serverSocket, NULL, NULL);
+    if (clientFd == -1)
+        return;
+    if (checkClientCap() == ERR) {
+        close(clientFd);
+        return;
     }
+    newClient(clientFd);
 }
 
 bool Server::recvClientEvent(Client &client) {
@@ -210,7 +202,7 @@ void Server::handleClientEvent(int clientFd, unsigned int event) {
     if (event & EPOLLOUT) {
         if (client.sendResponse() == false)
             return closeConnection(clientFd);
-        
+
         if (client.parsePending() == false)
             return closeConnection(clientFd);
     }
