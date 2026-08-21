@@ -199,6 +199,8 @@ int HttpRequest::parseHeaders(std::string &recvBuffer) {
                 break;
             }
             if (pos == std::string::npos) {
+                if (brokenSyntax(pos, max_pos))
+                    return 1;
                 if (isTooLong(recvBuffer.size() - _bytesRead) == true)
                     return 1;
                 _fieldName += recvBuffer.substr(_bytesRead);
