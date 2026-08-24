@@ -10,6 +10,8 @@
 
 class Client;
 
+enum errPosition { EPOLL, BEFORE_EPOLL};
+
 enum status { RESPONSE_READY, RESPONSE_PENDING, RESPONSE_ERR};
 
 enum envStates { PYTHON, PHP, METHOD_GET, METHOD_POST };
@@ -45,11 +47,13 @@ class CGI {
     bool handleCGI(void);
     int buildResponse(int pipeReadFd);
     bool isCGIRequest(const HttpRequest &request);
-    void init(HttpRequest *request, int clientFd, int epfd, int sid, const t_server *serverConfig);
+    void init(HttpRequest *request, int clientFd, int epfd, int sid, const t_config *config);
     void reset();
 
     // getters
+    unsigned int getIdentifier() const;
     pid_t getPid(void) const;
+    int getPipeFd(void) const;
     const CGIResponse &getResponse();
 
   private:
@@ -58,6 +62,7 @@ class CGI {
     ssize_t     _CGIResponseLen;
     pid_t       _CGIPid;
     CGIResponse _CGIResponse;
+    unsigned int    _CGIIdentifier;
 
     HttpRequest                     *_request;
     std::string                      _scriptName;
@@ -93,7 +98,7 @@ class CGI {
     bool redirectIO(void);
     bool spawnProcess(void);
     bool addPipeToEpoll(void);
-    void wait(void) const;
+    void errHandler(int fd, errPosition pos);
 };
 
 std::string parsePathInfo(const std::string &_uri, const std::string &scriptName);

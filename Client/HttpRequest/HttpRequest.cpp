@@ -409,7 +409,7 @@ std::string percentDecode(const std::string &encoded, bool isQuery) {
             const std::string s = encoded.substr(i + 1, 2);
             if (s.size() != 2 || s[0] == '+' || s[0] == '-')
                 return "";
-            int                val;
+            int                val = 0;
             std::istringstream hex(s);
             hex >> std::noskipws >> std::hex >> val;
             if (hex.fail() || !hex.eof())

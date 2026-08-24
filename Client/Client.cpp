@@ -31,7 +31,7 @@ void Client::init(int epfd, const t_config *config, const int sid, const int cli
     _responseSize = 0;
     _request.init(config->servers.at(sid).clientMaxBody);
     _response.init(config, sid);
-    _CGI.init(&_request, _fd, _epfd, _sid, &_config->servers.at(_sid));
+    _CGI.init(&_request, _fd, _epfd, _sid, config);
     _maxRecvBuffer = config->servers.at(sid).clientMaxBody + HEADER_SLACK;
     setLastActivity();
 }
@@ -40,13 +40,9 @@ int Client::prepareSendCGI(int pipeReadFd) {
     int status = _CGI.buildResponse(pipeReadFd);
     if (status == RESPONSE_PENDING)
         return RESPONSE_PENDING;
-    if (status == RESPONSE_READY) {
-        _fullResponse = _CGI.getResponse().getFullResponse();
-        _responseSize = _fullResponse.size();
-        updateEpoll(EPOLLIN | EPOLLOUT);
-    } else if (status == RESPONSE_ERR) {
-        // fix: error message?
-    }
+    _fullResponse = _CGI.getResponse().getFullResponse();
+    _responseSize = _fullResponse.size();
+    updateEpoll(EPOLLIN | EPOLLOUT); //fix: this can fail?
     _CGI.reset();
     return status;
 }
@@ -155,8 +151,6 @@ bool Client::parsePending() {
     if (_CGI.isCGIRequest(_request)) {
         if (!_CGI.handleCGI())
             return closeConnection(CLOSE_SERVER_ERROR);
-        //     _request.reset();  // fix: maybe unnecessary
-        //     return CLOSE;
         _request.reset();
         return true;
     }

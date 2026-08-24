@@ -3,6 +3,7 @@
 #include "../Client/HttpRequest/HttpRequest.hpp"
 #include "../Logger/Logger.hpp"
 #include "../Utils/Macros.hpp"
+#include "CGIResponse.hpp"
 
 #include <cstdio>
 #include <cstring>
@@ -18,6 +19,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+
+uint32_t nextCGIIdentifier = 0;
 
 CGI::CGI() {
     _pipeFd[0] = -1;
@@ -217,9 +220,9 @@ bool CGI::addPipeToEpoll(void) {
     struct epoll_event ev;
     ev.events = EPOLLIN;
     uint64_t u64;
-    reinterpret_cast<int *>(&u64)[0] = _pipeFd[0];
-    reinterpret_cast<int *>(&u64)[1] = _clientFd;  // TODO do we need to set all of this to
-                                                   // null if the clients disconnects?
+    u64 = (static_cast<uint64_t>(_CGIIdentifier) << 32)
+        | (static_cast<uint64_t>(_pipeFd[0] & 0xFFFF) << 16)
+        | (static_cast<uint64_t>(_clientFd) & 0xFFFFu);
     ev.data.u64 = u64;
     if (epoll_ctl(_epfd, EPOLL_CTL_ADD, _pipeFd[0], &ev) == -1) {
         log(Level::WARNING, "addPipeToEpoll() failed in CGI");
@@ -236,11 +239,6 @@ bool CGI::redirectIO(void) {
     }
     close(_pipeFd[1]);
     return true;
-}
-
-void CGI::wait(void) const {
-    if (waitpid(_pid, NULL, 0) == -1)
-        log(Level::WARNING, "waitpid() failed in CGI");
 }
 
 void CGI::execute(void) {
@@ -271,15 +269,18 @@ bool CGI::isCGIRequest(const HttpRequest &request) {
     return false;
 }
 
-void CGI::init(
-    HttpRequest *request, int clientFd, int epfd, int sid, const t_server *serverConfig) {
+void CGI::init(HttpRequest *request, int clientFd, int epfd, int sid, const t_config *config) {
 
+    _CGIResponse.init(0, config, sid);
+    if (++nextCGIIdentifier == 0)
+        ++nextCGIIdentifier;
+    _CGIIdentifier = nextCGIIdentifier;
     _request = request;
     _epfd = epfd;
     _sid = sid;
     _clientFd = clientFd;
-    _cgiConfigs = &serverConfig->cgiConfigs;
-    _serverConfig = serverConfig;
+    _cgiConfigs = &config->servers.at(sid).cgiConfigs;
+    _serverConfig = &config->servers.at(sid);
     // TODO this can be better moved to Server class
     for (size_t i = 0; i < _cgiConfigs->size(); ++i) {
         _knownExtensions.push_back(_cgiConfigs->at(i).extension);
@@ -290,6 +291,7 @@ void CGI::reset(void) {
     // _clientFd = -1; //fix: was buggy but where does this happen instead or does it just get
     // overwritten anyways
     _CGIResponseLen = 0;
+    _CGIIdentifier = 0;
     _CGIResponse.reset();
     _CGIResponseStr.erase();
     _CGIResponseStream.erase();
@@ -299,7 +301,13 @@ void CGI::reset(void) {
     ;
 }
 
+unsigned int CGI::getIdentifier(void) const { return _CGIIdentifier; }
+
 pid_t CGI::getPid(void) const { return _pid; }
+
+int CGI::getPipeFd(void) const {
+return _pipeFd[0];   
+}
 
 bool CGI::doCGI(void) {
     if (!scriptFileExists()) {
@@ -333,27 +341,32 @@ bool CGI::handleCGI() {
 
 const CGIResponse &CGI::getResponse() { return _CGIResponse; }
 
-int CGI::buildResponse(
-    int pipeReadFd) {  // ALL OF THE ERRORS HERE CAUSE INFINITE LOADING AND CRASH THE SERVER
+void CGI::errHandler(int fd, errPosition pos) {
+    _request->setStatusCode(500);
+    _CGIResponse.setConnection(false);
+    _CGIResponse.build(*_request);
+    if (pos == BEFORE_EPOLL)
+        epoll_ctl(_epfd, EPOLL_CTL_DEL, fd, NULL);
+    close(fd);
+}
+
+int CGI::buildResponse(int pipeReadFd) {
 
     std::string buf(BUFFER_SIZE, '\0');
     ssize_t     bytesRead;
 
     bytesRead = read(pipeReadFd, &buf[0], BUFFER_SIZE - 1);
     if (bytesRead == -1) {
-        _CGIResponseLen = 0;
-        _CGIResponseStream.erase();
         log(Level::WARNING, "read() failed in Client::handleCGIResponse()");
-        return RESPONSE_ERR;  // NOTFINISHED: i have no idea whats open here and what this function
-                              // is responsible for
-    }
-    if (bytesRead == 0) {
+        errHandler(pipeReadFd, BEFORE_EPOLL);
+        return RESPONSE_ERR;
+    } else if (bytesRead == 0) {
+        std::cout << "calling waitpid\n";
         int res = waitpid(_CGIPid, NULL, WNOHANG);
         if (res == -1) {
             log(Level::WARNING, "waitpid() failed in Client::handleCGIResponse()");
-            return RESPONSE_ERR;  // NOTFINISHED: i have no idea whats open here and what this
-                                  // function is responsible for // needs to have the epoll del
-                                  // everywhere
+            errHandler(pipeReadFd, BEFORE_EPOLL);
+            return RESPONSE_ERR;
         }
         if (res == 0) {
             kill(_CGIPid, SIGKILL);
@@ -361,11 +374,13 @@ int CGI::buildResponse(
         }
         if (epoll_ctl(_epfd, EPOLL_CTL_DEL, pipeReadFd, NULL) == -1) {
             log(Level::WARNING, "epoll_ctl() DEL failed in readCGIPipe()");
+            errHandler(pipeReadFd, EPOLL);
             return RESPONSE_ERR;
         }
         close(pipeReadFd);
         _CGIResponse.setCGIResponseStr(_CGIResponseStream);
         _CGIResponse.setCGIResponseLen(_CGIResponseLen);
+        _CGIResponse.setConnection(true);  // fix: necessary?
         _CGIResponse.build(*_request);
         return RESPONSE_READY;
     } else {

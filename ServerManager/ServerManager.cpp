@@ -18,6 +18,7 @@
 #include <sstream>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <vector>
 
@@ -112,11 +113,18 @@ void ServerManager::loopReadyEvents(void) {
         } else if (_clientToServerMap.find(fd) != _clientToServerMap.end()) {
             _servers.at(_clientToServerMap[fd]).handleClientEvent(fd, _triggeredEvents[i].events);
         } else { /* is CGI's pipe fd */
-            int fds[2];
-            pp_memcpy(fds, &_triggeredEvents[i].data.u64, sizeof(uint64_t));
-            if (_clients.at(fds[1]).prepareSendCGI(fds[0]) == RESPONSE_ERR) {
-                //fix: handle error here
+            uint64_t u64      = _triggeredEvents[i].data.u64;
+            uint32_t cgiId    = static_cast<uint32_t>(u64 >> 32);
+            int      pipeFd   = static_cast<int>((u64 >> 16) & 0xFFFFu);
+            int      clientFd = static_cast<int>(u64 & 0xFFFFu);
+        
+            std::map<int, Client>::iterator it = _clients.find(clientFd);
+            if (it == _clients.end() || it->second.getCGI().getIdentifier() != cgiId) {
+                epoll_ctl(_epfd, EPOLL_CTL_DEL, pipeFd, NULL);
+                close(pipeFd);
+            } else {
+                it->second.prepareSendCGI(pipeFd);
             }
-        }
+        } 
     }
 }

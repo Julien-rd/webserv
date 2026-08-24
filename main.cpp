@@ -12,6 +12,7 @@
 #include <exception>
 
 volatile sig_atomic_t serverRunning = 1;
+extern uint64_t CGIIdentifier;
 
 void signalHandler(int sig) {
     serverRunning = 0;
