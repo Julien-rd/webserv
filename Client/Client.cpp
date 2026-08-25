@@ -11,6 +11,7 @@
 #include <cstring>
 #include <ctime>
 #include <fcntl.h>
+#include <iostream>
 #include <netinet/in.h>
 #include <poll.h>
 #include <sys/epoll.h>
@@ -38,8 +39,11 @@ void Client::init(int epfd, const t_config *config, const int sid, const int cli
 
 int Client::prepareSendCGI(int pipeReadFd) {
     int status = _CGI.buildResponse(pipeReadFd);
-    if (status == RESPONSE_PENDING)
+    if (status == RESPONSE_PENDING) {
+        
+        std::cout << "epoll\n";
         return RESPONSE_PENDING;
+    }
     _fullResponse = _CGI.getResponse().getFullResponse();
     _responseSize = _fullResponse.size();
     updateEpoll(EPOLLIN | EPOLLOUT); //fix: this can fail?
@@ -127,6 +131,7 @@ bool Client::updateEpoll(const unsigned int &event) {
     struct epoll_event ev;
     std::memset(&ev, 0, sizeof(ev));
     ev.events = event;
+    ev.data.u64 = 0;
     ev.data.fd = _fd;
     if (epoll_ctl(_epfd, EPOLL_CTL_MOD, _fd, &ev) == -1) {
         log(Level::WARNING, "epoll_ctl MOD failed");

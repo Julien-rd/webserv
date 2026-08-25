@@ -8,7 +8,6 @@
 #include <cstdio>
 #include <cstring>
 #include <dirent.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <iostream>
 #include <sstream>
@@ -161,20 +160,45 @@ bool CGI::pipeIO(void) {  // Fix: This might leak. Make smart adjustments to if/
     return true;
 }
 
+void CGI::flushWriteBuffer(void) {
+    const std::vector<char> &body = _request->getBody();
+    std::string              bodyStr(body.begin(), body.end());
+
+    while (_writeOffset < bodyStr.size()) {
+        ssize_t n =
+            write(_postPipeFd[1], bodyStr.data() + _writeOffset, bodyStr.size() - _writeOffset);
+        if (n > 0) {
+            _writeOffset += static_cast<size_t>(n);
+            time(&_lastProgressTime);
+            continue;
+        }
+        return;
+    }
+    epoll_ctl(_epfd, EPOLL_CTL_DEL, _postPipeFd[1], NULL);
+    close(_postPipeFd[1]);
+    _postRegisteredFd = -1;
+    _writeOffset = 0;
+    return;
+}
+
 bool CGI::spawnProcess(void) {
     // std::cout << "postpipe[0]: " << _postPipeFd[0] << "\n";
-    if (_request->getMethod() == "POST") {
-        if (dup2(_postPipeFd[0], STDIN_FILENO) == -1) {
-            log(Level::WARNING, "dup2() failed for post pipe");
-            return false;
-        }
-    }
     _pid = fork();
     if (_pid == -1) {
         log(Level::WARNING, "fork() failed for post pipe");
         return false;
     }
     if (_pid == 0) {
+        if (_request->getMethod() == "POST") {
+            if (dup2(_postPipeFd[0], STDIN_FILENO) == -1) {
+                log(Level::WARNING, "dup2() failed for post pipe");
+                return false;  // fix: here and in redirectIO return in child?
+            }
+            if (_postPipeFd[0] != -1)
+                close(_postPipeFd[0]);
+            if (_postPipeFd[1] != -1)
+                close(_postPipeFd[1]);
+        }
         if (_pipeFd[0] != -1)
             close(_pipeFd[0]);
         if (_epfd != -1)
@@ -184,32 +208,19 @@ bool CGI::spawnProcess(void) {
         redirectIO();
         execute();
     } else {
-        if (_pipeFd[1] != -1) {
+        if (_pipeFd[1] != -1)
             close(_pipeFd[1]);
-        }
         if (!addPipeToEpoll())
             return false;
         if (_request->getMethod() == "POST") {
-            const std::vector<char> &body = _request->getBody();
-            std::string              bodyStr(body.begin(), body.end());
-            size_t                   totalWritten = 0;
-            while (totalWritten < _request->getContentLength()) {
-                ssize_t written = write(_postPipeFd[1],
-                                        bodyStr.data() + totalWritten,
-                                        _request->getContentLength() - totalWritten);
-                if (written == -1) {
-                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                        continue;
-                    }
-                    if (errno == EINTR) {
-                        continue;
-                    }
-                    log(Level::WARNING, "write() failed in CGI");
-                    break;
-                }
-                totalWritten += written;
-            }
-            close(_postPipeFd[1]);
+            struct epoll_event ev;
+            ev.events = EPOLLOUT;
+            ev.data.u64 = (static_cast<uint64_t>(_CGIIdentifier) << 32) |
+                          (static_cast<uint64_t>(_clientFd) & 0xFFFFFFFFu);
+            epoll_ctl(_epfd, EPOLL_CTL_ADD, _postPipeFd[1], &ev);  // fix: this can fail what to do?
+            _postRegisteredFd = _postPipeFd[1];
+            _writeOffset = 0;
+            time(&_lastProgressTime);
             close(_postPipeFd[0]);
         }
     }
@@ -219,15 +230,13 @@ bool CGI::spawnProcess(void) {
 bool CGI::addPipeToEpoll(void) {
     struct epoll_event ev;
     ev.events = EPOLLIN;
-    uint64_t u64;
-    u64 = (static_cast<uint64_t>(_CGIIdentifier) << 32)
-        | (static_cast<uint64_t>(_pipeFd[0] & 0xFFFF) << 16)
-        | (static_cast<uint64_t>(_clientFd) & 0xFFFFu);
-    ev.data.u64 = u64;
+    ev.data.u64 = (static_cast<uint64_t>(_CGIIdentifier) << 32) |
+                  (static_cast<uint64_t>(_clientFd) & 0xFFFFFFFFu);
     if (epoll_ctl(_epfd, EPOLL_CTL_ADD, _pipeFd[0], &ev) == -1) {
         log(Level::WARNING, "addPipeToEpoll() failed in CGI");
         return false;
     }
+    _readRegisteredFd = _pipeFd[0];
     return true;
 }
 
@@ -275,6 +284,8 @@ void CGI::init(HttpRequest *request, int clientFd, int epfd, int sid, const t_co
     if (++nextCGIIdentifier == 0)
         ++nextCGIIdentifier;
     _CGIIdentifier = nextCGIIdentifier;
+    _readRegisteredFd = -1;
+    _postRegisteredFd = -1;
     _request = request;
     _epfd = epfd;
     _sid = sid;
@@ -292,9 +303,12 @@ void CGI::reset(void) {
     // overwritten anyways
     _CGIResponseLen = 0;
     _CGIIdentifier = 0;
+    _writeOffset = 0;
     _CGIResponse.reset();
     _CGIResponseStr.erase();
     _CGIResponseStream.erase();
+    _readRegisteredFd = -1;
+    _postRegisteredFd = -1;
     _scriptName.erase();
     _executable.erase();
     _argv.clear();
@@ -302,12 +316,11 @@ void CGI::reset(void) {
 }
 
 unsigned int CGI::getIdentifier(void) const { return _CGIIdentifier; }
-
+int CGI::getReadFd(void) const { return _readRegisteredFd; }
+int  CGI::getPostFd(void) const { return _postRegisteredFd; }
 pid_t CGI::getPid(void) const { return _pid; }
 
-int CGI::getPipeFd(void) const {
-return _pipeFd[0];   
-}
+// int CGI::getPipeFd(void) const { return _pipeFd[0]; }
 
 bool CGI::doCGI(void) {
     if (!scriptFileExists()) {
@@ -356,19 +369,21 @@ int CGI::buildResponse(int pipeReadFd) {
     ssize_t     bytesRead;
 
     bytesRead = read(pipeReadFd, &buf[0], BUFFER_SIZE - 1);
+    std::cout << "we ok?\n";
     if (bytesRead == -1) {
         log(Level::WARNING, "read() failed in Client::handleCGIResponse()");
         errHandler(pipeReadFd, BEFORE_EPOLL);
+        
         return RESPONSE_ERR;
     } else if (bytesRead == 0) {
-        std::cout << "calling waitpid\n";
+        std::cout << "EPOLLHUP\n";
         int res = waitpid(_CGIPid, NULL, WNOHANG);
         if (res == -1) {
             log(Level::WARNING, "waitpid() failed in Client::handleCGIResponse()");
             errHandler(pipeReadFd, BEFORE_EPOLL);
             return RESPONSE_ERR;
         }
-        if (res == 0) {
+        if (res == 0) { //fix_CGI: delete this waitpid
             kill(_CGIPid, SIGKILL);
             waitpid(_CGIPid, NULL, 0);
         }
@@ -378,6 +393,7 @@ int CGI::buildResponse(int pipeReadFd) {
             return RESPONSE_ERR;
         }
         close(pipeReadFd);
+        _readRegisteredFd = -1;  // fix_CGI: _readReistered reset is this correct epoll style?
         _CGIResponse.setCGIResponseStr(_CGIResponseStream);
         _CGIResponse.setCGIResponseLen(_CGIResponseLen);
         _CGIResponse.setConnection(true);  // fix: necessary?

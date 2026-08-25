@@ -9,7 +9,7 @@ import time
 EXPIRESESSION = 60 # in seconds
 
 # webserv sends POST body via stdin
-time.sleep(10)
+# time.sleep(10)
 body = sys.stdin.read(int(os.environ.get('CONTENT_LENGTH', 0)))
 fields = urllib.parse.parse_qs(body)
 

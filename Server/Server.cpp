@@ -9,6 +9,7 @@
 #include <netdb.h>
 #include <sstream>
 #include <string>
+#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -66,6 +67,16 @@ void Server::updateClientsMap(e_mapOperation op, const int clientFd) {
 }
 
 void Server::closeConnection(int clientFd) {
+    int postFd = _clients.at(clientFd).getCGI().getPostFd();
+    if (postFd != -1) {
+        epoll_ctl(_epfd, EPOLL_CTL_DEL, postFd, NULL);
+        close(postFd);
+    }
+    int readFd = _clients.at(clientFd).getCGI().getReadFd();
+    if (readFd != -1) {
+        epoll_ctl(_epfd, EPOLL_CTL_DEL, readFd, NULL);
+        close(readFd);
+    }
     updateClientsMap(REMOVE, clientFd);
     std::stringstream ss;
     ss << "Server " << _sid << " closed connection with Client " << clientFd;
@@ -117,6 +128,7 @@ void Server::addSocketToEpoll(int socketFd) {
     struct epoll_event ev;
     ev.events = EPOLLIN;
     // ev.data.ptr = 0;
+    ev.data.u64 = 0;
     ev.data.fd = socketFd;
     if (epoll_ctl(_epfd, EPOLL_CTL_ADD, socketFd, &ev) == -1) {
         error_msg(ERR_EPOLL_CTL);
@@ -177,11 +189,12 @@ void Server::handleServerEvent(void) {
 
 bool Server::recvClientEvent(Client &client) {
     std::string recvBuffer(BUFFER_SIZE, '\0');
+    std::cout << client.getFd() << std::endl;
     ssize_t     bytesRead = recv(client.getFd(), &recvBuffer[0], BUFFER_SIZE, 0);
 
     if (bytesRead <= 0) {
         if (bytesRead == -1)
-            error_msg(ERR_RECV);
+            error_msg(ERR_RECV); //fix: log
         return false;
     }
     recvBuffer.resize(bytesRead);
