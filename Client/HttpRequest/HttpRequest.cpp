@@ -120,8 +120,6 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
         }
         if (extractContent(recvBuffer, pos) == false)
             return 1;
-        if (validMethod() == false)
-            return 1;
         _currentState = URI;
         /* fall through */
     case URI:;
@@ -138,6 +136,8 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
         if (extractContent(recvBuffer, pos) == false)
             return 1;
         if (validUri() == false)
+            return 1;
+        if (validMethod() == false)
             return 1;
         _currentState = HTTP_VERSION;
         /* fall through */
