@@ -26,6 +26,7 @@ void CGI::setEnv(int type, int state) {
         _envp[entry++] = _meta.content_length.c_str();
         _envp[entry++] = _meta.content_type.c_str();
     }
+    _envp[entry++] = "GATEWAY_INTERFACE=CGI/1.1";
     _envp[entry] = NULL;
 }
 
