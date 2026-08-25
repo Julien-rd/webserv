@@ -402,34 +402,38 @@ int HttpRequest::parseHttpRequest(std::string &recvBuffer, size_t bytes_read) {
     return 0;
 }
 
-std::string percentDecode(const std::string &encoded, bool isQuery) {
+bool percentDecode(std::string &encoded, bool isQuery) {
     std::string result;
     for (size_t i = 0; i < encoded.size(); ++i) {
         if (encoded[i] == '%' && i + 2 < encoded.size()) {
             const std::string s = encoded.substr(i + 1, 2);
             if (s.size() != 2 || s[0] == '+' || s[0] == '-')
-                return "";
+                return false;
             int                val = 0;
             std::istringstream hex(s);
             hex >> std::noskipws >> std::hex >> val;
             if (hex.fail() || !hex.eof())
-                return "";
+                return false;
             result += static_cast<char>(val);
             i += 2;
         } else if (isQuery && encoded[i] == '+') {
             result += ' ';  // only in query strings, not paths
         } else {
-
             result += encoded[i];
         }
     }
-    return result;
+    encoded = result;
+    return true;
 }
 
 int HttpRequest::parseURIContent(void) {
     size_t      qmark = _uri.find('?');
     std::string path = _uri.substr(0, qmark);
-    path = percentDecode(path, false);
+
+    if (percentDecode(path, false) == false) {
+        _statusCode = 400;
+        return 1;
+    }
     if (validateURIPath(path) == false) {
         _statusCode = 400;
         return 1;
@@ -452,7 +456,12 @@ int HttpRequest::parseURIContent(void) {
             _uriData.extension = path.substr(dot);
         _uriData.path = path;
     }
-    _uriData.query = percentDecode(_uriData.query, true);
+    std::string query = _uriData.query;
+    if (percentDecode(query, true) == false) {
+        _statusCode = 400;
+        return 1;
+    }
     _uri = _uriData.path;
     return 0;
 }
+

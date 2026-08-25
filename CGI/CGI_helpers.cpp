@@ -80,7 +80,7 @@ void CGI::initMeta(int type) {
         setMeta(_meta.content_type, "CONTENT_TYPE", headers.at("content-type"));
 
     setMeta(_meta.path_info, "PATH_INFO", _request->getUriData().pathInfo);
-    setMeta(_meta.query_string, "QUERY_STRING", parseQueryString(_request->getUri()));
+    setMeta(_meta.query_string, "QUERY_STRING", _request->getQuery());
     setMeta(_meta.request_method, "REQUEST_METHOD", _request->getMethod());
     setMeta(_meta.script_name, "SCRIPT_NAME", _scriptName);
     setMeta(_meta.server_port, "SERVER_PORT", _serverConfig->port);

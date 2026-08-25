@@ -14,3 +14,4 @@ const std::string &HttpRequest::getBuffer() const { return _buffer; }
 chunkedBodyState   HttpRequest::getChunkedBodyState() const { return _chunkedBodyState; }
 size_t             HttpRequest::getBytesNeeded() const { return _bytesNeeded; }
 std::string        HttpRequest::getHttpVersion() const { return _httpVersion; }
+std::string        HttpRequest::getQuery() const { return _uriData.query; }

@@ -53,6 +53,7 @@ class HttpRequest {
     chunkedBodyState                          getChunkedBodyState() const;
     size_t                                    getBytesNeeded() const;
     std::string                               getHttpVersion() const;
+    std::string                               getQuery() const;
 
     // setters
     void setStatusCode(int status);
