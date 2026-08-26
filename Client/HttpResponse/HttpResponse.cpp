@@ -343,7 +343,7 @@ bool HttpResponse::addBody(const HttpRequest &request, const UriResult &result) 
         _responseBody.resize(st.st_size);
         ssize_t bytesRead = 0;
         size_t  total = 0;
-        while (total < (size_t) st.st_size) {
+        while (total < (size_t) st.st_size) { //fix: without epoll?
             bytesRead = read(fd, &_responseBody[total], st.st_size - total);
             if (bytesRead < 0) {
                 log(Level::WARNING, "read() failed in HttpResponse::addBody()");

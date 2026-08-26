@@ -136,6 +136,16 @@ bool CGI::pipeIO(void) {  // Fix: This might leak. Make smart adjustments to if/
         return false;
     }
     if (_request->getMethod() == "POST") {
+        if (_readRegisteredFd != -1) {
+            epoll_ctl(_epfd, EPOLL_CTL_DEL, _readRegisteredFd, NULL);
+            close(_readRegisteredFd);
+            _readRegisteredFd = -1;
+        }
+        if (_postRegisteredFd != -1) {
+            epoll_ctl(_epfd, EPOLL_CTL_DEL, _postRegisteredFd, NULL);
+            close(_postRegisteredFd);
+            _postRegisteredFd = -1;
+        }
         if (pipe(_postPipeFd) == -1) {
             log(Level::WARNING, "CGI post pipe failed");
             return false;
@@ -144,10 +154,10 @@ bool CGI::pipeIO(void) {  // Fix: This might leak. Make smart adjustments to if/
             log(Level::WARNING, "CGI fcntl failed");
             return false;
         }
-        if (fcntl(_postPipeFd[0], F_SETFL, O_NONBLOCK) == -1) {
-            log(Level::WARNING, "CGI fcntl failed");
-            return false;
-        }
+        // if (fcntl(_postPipeFd[0], F_SETFL, O_NONBLOCK) == -1) {
+        //     log(Level::WARNING, "CGI fcntl failed");
+        //     return false;
+        // }
         if (fcntl(_postPipeFd[1], F_SETFD, FD_CLOEXEC) == -1) {
             log(Level::WARNING, "CGI fcntl failed");
             return false;
@@ -161,12 +171,10 @@ bool CGI::pipeIO(void) {  // Fix: This might leak. Make smart adjustments to if/
 }
 
 void CGI::flushWriteBuffer(void) {
-    const std::vector<char> &body = _request->getBody();
-    std::string              bodyStr(body.begin(), body.end());
 
-    while (_writeOffset < bodyStr.size()) {
-        ssize_t n =
-            write(_postPipeFd[1], bodyStr.data() + _writeOffset, bodyStr.size() - _writeOffset);
+    while (_writeOffset < _writeTotal.size()) {
+        ssize_t n = write(
+            _postPipeFd[1], _writeTotal.data() + _writeOffset, _writeTotal.size() - _writeOffset);
         if (n > 0) {
             _writeOffset += static_cast<size_t>(n);
             time(&_lastProgressTime);
@@ -178,11 +186,11 @@ void CGI::flushWriteBuffer(void) {
     close(_postPipeFd[1]);
     _postRegisteredFd = -1;
     _writeOffset = 0;
+    _writeTotal.clear();
     return;
 }
 
 bool CGI::spawnProcess(void) {
-    // std::cout << "postpipe[0]: " << _postPipeFd[0] << "\n";
     _pid = fork();
     if (_pid == -1) {
         log(Level::WARNING, "fork() failed for post pipe");
@@ -216,10 +224,12 @@ bool CGI::spawnProcess(void) {
             struct epoll_event ev;
             ev.events = EPOLLOUT;
             ev.data.u64 = (static_cast<uint64_t>(_CGIIdentifier) << 32) |
-                          (static_cast<uint64_t>(_clientFd) & 0xFFFFFFFFu);
+                          (static_cast<uint64_t>(_clientFd) << 16) |
+                          static_cast<uint64_t>(_postPipeFd[1]);
             epoll_ctl(_epfd, EPOLL_CTL_ADD, _postPipeFd[1], &ev);  // fix: this can fail what to do?
             _postRegisteredFd = _postPipeFd[1];
             _writeOffset = 0;
+            _writeTotal = _request->getBody();
             time(&_lastProgressTime);
             close(_postPipeFd[0]);
         }
@@ -230,8 +240,9 @@ bool CGI::spawnProcess(void) {
 bool CGI::addPipeToEpoll(void) {
     struct epoll_event ev;
     ev.events = EPOLLIN;
+    // fix: we have to make sure here that fds are never above the limit 65500 something
     ev.data.u64 = (static_cast<uint64_t>(_CGIIdentifier) << 32) |
-                  (static_cast<uint64_t>(_clientFd) & 0xFFFFFFFFu);
+                  (static_cast<uint64_t>(_clientFd) << 16) | static_cast<uint64_t>(_pipeFd[0]);
     if (epoll_ctl(_epfd, EPOLL_CTL_ADD, _pipeFd[0], &ev) == -1) {
         log(Level::WARNING, "addPipeToEpoll() failed in CGI");
         return false;
@@ -283,6 +294,8 @@ void CGI::init(HttpRequest *request, int clientFd, int epfd, int sid, const t_co
     _CGIResponse.init(0, config, sid);
     if (++nextCGIIdentifier == 0)
         ++nextCGIIdentifier;
+    if (nextCGIIdentifier > 65535)
+        nextCGIIdentifier = 1;
     _CGIIdentifier = nextCGIIdentifier;
     _readRegisteredFd = -1;
     _postRegisteredFd = -1;
@@ -293,9 +306,9 @@ void CGI::init(HttpRequest *request, int clientFd, int epfd, int sid, const t_co
     _cgiConfigs = &config->servers.at(sid).cgiConfigs;
     _serverConfig = &config->servers.at(sid);
     // TODO this can be better moved to Server class
-    for (size_t i = 0; i < _cgiConfigs->size(); ++i) {
-        _knownExtensions.push_back(_cgiConfigs->at(i).extension);
-    }
+    if (!_knownExtensions.size())
+        for (size_t i = 0; i < _cgiConfigs->size(); ++i)
+            _knownExtensions.push_back(_cgiConfigs->at(i).extension);
 }
 
 void CGI::reset(void) {
@@ -304,11 +317,20 @@ void CGI::reset(void) {
     _CGIResponseLen = 0;
     _CGIIdentifier = 0;
     _writeOffset = 0;
+    _writeTotal.clear();
     _CGIResponse.reset();
     _CGIResponseStr.erase();
     _CGIResponseStream.erase();
-    _readRegisteredFd = -1;
-    _postRegisteredFd = -1;
+    if (_readRegisteredFd != -1) {
+        epoll_ctl(_epfd, EPOLL_CTL_DEL, _readRegisteredFd, NULL);
+        close(_readRegisteredFd);
+        _readRegisteredFd = -1;
+    }
+    if (_postRegisteredFd != -1) {
+        epoll_ctl(_epfd, EPOLL_CTL_DEL, _postRegisteredFd, NULL);
+        close(_postRegisteredFd);
+        _postRegisteredFd = -1;
+    }
     _scriptName.erase();
     _executable.erase();
     _argv.clear();
@@ -316,9 +338,11 @@ void CGI::reset(void) {
 }
 
 unsigned int CGI::getIdentifier(void) const { return _CGIIdentifier; }
-int CGI::getReadFd(void) const { return _readRegisteredFd; }
-int  CGI::getPostFd(void) const { return _postRegisteredFd; }
-pid_t CGI::getPid(void) const { return _pid; }
+int          CGI::getReadFd(void) const { return _readRegisteredFd; }
+int          CGI::getPostFd(void) const { return _postRegisteredFd; }
+pid_t        CGI::getPid(void) const { return _pid; }
+void         CGI::setReadFd(int fd) { _readRegisteredFd = fd; }
+void         CGI::setPostFd(int fd) { _postRegisteredFd = fd; }
 
 // int CGI::getPipeFd(void) const { return _pipeFd[0]; }
 
@@ -369,21 +393,19 @@ int CGI::buildResponse(int pipeReadFd) {
     ssize_t     bytesRead;
 
     bytesRead = read(pipeReadFd, &buf[0], BUFFER_SIZE - 1);
-    std::cout << "we ok?\n";
     if (bytesRead == -1) {
         log(Level::WARNING, "read() failed in Client::handleCGIResponse()");
         errHandler(pipeReadFd, BEFORE_EPOLL);
-        
+
         return RESPONSE_ERR;
     } else if (bytesRead == 0) {
-        std::cout << "EPOLLHUP\n";
         int res = waitpid(_CGIPid, NULL, WNOHANG);
         if (res == -1) {
             log(Level::WARNING, "waitpid() failed in Client::handleCGIResponse()");
             errHandler(pipeReadFd, BEFORE_EPOLL);
             return RESPONSE_ERR;
         }
-        if (res == 0) { //fix_CGI: delete this waitpid
+        if (res == 0) {  // fix_CGI: delete this waitpid
             kill(_CGIPid, SIGKILL);
             waitpid(_CGIPid, NULL, 0);
         }

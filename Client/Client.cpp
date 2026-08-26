@@ -39,11 +39,8 @@ void Client::init(int epfd, const t_config *config, const int sid, const int cli
 
 int Client::prepareSendCGI(int pipeReadFd) {
     int status = _CGI.buildResponse(pipeReadFd);
-    if (status == RESPONSE_PENDING) {
-        
-        std::cout << "epoll\n";
+    if (status == RESPONSE_PENDING)
         return RESPONSE_PENDING;
-    }
     _fullResponse = _CGI.getResponse().getFullResponse();
     _responseSize = _fullResponse.size();
     updateEpoll(EPOLLIN | EPOLLOUT); //fix: this can fail?
@@ -154,6 +151,7 @@ bool Client::parsePending() {
     if (_request.parseURIContent() == 1)
         return closeConnection(CLOSE_CLIENT_ERROR);
     if (_CGI.isCGIRequest(_request)) {
+        _CGI.init(&_request, _fd, _epfd, _sid, _config);
         if (!_CGI.handleCGI())
             return closeConnection(CLOSE_SERVER_ERROR);
         _request.reset();

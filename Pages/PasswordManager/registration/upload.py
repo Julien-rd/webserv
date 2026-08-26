@@ -7,11 +7,8 @@ def read_exact(stream, length):
     data = bytearray()
     while len(data) < length:
         chunk = stream.read(length - len(data))
-        if chunk is None:
-            # non-blocking stream, nothing available *right now* — retry
-            continue
         if not chunk:
-            # EOF before we got everything expected
+            # EOF before we got everything expected — stop, don't spin forever
             break
         data.extend(chunk)
     return bytes(data)
@@ -24,6 +21,9 @@ content_type = os.environ.get('CONTENT_TYPE', 'application/octet-stream')
 # will corrupt raw image bytes. login.py/register.py can use text mode
 # because their bodies are url-encoded form data, not binary.
 raw_bytes = read_exact(sys.stdin.buffer, content_length)
+with open("/tmp/upload_debug.log", "a") as dbg:
+    dbg.write(f"CONTENT_LENGTH={content_length} actual_read={len(raw_bytes)}\n")
+    
 ext_map = {
     'image/jpeg': '.jpg',
     'image/png': '.png',

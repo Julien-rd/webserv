@@ -55,9 +55,12 @@ class CGI {
     unsigned int       getIdentifier() const;
     pid_t              getPid(void) const;
     // int                getPipeFd(void) const;
-    int               getReadFd(void) const;
-    int               getPostFd(void) const;
+    int                getReadFd(void) const;
+    int                getPostFd(void) const;
     const CGIResponse &getResponse();
+    void               setReadFd(int fd);
+    void               setPostFd(int fd);
+    void                setKnownExtensions(void);
 
   private:
     std::string  _CGIResponseStream;
@@ -83,9 +86,10 @@ class CGI {
     int                              _pipeFd[2];
     int                              _postPipeFd[2];
     size_t                           _writeOffset;
+    std::vector<char>                _writeTotal;
     time_t                           _lastProgressTime;
-    int                             _postRegisteredFd;
-    int                             _readRegisteredFd;
+    int                              _postRegisteredFd;
+    int                              _readRegisteredFd;
 
     // setters //Fix: these are private so they are not setters but initializers? rename accordingly
     void setEnv(int type, int state);
