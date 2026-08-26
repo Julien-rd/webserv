@@ -72,10 +72,10 @@ void CGI::initMeta(int type) {
     std::stringstream                         ss;
     ss << _request->getContentLength();
 
-    if (_request->getMethod() == "POST" || 1) {
-        setMeta(_meta.content_length, "CONTENT_LENGTH", ss.str());  // fix: chunks?
+    if (_request->getMethod() == "POST") {
+        setMeta(_meta.content_length, "CONTENT_LENGTH", ss.str());
     } else
-        setMeta(_meta.content_length, "CONTENT_LENGTH", "0");  // fix: chunks?
+        setMeta(_meta.content_length, "CONTENT_LENGTH", "0");
 
     if (_request->getHeaders().find("content-type") != headers.end())
         setMeta(_meta.content_type, "CONTENT_TYPE", headers.at("content-type"));
