@@ -252,7 +252,7 @@ void HttpResponse::extractContentLength() {
     _response += "Content-Length: " + ss.str() + "\r\n";
 }
 
-std::string escapeHtml(const std::string &str) {
+static std::string escapeHtml(const std::string &str) {
     std::string result;
     result.reserve(str.size() * 1.1);
 
@@ -281,7 +281,7 @@ std::string escapeHtml(const std::string &str) {
     return result;
 }
 
-std::string autoindex(const std::string &path, const std::string &uri) {
+static std::string autoindex(const std::string &path, const std::string &uri) {
     std::string file;
     file = "<!DOCTYPE html>\r\n"
            "<html>\r\n"

@@ -5,6 +5,7 @@
 
 #include <ctime>
 #include <string>
+#include <stdint.h>
 
 // enum clientStatus { CLIENT_KEEP, CLIENT_CLOSE};
 
@@ -25,8 +26,9 @@ class Client {
     void init(int epfd, const t_config *config, const int sid, const int clientFd);
     void reset();
     bool recvBufferIsParsed() const;
-    int        prepareSendCGI(int pipeReadFd);
+    int  prepareSendCGI(int pipeReadFd);
     bool keepConnection() const;
+    int  handleCGIEvent(int pipeFd, uint32_t events);
 
     // getters
     time_t getLastActivity();

@@ -123,7 +123,7 @@ void ServerManager::loopReadyEvents(void) {
                 epoll_ctl(_epfd, EPOLL_CTL_DEL, pipeFd, NULL);
                 close(pipeFd);
             } else {
-                it->second.prepareSendCGI(pipeFd);
+                it->second.handleCGIEvent(pipeFd, _triggeredEvents[i].events);
             }
         } 
     }

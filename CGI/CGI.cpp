@@ -132,10 +132,10 @@ bool CGI::pipeIO(void) {  // Fix: This might leak. Make smart adjustments to if/
         log(Level::WARNING, "CGI fcntl failed");
         return false;
     }
-    if (fcntl(_pipeFd[1], F_SETFL, O_NONBLOCK) == -1) {
-        log(Level::WARNING, "CGI fcntl failed");
-        return false;
-    }
+    // if (fcntl(_pipeFd[1], F_SETFL, O_NONBLOCK) == -1) {
+    //     log(Level::WARNING, "CGI fcntl failed");
+    //     return false;
+    // }
     if (_request->getMethod() == "POST") {
         if (pipe(_postPipeFd) == -1) {
             log(Level::WARNING, "CGI post pipe failed");
@@ -145,10 +145,10 @@ bool CGI::pipeIO(void) {  // Fix: This might leak. Make smart adjustments to if/
             log(Level::WARNING, "CGI fcntl failed");
             return false;
         }
-        if (fcntl(_postPipeFd[0], F_SETFL, O_NONBLOCK) == -1) {
-            log(Level::WARNING, "CGI fcntl failed");
-            return false;
-        }
+        // if (fcntl(_postPipeFd[0], F_SETFL, O_NONBLOCK) == -1) {
+        //     log(Level::WARNING, "CGI fcntl failed");
+        //     return false;
+        // }
         if (fcntl(_postPipeFd[1], F_SETFD, FD_CLOEXEC) == -1) {
             log(Level::WARNING, "CGI fcntl failed");
             return false;
@@ -161,8 +161,42 @@ bool CGI::pipeIO(void) {  // Fix: This might leak. Make smart adjustments to if/
     return true;
 }
 
+void CGI::writeBody(void) {
+    ssize_t n =
+        write(_postPipeFd[1], &_responseBody[_writtenBytes], _responseBody.size() - _writtenBytes);
+    if (n <= 0) {
+        closePostPipe();
+        return;
+    }
+    _writtenBytes += n;
+    if (_writtenBytes == _responseBody.size())
+        closePostPipe();
+}
+
+void CGI::closePostPipe(void) {
+    if (_postPipeFd[1] == -1)
+        return;
+    epoll_ctl(_epfd, EPOLL_CTL_DEL, _postPipeFd[1], NULL);
+    close(_postPipeFd[1]);
+    _postPipeFd[1] = -1;
+}
+
+bool CGI::addPostPipeToEpoll(void) {
+    struct epoll_event ev;
+    ev.events = EPOLLOUT;
+    uint64_t u64;
+    u64 = (static_cast<uint64_t>(_CGIIdentifier) << 32) |
+          (static_cast<uint64_t>(_postPipeFd[1] & 0xFFFF) << 16) |
+          (static_cast<uint64_t>(_clientFd) & 0xFFFFu);
+    ev.data.u64 = u64;
+    if (epoll_ctl(_epfd, EPOLL_CTL_ADD, _postPipeFd[1], &ev) == -1) {
+        log(Level::WARNING, "addPipeToEpoll() failed in CGI");
+        return false;
+    }
+    return true;
+}
+
 bool CGI::spawnProcess(void) {
-    // std::cout << "postpipe[0]: " << _postPipeFd[0] << "\n";
     if (_request->getMethod() == "POST") {
         if (dup2(_postPipeFd[0], STDIN_FILENO) == -1) {
             log(Level::WARNING, "dup2() failed for post pipe");
@@ -172,60 +206,45 @@ bool CGI::spawnProcess(void) {
     _pid = fork();
     if (_pid == -1) {
         log(Level::WARNING, "fork() failed for post pipe");
-        return false;
+        return 1;
     }
     if (_pid == 0) {
         if (_pipeFd[0] != -1)
             close(_pipeFd[0]);
+        if (_postPipeFd[1] != -1)
+            close(_postPipeFd[1]);
         if (_epfd != -1)
             close(_epfd);
         if (_clientFd != -1)
             close(_clientFd);
         redirectIO();
         execute();
-    } else {
-        if (_pipeFd[1] != -1) {
-            close(_pipeFd[1]);
-        }
-        if (!addPipeToEpoll())
-            return false;
-        if (_request->getMethod() == "POST") {
-            const std::vector<char> &body = _request->getBody();
-            std::string              bodyStr(body.begin(), body.end());
-            size_t                   totalWritten = 0;
-            while (totalWritten < _request->getContentLength()) {
-                ssize_t written = write(_postPipeFd[1],
-                                        bodyStr.data() + totalWritten,
-                                        _request->getContentLength() - totalWritten);
-                if (written == -1) {
-                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                        continue;
-                    }
-                    if (errno == EINTR) {
-                        continue;
-                    }
-                    log(Level::WARNING, "write() failed in CGI");
-                    break;
-                }
-                totalWritten += written;
-            }
-            close(_postPipeFd[1]);
-            close(_postPipeFd[0]);
-        }
     }
-    return true;
+    close(_pipeFd[1]);
+    _pipeFd[1] = -1;
+    if (_request->getMethod() == "POST") {
+        close(_postPipeFd[0]);
+        _postPipeFd[0] = -1;
+        _responseBody = _request->getBody();
+        _writtenBytes = 0;
+        if (_responseBody.empty())
+            closePostPipe();
+        else if (!addPostPipeToEpoll())
+            return false;
+    }
+    return addPipeToEpoll();
 }
 
 bool CGI::addPipeToEpoll(void) {
     struct epoll_event ev;
     ev.events = EPOLLIN;
     uint64_t u64;
-    u64 = (static_cast<uint64_t>(_CGIIdentifier) << 32)
-        | (static_cast<uint64_t>(_pipeFd[0] & 0xFFFF) << 16)
-        | (static_cast<uint64_t>(_clientFd) & 0xFFFFu);
+    u64 = (static_cast<uint64_t>(_CGIIdentifier) << 32) |
+          (static_cast<uint64_t>(_pipeFd[0] & 0xFFFF) << 16) |
+          (static_cast<uint64_t>(_clientFd) & 0xFFFFu);
     ev.data.u64 = u64;
     if (epoll_ctl(_epfd, EPOLL_CTL_ADD, _pipeFd[0], &ev) == -1) {
-        log(Level::WARNING, "addPipeToEpoll() failed in CGI");
+        log(Level::WARNING, "addPipeToEpoll(): ");
         return false;
     }
     return true;
@@ -298,16 +317,16 @@ void CGI::reset(void) {
     _scriptName.erase();
     _executable.erase();
     _argv.clear();
-    ;
+    closePostPipe();
+    _responseBody.clear();
+    _writtenBytes = 0;
 }
 
 unsigned int CGI::getIdentifier(void) const { return _CGIIdentifier; }
 
 pid_t CGI::getPid(void) const { return _pid; }
 
-int CGI::getPipeFd(void) const {
-return _pipeFd[0];   
-}
+int CGI::getPipeFd(void) const { return _pipeFd[0]; }
 
 bool CGI::doCGI(void) {
     if (!scriptFileExists()) {

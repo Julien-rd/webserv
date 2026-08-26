@@ -259,7 +259,7 @@ int HttpRequest::parseHeaders(std::string &recvBuffer) {
     return 0;
 }
 
-bool parseHexSize(std::string s, size_t &out) {
+static bool parseHexSize(std::string s, size_t &out) {
     size_t pos = s.find(";");
     if (pos != std::string::npos)
         s.erase(pos);
@@ -402,7 +402,7 @@ int HttpRequest::parseHttpRequest(std::string &recvBuffer, size_t bytes_read) {
     return 0;
 }
 
-bool percentDecode(std::string &encoded, bool isQuery) {
+static bool percentDecode(std::string &encoded, bool isQuery) {
     std::string result;
     for (size_t i = 0; i < encoded.size(); ++i) {
         if (encoded[i] == '%' && i + 2 < encoded.size()) {

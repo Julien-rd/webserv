@@ -10,9 +10,9 @@
 
 class Client;
 
-enum errPosition { EPOLL, BEFORE_EPOLL};
+enum errPosition { EPOLL, BEFORE_EPOLL };
 
-enum status { RESPONSE_READY, RESPONSE_PENDING, RESPONSE_ERR};
+enum status { RESPONSE_READY, RESPONSE_PENDING, RESPONSE_ERR };
 
 enum envStates { PYTHON, PHP, METHOD_GET, METHOD_POST };
 
@@ -45,24 +45,26 @@ class CGI {
     ~CGI(void);
 
     bool handleCGI(void);
-    int buildResponse(int pipeReadFd);
+    int  buildResponse(int pipeReadFd);
     bool isCGIRequest(const HttpRequest &request);
     void init(HttpRequest *request, int clientFd, int epfd, int sid, const t_config *config);
     void reset();
+    void writeBody(void);
+    void closePostPipe(void);
 
     // getters
-    unsigned int getIdentifier() const;
-    pid_t getPid(void) const;
-    int getPipeFd(void) const;
+    unsigned int       getIdentifier() const;
+    pid_t              getPid(void) const;
+    int                getPipeFd(void) const;
     const CGIResponse &getResponse();
 
   private:
-    std::string _CGIResponseStream;
-    std::string _CGIResponseStr;
-    ssize_t     _CGIResponseLen;
-    pid_t       _CGIPid;
-    CGIResponse _CGIResponse;
-    unsigned int    _CGIIdentifier;
+    std::string  _CGIResponseStream;
+    std::string  _CGIResponseStr;
+    ssize_t      _CGIResponseLen;
+    pid_t        _CGIPid;
+    CGIResponse  _CGIResponse;
+    unsigned int _CGIIdentifier;
 
     HttpRequest                     *_request;
     std::string                      _scriptName;
@@ -79,6 +81,8 @@ class CGI {
     std::vector<std::string>         _knownExtensions;
     int                              _pipeFd[2];
     int                              _postPipeFd[2];
+    std::vector<char>                _responseBody;
+    size_t                           _writtenBytes;
 
     // setters //Fix: these are private so they are not setters but initializers? rename accordingly
     void setEnv(int type, int state);
@@ -99,6 +103,7 @@ class CGI {
     bool spawnProcess(void);
     bool addPipeToEpoll(void);
     void errHandler(int fd, errPosition pos);
+    bool addPostPipeToEpoll(void);
 };
 
 std::string parsePathInfo(const std::string &_uri, const std::string &scriptName);
