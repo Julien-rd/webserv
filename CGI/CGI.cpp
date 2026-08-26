@@ -131,10 +131,6 @@ bool CGI::pipeIO(void) {  // Fix: This might leak. Make smart adjustments to if/
         log(Level::WARNING, "CGI fcntl failed");
         return false;
     }
-    if (fcntl(_pipeFd[1], F_SETFL, O_NONBLOCK) == -1) {
-        log(Level::WARNING, "CGI fcntl failed");
-        return false;
-    }
     if (_request->getMethod() == "POST") {
         if (_readRegisteredFd != -1) {
             epoll_ctl(_epfd, EPOLL_CTL_DEL, _readRegisteredFd, NULL);
@@ -171,8 +167,7 @@ bool CGI::pipeIO(void) {  // Fix: This might leak. Make smart adjustments to if/
 }
 
 void CGI::flushWriteBuffer(void) {
-    ssize_t n =
-        write(_postPipeFd[1], _writeTotal.data() + _writeOffset, _writeTotal.size() - _writeOffset);
+    ssize_t n = write(_postPipeFd[1], _writeTotal.data() + _writeOffset, _writeTotal.size() - _writeOffset);
     if (n <= 0) {
         epoll_ctl(_epfd, EPOLL_CTL_DEL, _postPipeFd[1], NULL);
         close(_postPipeFd[1]);
