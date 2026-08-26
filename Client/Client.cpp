@@ -48,15 +48,14 @@ int Client::prepareSendCGI(int pipeReadFd) {
 }
 
 int Client::handleCGIEvent(int pipeFd, uint32_t events) {
-    if (events & (EPOLLERR | EPOLLHUP)) {
+    if (pipeFd == _CGI.getPipeFd())
+        return prepareSendCGI(pipeFd);
+
+    if (events & (EPOLLERR | EPOLLHUP))
         _CGI.closePostPipe();
-        return RESPONSE_PENDING;
-    }
-    if (events & EPOLLOUT) {
+    else if (events & EPOLLOUT)
         _CGI.writeBody();
-        return RESPONSE_PENDING;
-    }
-    return prepareSendCGI(pipeFd);
+    return RESPONSE_PENDING;
 }
 
 // Client::Client(const Client &obj)

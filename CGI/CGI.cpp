@@ -197,16 +197,10 @@ bool CGI::addPostPipeToEpoll(void) {
 }
 
 bool CGI::spawnProcess(void) {
-    if (_request->getMethod() == "POST") {
-        if (dup2(_postPipeFd[0], STDIN_FILENO) == -1) {
-            log(Level::WARNING, "dup2() failed for post pipe");
-            return false;
-        }
-    }
     _pid = fork();
     if (_pid == -1) {
         log(Level::WARNING, "fork() failed for post pipe");
-        return 1;
+        return false;
     }
     if (_pid == 0) {
         if (_pipeFd[0] != -1)
@@ -251,7 +245,14 @@ bool CGI::addPipeToEpoll(void) {
 }
 
 bool CGI::redirectIO(void) {
-
+    if (_postPipeFd[0] != -1) {
+        if (dup2(_postPipeFd[0], STDIN_FILENO) == -1) {
+            log(Level::WARNING, "dup2() failed for post pipe");
+            return false;
+        }
+        close(_postPipeFd[0]);
+        _postPipeFd[0] = -1;
+    }
     if (dup2(_pipeFd[1], STDOUT_FILENO) == -1) {
         log(Level::WARNING, "dup2() failed in CGI");
         return false;
