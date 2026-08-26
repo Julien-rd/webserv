@@ -172,7 +172,7 @@ bool CGI::pipeIO(void) {  // Fix: This might leak. Make smart adjustments to if/
 
 void CGI::flushWriteBuffer(void) {
     ssize_t n = write(_postPipeFd[1], _writeTotal.data() + _writeOffset, _writeTotal.size() - _writeOffset);
-    if (n >= 0)
+    if (n <= 0)
         return ;
     _writeOffset += static_cast<size_t>(n);
     time(&_lastProgressTime);
