@@ -171,17 +171,13 @@ bool CGI::pipeIO(void) {  // Fix: This might leak. Make smart adjustments to if/
 }
 
 void CGI::flushWriteBuffer(void) {
-
-    while (_writeOffset < _writeTotal.size()) {
-        ssize_t n = write(
-            _postPipeFd[1], _writeTotal.data() + _writeOffset, _writeTotal.size() - _writeOffset);
-        if (n > 0) {
-            _writeOffset += static_cast<size_t>(n);
-            time(&_lastProgressTime);
-            continue;
-        }
-        return;
-    }
+    ssize_t n = write(_postPipeFd[1], _writeTotal.data() + _writeOffset, _writeTotal.size() - _writeOffset);
+    if (n >= 0)
+        return ;
+    _writeOffset += static_cast<size_t>(n);
+    time(&_lastProgressTime);
+    if(_writeOffset < _writeTotal.size())
+        return ;
     epoll_ctl(_epfd, EPOLL_CTL_DEL, _postPipeFd[1], NULL);
     close(_postPipeFd[1]);
     _postRegisteredFd = -1;
