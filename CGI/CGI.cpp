@@ -195,7 +195,7 @@ bool CGI::spawnProcess(void) {
         if (_request->getMethod() == "POST") {
             if (dup2(_postPipeFd[0], STDIN_FILENO) == -1) {
                 log(Level::WARNING, "dup2() failed for post pipe");
-                return false;  // fix: here and in redirectIO return in child?
+                _exit(1);
             }
             if (_postPipeFd[0] != -1)
                 close(_postPipeFd[0]);
@@ -263,7 +263,6 @@ void CGI::execute(void) {
     argv[2] = NULL;
     if (execve(_executable.c_str(), argv, const_cast<char **>(_envp)) == -1) {
         log(Level::WARNING, "execve() failed in CGI");
-
         _exit(1);
     }
 }
