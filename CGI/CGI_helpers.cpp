@@ -129,13 +129,4 @@ bool CGI::initScript(int type) {
     return true;
 }
 
-std::string parseQueryString(const std::string &_uri) {
-    const std::string queryString;
-    const size_t      queryStringPos = _uri.find('?');
-
-    if (queryStringPos == std::string::npos) {
-        return "";
-    }
-    return _uri.substr(queryStringPos + 1);
-}
 

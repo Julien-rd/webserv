@@ -34,8 +34,7 @@ class HttpRequest {
     int  parseHttpRequest(std::string &recvBuffer, size_t bytes_read);
     int  parseURIContent(void);
     bool parsingDone();
-
-    void print();
+  
     void init(unsigned int clientMaxBody);
     void reset();
 

@@ -113,4 +113,3 @@ class CGI {
 };
 
 std::string parsePathInfo(const std::string &_uri, const std::string &scriptName);
-std::string parseQueryString(const std::string &_uri);

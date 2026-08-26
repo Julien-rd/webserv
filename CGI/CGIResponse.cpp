@@ -120,7 +120,7 @@ void CGIResponse::build(HttpRequest &request) { //fix: detonate this function re
     addRules(request);
     if (_statusCode < 400)
         addCGIBody(request);
-    else
+    if(_statusCode >= 400)
         errorPage(request);
 }
 

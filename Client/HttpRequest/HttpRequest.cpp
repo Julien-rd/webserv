@@ -80,17 +80,6 @@ const HttpRequest &HttpRequest::operator=(const HttpRequest &obj) {
     return *this;
 }
 
-void HttpRequest::print() {
-    std::cout << "---------------------RequestLine---------------------\n";
-    std::cout << "Method: [" << _method << "]\n"
-              << "URI: [" << _uri << "]\n"
-              << "HTTP_VERSION: [" << _httpVersion << "]\n";
-    std::cout << "\n---------------------Headers---------------------\n";
-    for (std::map<std::string, std::string>::iterator it = _headers.begin(); it != _headers.end();
-         ++it) {
-        std::cout << "Fieldname: [" << it->first << "], Fieldvalue: [" << it->second << "]" << "\n";
-    }
-}
 bool HttpRequest::parsingDone() { return _parsingDone; }
 
 bool HttpRequest::validNewLine(std::string &recvBuffer) {
