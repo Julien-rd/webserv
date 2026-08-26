@@ -22,7 +22,6 @@
 #include <unistd.h>
 #include <vector>
 
-
 ServerManager::ServerManager(const t_serverManagerContext &context)
         : _config(context.config)
         , _epfd(context.epfd)
@@ -121,8 +120,14 @@ void ServerManager::loopReadyEvents(void) {
             uint32_t cgiId = static_cast<uint32_t>(u64 >> 32);
             int      clientFd = static_cast<int>(static_cast<uint16_t>((u64 >> 16) & 0xFFFF));
             int      pipeFd = static_cast<int>(static_cast<uint16_t>(u64 & 0xFFFF));
-            Client  &client = _clients.at(clientFd);
-            
+            std::map<int, Client>::iterator it = _clients.find(clientFd);
+            if (it == _clients.end()) {
+                epoll_ctl(_epfd, EPOLL_CTL_DEL, pipeFd, NULL);
+                close(pipeFd);
+                continue;
+            }
+            Client &client = it->second;
+
             if (client.getCGI().getReadFd() == pipeFd) {
                 int readFd = client.getCGI().getReadFd();
                 if (_triggeredEvents[i].events & EPOLLERR ||
@@ -138,7 +143,7 @@ void ServerManager::loopReadyEvents(void) {
 
                 if (client.getCGI().getIdentifier() != cgiId ||
                     _triggeredEvents[i].events & (EPOLLHUP | EPOLLERR)) {
-                        
+
                     epoll_ctl(_epfd, EPOLL_CTL_DEL, postFd, NULL);
                     close(postFd);
                     client.getCGI().setPostFd(-1);
