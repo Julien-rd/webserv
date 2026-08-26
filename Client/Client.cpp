@@ -11,6 +11,7 @@
 #include <cstring>
 #include <ctime>
 #include <fcntl.h>
+#include <iostream>
 #include <netinet/in.h>
 #include <poll.h>
 #include <sys/epoll.h>
@@ -127,6 +128,7 @@ bool Client::updateEpoll(const unsigned int &event) {
     struct epoll_event ev;
     std::memset(&ev, 0, sizeof(ev));
     ev.events = event;
+    ev.data.u64 = 0;
     ev.data.fd = _fd;
     if (epoll_ctl(_epfd, EPOLL_CTL_MOD, _fd, &ev) == -1) {
         log(Level::WARNING, "epoll_ctl MOD failed");
@@ -149,6 +151,7 @@ bool Client::parsePending() {
     if (_request.parseURIContent() == 1)
         return closeConnection(CLOSE_CLIENT_ERROR);
     if (_CGI.isCGIRequest(_request)) {
+        _CGI.init(&_request, _fd, _epfd, _sid, _config);
         if (!_CGI.handleCGI())
             return closeConnection(CLOSE_SERVER_ERROR);
         _request.reset();

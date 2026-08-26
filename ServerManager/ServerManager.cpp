@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <vector>
 
+
 ServerManager::ServerManager(const t_serverManagerContext &context)
         : _config(context.config)
         , _epfd(context.epfd)
@@ -107,24 +108,44 @@ void ServerManager::timeoutClients() {
 void ServerManager::loopReadyEvents(void) {
     timeoutClients();
     for (int i = 0; i < _readyEventsCount; ++i) {
-        int fd = _triggeredEvents[i].data.fd;
-        if (_servers.find(fd) != _servers.end()) {
-            _servers.at(fd).handleServerEvent();
-        } else if (_clientToServerMap.find(fd) != _clientToServerMap.end()) {
-            _servers.at(_clientToServerMap[fd]).handleClientEvent(fd, _triggeredEvents[i].events);
-        } else { /* is CGI's pipe fd */
-            uint64_t u64      = _triggeredEvents[i].data.u64;
-            uint32_t cgiId    = static_cast<uint32_t>(u64 >> 32);
-            int      pipeFd   = static_cast<int>((u64 >> 16) & 0xFFFFu);
-            int      clientFd = static_cast<int>(u64 & 0xFFFFu);
-        
-            std::map<int, Client>::iterator it = _clients.find(clientFd);
-            if (it == _clients.end() || it->second.getCGI().getIdentifier() != cgiId) {
-                epoll_ctl(_epfd, EPOLL_CTL_DEL, pipeFd, NULL);
-                close(pipeFd);
-            } else {
-                it->second.prepareSendCGI(pipeFd);
+        if (_triggeredEvents[i].data.u64 >> 32 == 0) {
+            int fd = _triggeredEvents[i].data.fd;
+            if (_servers.find(fd) != _servers.end()) {
+                _servers.at(fd).handleServerEvent();
+            } else if (_clientToServerMap.find(fd) != _clientToServerMap.end()) {
+                _servers.at(_clientToServerMap[fd])
+                    .handleClientEvent(fd, _triggeredEvents[i].events);
             }
-        } 
+        } else { /* is CGI's pipe fd */
+            uint64_t u64 = _triggeredEvents[i].data.u64;
+            uint32_t cgiId = static_cast<uint32_t>(u64 >> 32);
+            int      clientFd = static_cast<int>(static_cast<uint16_t>((u64 >> 16) & 0xFFFF));
+            int      pipeFd = static_cast<int>(static_cast<uint16_t>(u64 & 0xFFFF));
+            Client  &client = _clients.at(clientFd);
+            
+            if (client.getCGI().getReadFd() == pipeFd) {
+                int readFd = client.getCGI().getReadFd();
+                if (_triggeredEvents[i].events & EPOLLERR ||
+                    client.getCGI().getIdentifier() != cgiId) {
+                    epoll_ctl(_epfd, EPOLL_CTL_DEL, readFd, NULL);
+                    close(readFd);
+                    client.getCGI().setReadFd(-1);
+                } else if (_triggeredEvents[i].events & (EPOLLIN | EPOLLHUP)) {
+                    client.prepareSendCGI(readFd);
+                }
+            } else if (client.getCGI().getPostFd() == pipeFd) {
+                int postFd = client.getCGI().getPostFd();
+
+                if (client.getCGI().getIdentifier() != cgiId ||
+                    _triggeredEvents[i].events & (EPOLLHUP | EPOLLERR)) {
+                        
+                    epoll_ctl(_epfd, EPOLL_CTL_DEL, postFd, NULL);
+                    close(postFd);
+                    client.getCGI().setPostFd(-1);
+                } else if (_triggeredEvents[i].events & (EPOLLOUT)) {
+                    client.getCGI().flushWriteBuffer();
+                }
+            }
+        }
     }
 }

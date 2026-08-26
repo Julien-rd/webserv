@@ -10,9 +10,9 @@
 
 class Client;
 
-enum errPosition { EPOLL, BEFORE_EPOLL};
+enum errPosition { EPOLL, BEFORE_EPOLL };
 
-enum status { RESPONSE_READY, RESPONSE_PENDING, RESPONSE_ERR};
+enum status { RESPONSE_READY, RESPONSE_PENDING, RESPONSE_ERR };
 
 enum envStates { PYTHON, PHP, METHOD_GET, METHOD_POST };
 
@@ -45,24 +45,30 @@ class CGI {
     ~CGI(void);
 
     bool handleCGI(void);
-    int buildResponse(int pipeReadFd);
+    int  buildResponse(int pipeReadFd);
     bool isCGIRequest(const HttpRequest &request);
     void init(HttpRequest *request, int clientFd, int epfd, int sid, const t_config *config);
     void reset();
+    void flushWriteBuffer(void);
 
     // getters
-    unsigned int getIdentifier() const;
-    pid_t getPid(void) const;
-    int getPipeFd(void) const;
+    unsigned int       getIdentifier() const;
+    pid_t              getPid(void) const;
+    // int                getPipeFd(void) const;
+    int                getReadFd(void) const;
+    int                getPostFd(void) const;
     const CGIResponse &getResponse();
+    void               setReadFd(int fd);
+    void               setPostFd(int fd);
+    void                setKnownExtensions(void);
 
   private:
-    std::string _CGIResponseStream;
-    std::string _CGIResponseStr;
-    ssize_t     _CGIResponseLen;
-    pid_t       _CGIPid;
-    CGIResponse _CGIResponse;
-    unsigned int    _CGIIdentifier;
+    std::string  _CGIResponseStream;
+    std::string  _CGIResponseStr;
+    ssize_t      _CGIResponseLen;
+    pid_t        _CGIPid;
+    CGIResponse  _CGIResponse;
+    unsigned int _CGIIdentifier;
 
     HttpRequest                     *_request;
     std::string                      _scriptName;
@@ -79,6 +85,11 @@ class CGI {
     std::vector<std::string>         _knownExtensions;
     int                              _pipeFd[2];
     int                              _postPipeFd[2];
+    size_t                           _writeOffset;
+    std::vector<char>                _writeTotal;
+    time_t                           _lastProgressTime;
+    int                              _postRegisteredFd;
+    int                              _readRegisteredFd;
 
     // setters //Fix: these are private so they are not setters but initializers? rename accordingly
     void setEnv(int type, int state);
