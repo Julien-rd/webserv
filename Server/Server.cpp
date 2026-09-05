@@ -67,16 +67,20 @@ void Server::updateClientsMap(e_mapOperation op, const int clientFd) {
 }
 
 void Server::closeConnection(int clientFd) {
+    std::cout << "0. in errorPage(), servers.size is: " << _config.servers.size() << std::endl;
     updateClientsMap(REMOVE, clientFd);
     std::stringstream ss;
     ss << "Server " << _sid << " closed connection with Client " << clientFd;
     log(Level::INFO, ss.str());
+    std::cout << "1. in errorPage(), servers.size is: " << _config.servers.size() << std::endl;
     if (epoll_ctl(_epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
         error_msg(ERR_EPOLL_CTL);
         return;
     }
+    std::cout << "2. in errorPage(), servers.size is: " << _config.servers.size() << std::endl;
     if (close(clientFd) == -1)
         error_msg(ERR_CLOSE);
+    std::cout << "3. in errorPage(), servers.size is: " << _config.servers.size() << std::endl;
     return;
 }
 
@@ -144,7 +148,7 @@ int Server::start(void) {
     return _serverSocket;
 }
 
-int Server::checkClientCap(void) { return 0; }
+int Server::checkClientCap(void) { return 0; } // TODO: incomplete
 
 void Server::newClient(int clientFd) {
     updateClientsMap(ADD, clientFd);
@@ -168,7 +172,7 @@ void Server::handleServerEvent(void) {
                 return;
             }
         }
-        if (checkClientCap() == ERR) {
+        if (checkClientCap() == ERR) { // TODO: incomplete
             close(clientFd);
             return;
         }

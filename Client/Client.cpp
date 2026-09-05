@@ -155,9 +155,6 @@ bool Client::parsePending() {
     if (_CGI.isCGIRequest(_request)) {
         if (!_CGI.handleCGI())
             return closeConnection(CLOSE_SERVER_ERROR);
-        //     _request.reset();  // fix: maybe unnecessary
-        //     return CLOSE;
-        _request.reset();
         return true;
     }
     _response.build(_request);

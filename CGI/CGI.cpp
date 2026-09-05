@@ -159,13 +159,6 @@ bool CGI::pipeIO(void) {  // Fix: This might leak. Make smart adjustments to if/
 }
 
 bool CGI::spawnProcess(void) {
-    // std::cout << "postpipe[0]: " << _postPipeFd[0] << "\n";
-    if (_request->getMethod() == "POST") {
-        if (dup2(_postPipeFd[0], STDIN_FILENO) == -1) {
-            log(Level::WARNING, "dup2() failed for post pipe");
-            return false;
-        }
-    }
     _pid = fork();
     if (_pid == -1) {
         log(Level::WARNING, "fork() failed for post pipe");
@@ -178,6 +171,12 @@ bool CGI::spawnProcess(void) {
             close(_epfd);
         if (_clientFd != -1)
             close(_clientFd);
+        if (_request->getMethod() == "POST" && dup2(_postPipeFd[0], STDIN_FILENO) == -1) {
+            log(Level::WARNING, "dup2() failed for post pipe");
+            _exit(1);
+        }
+        if (_postPipeFd[0] != -1)
+            close(_postPipeFd[0]);
         redirectIO();
         execute();
     } else {
@@ -188,12 +187,12 @@ bool CGI::spawnProcess(void) {
             return false;
         if (_request->getMethod() == "POST") {
             const std::vector<char> &body = _request->getBody();
-            std::string              bodyStr(body.begin(), body.end());
+            size_t                   bodySize = body.size();
             size_t                   totalWritten = 0;
-            while (totalWritten < _request->getContentLength()) {
+            while (totalWritten < bodySize) {
                 ssize_t written = write(_postPipeFd[1],
-                                        bodyStr.data() + totalWritten,
-                                        _request->getContentLength() - totalWritten);
+                                        &body[totalWritten],
+                                        bodySize - totalWritten);
                 if (written == -1) {
                     if (errno == EAGAIN || errno == EWOULDBLOCK) {
                         continue;
@@ -341,6 +340,10 @@ int CGI::buildResponse(
 
     bytesRead = read(pipeReadFd, &buf[0], BUFFER_SIZE - 1);
     if (bytesRead == -1) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return RESPONSE_PENDING;
+        epoll_ctl(_epfd, EPOLL_CTL_DEL, pipeReadFd, NULL);
+        close(pipeReadFd);
         _CGIResponseLen = 0;
         _CGIResponseStream.erase();
         log(Level::WARNING, "read() failed in Client::handleCGIResponse()");
@@ -349,7 +352,9 @@ int CGI::buildResponse(
     }
     if (bytesRead == 0) {
         int res = waitpid(_CGIPid, NULL, WNOHANG);
-        if (res == -1) {
+        if (res == -1 && errno != ECHILD) {
+            epoll_ctl(_epfd, EPOLL_CTL_DEL, pipeReadFd, NULL);
+            close(pipeReadFd);
             log(Level::WARNING, "waitpid() failed in Client::handleCGIResponse()");
             return RESPONSE_ERR;  // NOTFINISHED: i have no idea whats open here and what this
                                   // function is responsible for // needs to have the epoll del

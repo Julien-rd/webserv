@@ -114,7 +114,10 @@ void ServerManager::loopReadyEvents(void) {
         } else { /* is CGI's pipe fd */
             int fds[2];
             pp_memcpy(fds, &_triggeredEvents[i].data.u64, sizeof(uint64_t));
-            if (_clients.at(fds[1]).prepareSendCGI(fds[0]) == RESPONSE_ERR) {
+            std::map<int, Client>::iterator client = _clients.find(fds[1]);
+            if (client == _clients.end())
+                continue;
+            if (client->second.prepareSendCGI(fds[0]) == RESPONSE_ERR) {
                 //fix: handle error here
             }
         }

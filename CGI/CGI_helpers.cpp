@@ -20,8 +20,6 @@ void CGI::setEnv(int type, int state) {
         _envp[entry++] = "REDIRECT_STATUS=1";
         _envp[entry++] = _meta.script_filename.c_str();
     }
-    if (state == METHOD_GET)
-        _envp[entry++] = _meta.query_string.c_str();
     if (state == METHOD_POST) {
         _envp[entry++] = _meta.content_length.c_str();
         _envp[entry++] = _meta.content_type.c_str();
@@ -68,13 +66,10 @@ void CGI::initMeta(int type) {
     //              "Host")); // TODO get this from result of config_parser instead
 
     const std::map<std::string, std::string> &headers = _request->getHeaders();
-    std::stringstream                         ss;
-    ss << _request->getContentLength();
+    std::stringstream ss;
+    ss << _request->getBody().size();
 
-    if (_request->getMethod() == "POST") {
-        setMeta(_meta.content_length, "CONTENT_LENGTH", ss.str());  // fix: chunks?
-    } else
-        setMeta(_meta.content_length, "CONTENT_LENGTH", "0");  // fix: chunks?
+    setMeta(_meta.content_length, "CONTENT_LENGTH", ss.str());
 
     if (_request->getHeaders().find("content-type") != headers.end())
         setMeta(_meta.content_type, "CONTENT_TYPE", headers.at("content-type"));
@@ -82,7 +77,7 @@ void CGI::initMeta(int type) {
     setMeta(_meta.path_info, "PATH_INFO", _request->getUriData().pathInfo);
     setMeta(_meta.query_string, "QUERY_STRING", parseQueryString(_request->getUri()));
     setMeta(_meta.request_method, "REQUEST_METHOD", _request->getMethod());
-    setMeta(_meta.script_name, "SCRIPT_NAME", _scriptName);
+    setMeta(_meta.script_name, "SCRIPT_NAME", _request->getUriData().path);
     setMeta(_meta.server_port, "SERVER_PORT", _serverConfig->port);
     setMeta(_meta.server_protocol, "SERVER_PROTOCOL", "HTTP/1.1");
     if (_request->getHeaders().find("cookie") != _request->getHeaders().end())
