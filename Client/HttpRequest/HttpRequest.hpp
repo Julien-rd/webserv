@@ -34,8 +34,7 @@ class HttpRequest {
     int  parseHttpRequest(std::string &recvBuffer, size_t bytes_read);
     int  parseURIContent(void);
     bool parsingDone();
-
-    void print();
+  
     void init(unsigned int clientMaxBody);
     void reset();
 
@@ -53,6 +52,7 @@ class HttpRequest {
     chunkedBodyState                          getChunkedBodyState() const;
     size_t                                    getBytesNeeded() const;
     std::string                               getHttpVersion() const;
+    std::string                               getQuery() const;
 
     // setters
     void setStatusCode(int status);
@@ -90,8 +90,8 @@ class HttpRequest {
     bool containsWhiteSpaces();
     int  parseHeaders(std::string &recvBuffer);
     int  parseRequestLine(std::string &recvBuffer);
-    int  bodyMode(std::string recvBuffer);
-    void parseBody(std::string recvBuffer);
+    int  bodyMode(const std::string &recvBuffer);
+    void parseBody(const std::string &recvBuffer);
     int  parseChunkedBody(const std::string &recvBuffer);
     bool saveData();
     bool validateMandatoryHeaders();

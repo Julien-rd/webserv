@@ -45,7 +45,6 @@ class HttpResponse {
     std::vector<char>                  _responseBody;
     std::string                        _method;
     std::string                        _statusCodeStr;
-    std::string                        _allowedMethods;
     bool                               _keepAlive;
 
     bool                methodAllowed(unsigned int index, const std::vector<t_location> &locations);
@@ -54,7 +53,7 @@ class HttpResponse {
     void                extractContentLength();
     void                errorPage(const HttpRequest &request);
     void                addRedirectHeaders(const std::string &path);
-    virtual bool        addBody(HttpRequest request, const UriResult &result);
+    virtual bool        addBody(const HttpRequest &request, const UriResult &result);
     static unsigned int getLocation(const std::string &match, const t_server &serverConfig);
     void                attachPrefix(const std::string &uri,
                                      std::string       &path,
@@ -67,6 +66,7 @@ class HttpResponse {
     void         addCacheHeaders();
     void         addSecurityHeaders();
     void         addConnectionHeader(const HttpRequest &request);
+    void         buildAllowedMethodsHeader(const HttpRequest &request);
 
     // Http Phrase getters
     void getReasonPhraseInfo();

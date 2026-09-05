@@ -10,7 +10,7 @@
 #define CLOSE 1
 #define BUFFER_SIZE 4096
 
-const size_t MAX_METHOD_LEN = 6;
+const size_t MAX_METHOD_LEN = 8;
 const size_t MAX_URI_LEN = 8192;
 const size_t MAX_HTTP_LEN = 8;
 const size_t MAX_FIELD_LEN = 8192;

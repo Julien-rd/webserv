@@ -11,11 +11,11 @@
 #include <cstdlib>
 #include <exception>
 
-volatile sig_atomic_t gSignal = 1;
+volatile sig_atomic_t serverRunning = 1;
 
 void signalHandler(int sig) {
-    (void) sig;
-    gSignal = 0;
+    serverRunning = 0;
+    signal(sig, SIG_DFL);
 }
 
 static bool parseLogLevelArg(const std::string &arg, Level::Value &outLevel) {
@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
     if (serverManager.init())
         return 1;
 
-    while (gSignal) {
+    while (serverRunning) {
         try {
             poller.epollWait();
             serverManager.loopReadyEvents();
@@ -119,6 +119,7 @@ int main(int argc, char **argv) {
             return 1;
         }
     }
+    std::cerr << "\n";
     log(Level::INFO, "Shutting Webserver down");
-    //fix: maybe catch child processes, close all file descriptors etc?
+    return 0;
 }

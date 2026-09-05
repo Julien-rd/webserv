@@ -24,6 +24,7 @@ void CGI::setEnv(int type, int state) {
         _envp[entry++] = _meta.content_length.c_str();
         _envp[entry++] = _meta.content_type.c_str();
     }
+    _envp[entry++] = "GATEWAY_INTERFACE=CGI/1.1";
     _envp[entry] = NULL;
 }
 
@@ -75,7 +76,7 @@ void CGI::initMeta(int type) {
         setMeta(_meta.content_type, "CONTENT_TYPE", headers.at("content-type"));
 
     setMeta(_meta.path_info, "PATH_INFO", _request->getUriData().pathInfo);
-    setMeta(_meta.query_string, "QUERY_STRING", parseQueryString(_request->getUri()));
+    setMeta(_meta.query_string, "QUERY_STRING", _request->getQuery());
     setMeta(_meta.request_method, "REQUEST_METHOD", _request->getMethod());
     setMeta(_meta.script_name, "SCRIPT_NAME", _request->getUriData().path);
     setMeta(_meta.server_port, "SERVER_PORT", _serverConfig->port);
@@ -123,13 +124,4 @@ bool CGI::initScript(int type) {
     return true;
 }
 
-std::string parseQueryString(const std::string &_uri) {
-    const std::string queryString;
-    const size_t      queryStringPos = _uri.find('?');
-
-    if (queryStringPos == std::string::npos) {
-        return "";
-    }
-    return _uri.substr(queryStringPos + 1);
-}
 

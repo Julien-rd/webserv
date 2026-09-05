@@ -80,17 +80,6 @@ const HttpRequest &HttpRequest::operator=(const HttpRequest &obj) {
     return *this;
 }
 
-void HttpRequest::print() {
-    std::cout << "---------------------RequestLine---------------------\n";
-    std::cout << "Method: [" << _method << "]\n"
-              << "URI: [" << _uri << "]\n"
-              << "HTTP_VERSION: [" << _httpVersion << "]\n";
-    std::cout << "\n---------------------Headers---------------------\n";
-    for (std::map<std::string, std::string>::iterator it = _headers.begin(); it != _headers.end();
-         ++it) {
-        std::cout << "Fieldname: [" << it->first << "], Fieldvalue: [" << it->second << "]" << "\n";
-    }
-}
 bool HttpRequest::parsingDone() { return _parsingDone; }
 
 bool HttpRequest::validNewLine(std::string &recvBuffer) {
@@ -120,8 +109,6 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
         }
         if (extractContent(recvBuffer, pos) == false)
             return 1;
-        if (validMethod() == false)
-            return 1;
         _currentState = URI;
         /* fall through */
     case URI:;
@@ -138,6 +125,8 @@ int HttpRequest::parseRequestLine(std::string &recvBuffer) {
         if (extractContent(recvBuffer, pos) == false)
             return 1;
         if (validUri() == false)
+            return 1;
+        if (validMethod() == false)
             return 1;
         _currentState = HTTP_VERSION;
         /* fall through */
@@ -199,6 +188,8 @@ int HttpRequest::parseHeaders(std::string &recvBuffer) {
                 break;
             }
             if (pos == std::string::npos) {
+                if (brokenSyntax(pos, max_pos))
+                    return 1;
                 if (isTooLong(recvBuffer.size() - _bytesRead) == true)
                     return 1;
                 _fieldName += recvBuffer.substr(_bytesRead);
@@ -277,11 +268,11 @@ bool parseHexSize(std::string s, size_t &out) {
     return true;
 }
 
-void HttpRequest::parseBody(std::string recvBuffer) {
+void HttpRequest::parseBody(const std::string &recvBuffer) {
     _bytesNeeded = _contentLength - _body.size();
-    std::string::iterator start = recvBuffer.begin() + _bytesRead;
-    std::string::iterator end = recvBuffer.end();
-    size_t                len = recvBuffer.length() - _bytesRead;
+    std::string::const_iterator start = recvBuffer.begin() + _bytesRead;
+    std::string::const_iterator end = recvBuffer.end();
+    size_t                      len = recvBuffer.length() - _bytesRead;
     if (_bytesNeeded > len) {
         _body.insert(_body.end(), start, end);
         _bytesRead += len;
@@ -334,6 +325,7 @@ int HttpRequest::parseChunkedBody(const std::string &recvBuffer) {
                 return 1;
             }
             _buffer.erase(0, pos + 2);
+            _contentLength += _bytesNeeded;
             _chunkedBodyState = (_bytesNeeded == 0) ? _EOF : LINE;
         } else if (_chunkedBodyState == LINE) {
             if (_buffer.size() < _bytesNeeded + 2)
@@ -378,7 +370,7 @@ int HttpRequest::parseChunkedBody(const std::string &recvBuffer) {
     }
 }
 
-int HttpRequest::bodyMode(std::string recvBuffer) {
+int HttpRequest::bodyMode(const std::string &recvBuffer) {
     if (_currentState == BODY)
         parseBody(recvBuffer);
     if (_currentState == BODY_CHUNKED) {
@@ -393,36 +385,45 @@ int HttpRequest::parseHttpRequest(std::string &recvBuffer, size_t bytes_read) {
     _parsingDone = false;
     if (parseRequestLine(recvBuffer) == 1)
         return 1;
-    if (parseHeaders(recvBuffer) == 1) 
+    if (parseHeaders(recvBuffer) == 1)
         return 1;
     if (bodyMode(recvBuffer) == 1)
         return 1;
     return 0;
 }
 
-std::string percentDecode(const std::string &encoded, bool isQuery) {
+bool percentDecode(std::string &encoded, bool isQuery) {
     std::string result;
     for (size_t i = 0; i < encoded.size(); ++i) {
         if (encoded[i] == '%' && i + 2 < encoded.size()) {
-            int                val;
-            std::istringstream hex(encoded.substr(i + 1, 2));
-            hex >> std::hex >> val;
+            const std::string s = encoded.substr(i + 1, 2);
+            if (s.size() != 2 || s[0] == '+' || s[0] == '-')
+                return false;
+            int                val = 0;
+            std::istringstream hex(s);
+            hex >> std::noskipws >> std::hex >> val;
+            if (hex.fail() || !hex.eof())
+                return false;
             result += static_cast<char>(val);
             i += 2;
         } else if (isQuery && encoded[i] == '+') {
             result += ' ';  // only in query strings, not paths
         } else {
-
             result += encoded[i];
         }
     }
-    return result;
+    encoded = result;
+    return true;
 }
 
 int HttpRequest::parseURIContent(void) {
     size_t      qmark = _uri.find('?');
     std::string path = _uri.substr(0, qmark);
-    path = percentDecode(path, false);
+
+    if (percentDecode(path, false) == false) {
+        _statusCode = 400;
+        return 1;
+    }
     if (validateURIPath(path) == false) {
         _statusCode = 400;
         return 1;
@@ -445,7 +446,12 @@ int HttpRequest::parseURIContent(void) {
             _uriData.extension = path.substr(dot);
         _uriData.path = path;
     }
-    _uriData.query = percentDecode(_uriData.query, true);
+    std::string query = _uriData.query;
+    if (percentDecode(query, true) == false) {
+        _statusCode = 400;
+        return 1;
+    }
     _uri = _uriData.path;
     return 0;
 }
+

@@ -1,0 +1,47 @@
+
+client_timeout 50;
+log_level info;
+server {
+    error_page 404 PasswordManager/errorpages/error404.html;
+  client_max_body_size        1;
+
+  cgi_config .py /usr/bin/python3;
+  allow_methods GET POST DELETE;
+
+  location /login/ {
+    index index.html;
+  }
+
+  location /chunked/ {
+    index chunkedRequest.html;
+}
+
+  location /error/ {
+    index index.html;
+  }
+
+  location /registration/ {
+    index index.html;
+    allow_methods GET POST DELETE;
+  }
+
+   location /files/ {
+    index index.html;
+  }
+
+  location /database/ {
+    allow_methods GET POST DELETE;
+  }
+
+  location /dashboard/ {
+    index index.html;
+    allow_methods GET POST DELETE;
+  }
+
+  location /processing/ {
+    index index.html;
+  }
+  
+  root /PasswordManager;
+  listen 127.0.0.1:7070;
+}

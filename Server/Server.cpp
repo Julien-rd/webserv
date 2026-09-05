@@ -9,6 +9,7 @@
 #include <netdb.h>
 #include <sstream>
 #include <string>
+#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -34,9 +35,8 @@ Server::Server(const Server &obj)
         , _addrInfo(NULL) {}
 
 Server::~Server(void) {
-    if (_addrInfo) {
+    if (_addrInfo)
         freeaddrinfo(_addrInfo);
-    }
 }
 
 void Server::closeClientFds(void) {
@@ -67,20 +67,28 @@ void Server::updateClientsMap(e_mapOperation op, const int clientFd) {
 }
 
 void Server::closeConnection(int clientFd) {
-    std::cout << "0. in errorPage(), servers.size is: " << _config.servers.size() << std::endl;
+    int postFd = _clients.at(clientFd).getCGI().getPostFd();
+    if (postFd != -1) {
+        epoll_ctl(_epfd, EPOLL_CTL_DEL, postFd, NULL);
+        close(postFd);
+        _clients.at(clientFd).getCGI().setPostFd(-1);
+    }
+    int readFd = _clients.at(clientFd).getCGI().getReadFd();
+    if (readFd != -1) {
+        epoll_ctl(_epfd, EPOLL_CTL_DEL, readFd, NULL);
+        close(readFd);
+        _clients.at(clientFd).getCGI().setReadFd(-1);
+    }
     updateClientsMap(REMOVE, clientFd);
     std::stringstream ss;
     ss << "Server " << _sid << " closed connection with Client " << clientFd;
     log(Level::INFO, ss.str());
-    std::cout << "1. in errorPage(), servers.size is: " << _config.servers.size() << std::endl;
     if (epoll_ctl(_epfd, EPOLL_CTL_DEL, clientFd, NULL) == -1) {
         error_msg(ERR_EPOLL_CTL);
         return;
     }
-    std::cout << "2. in errorPage(), servers.size is: " << _config.servers.size() << std::endl;
     if (close(clientFd) == -1)
         error_msg(ERR_CLOSE);
-    std::cout << "3. in errorPage(), servers.size is: " << _config.servers.size() << std::endl;
     return;
 }
 
@@ -122,6 +130,7 @@ void Server::addSocketToEpoll(int socketFd) {
     struct epoll_event ev;
     ev.events = EPOLLIN;
     // ev.data.ptr = 0;
+    ev.data.u64 = 0;
     ev.data.fd = socketFd;
     if (epoll_ctl(_epfd, EPOLL_CTL_ADD, socketFd, &ev) == -1) {
         error_msg(ERR_EPOLL_CTL);
@@ -141,10 +150,18 @@ void Server::bindAndListen(void) {
 }
 
 int Server::start(void) {
-    initServerSocket();
-    setServerSockAddr();
-    addSocketToEpoll(_serverSocket);
-    bindAndListen();
+    try {
+        initServerSocket();
+        setServerSockAddr();
+        bindAndListen();
+        addSocketToEpoll(_serverSocket);
+    } catch (...) {
+        if (_serverSocket != -1) {
+            close(_serverSocket);
+            _serverSocket = -1;
+        }
+        throw;
+    }
     return _serverSocket;
 }
 
@@ -186,7 +203,7 @@ bool Server::recvClientEvent(Client &client) {
 
     if (bytesRead <= 0) {
         if (bytesRead == -1)
-            error_msg(ERR_RECV);
+            error_msg(ERR_RECV); //fix: log
         return false;
     }
     recvBuffer.resize(bytesRead);
@@ -207,7 +224,7 @@ void Server::handleClientEvent(int clientFd, unsigned int event) {
     if (event & EPOLLOUT) {
         if (client.sendResponse() == false)
             return closeConnection(clientFd);
-        
+
         if (client.parsePending() == false)
             return closeConnection(clientFd);
     }

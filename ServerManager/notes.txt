@@ -1,0 +1,4 @@
+epollhup und epollerr oder wa genau nochmal setten bei pipe und ueberpruefen. 
+child processes orphans irgendwie tracken.
+wenn client connection geclosed wird alle seine pipefds von epoll entfernen, so kann maybe nicht passieren dass client nicht mehr existiert
+timeouts with lastprogress made

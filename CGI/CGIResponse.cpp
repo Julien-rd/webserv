@@ -54,7 +54,7 @@ void CGIResponse::extractStatus(void) {
     _statusCode = 200;
 }
 
-void CGIResponse::addCGIBody(HttpRequest request) {
+void CGIResponse::addCGIBody(const HttpRequest &request) {
     (void) request;
 
     size_t sepLen = 0;
@@ -120,7 +120,7 @@ void CGIResponse::build(HttpRequest &request) { //fix: detonate this function re
     addRules(request);
     if (_statusCode < 400)
         addCGIBody(request);
-    else
+    if(_statusCode >= 400)
         errorPage(request);
 }
 
